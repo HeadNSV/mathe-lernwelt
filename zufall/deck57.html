@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Baumdiagramm &amp; Pfadregeln</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .warnbox{background:#3d1c1c;border-left:5px solid #c0392b;border-radius:8px;padding:10px 16px;font-size:min(1.9vw,16px);color:#ffd9d0;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>BAUMDIAGRAMM &amp; PFADREGELN</h1>
+    <h2>Kapitel 18 · Teil 3 — mehrstufige Zufallsexperimente</h2>
+    <div class="hook" style="max-width:70ch;">„Längs mal, quer plus." Mit diesen zwei Regeln knackst du JEDES mehrstufige Zufallsexperiment — und am Ende dieser Folien lösen wir endlich das Rätsel von Teil 1.</div>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 18.3</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Konzept Baumdiagramm -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Mehrstufige Zufallsexperimente als Baum</h2>
+      <div class="defbox">Wird ein Zufallsexperiment mehrfach durchgeführt, spricht man von einem <b>mehrstufigen Zufallsexperiment</b>. Im <b>Baumdiagramm</b> trägt jeder Ast die Wahrscheinlichkeit seiner Stufe, jeder Pfad von der Wurzel bis zu einem Ende steht für ein Ergebnis.</div>
+    </div>
+  </section>
+
+  <!-- 3 Steps mit Zuruecklegen Setup -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Ersatzteilkiste — MIT Zurücklegen</h2>
+      <div class="defbox">Eine Kiste enthält 3 intakte (i) und 2 defekte (d) Ersatzteile. Es wird zweimal gezogen, JEDES Mal mit Zurücklegen.</div>
+      <div class="step" id="s3_1"><b class="lbl">Erste Stufe:</b> P(i)=3/5, P(d)=2/5.</div>
+      <div class="step" id="s3_2"><b class="lbl">Zweite Stufe:</b> weil zurückgelegt wird, sind die Wahrscheinlichkeiten unverändert: wieder P(i)=3/5, P(d)=2/5, unabhängig vom ersten Zug.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="3" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 4 Grafik Baum 1 -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Baumdiagramm mit Zurücklegen</h2>
+      <div class="svgbox"><div id="svgBaum1"></div><div class="svgcaption">Vier Pfade: ii, id, di, dd</div></div>
+      <div class="defbox">Bei jedem der vier Pfade multiplizierst du die Wahrscheinlichkeiten entlang des Weges.</div>
+    </div>
+  </section>
+
+  <!-- 5 1. Pfadregel -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> 1. Pfadregel — längs multiplizieren</h2>
+      <div class="defbox">Die <b>1. Pfadregel</b>: die Wahrscheinlichkeit eines Pfades ist das PRODUKT der Wahrscheinlichkeiten entlang des Weges.</div>
+      <div class="step" id="s5_1"><b class="lbl">P(ii)=3/5·3/5=9/25=0,36</b></div>
+      <div class="step" id="s5_2"><b class="lbl">P(id)=3/5·2/5=6/25=0,24</b></div>
+      <div class="step" id="s5_3"><b class="lbl">P(di)=2/5·3/5=6/25=0,24</b></div>
+      <div class="step" id="s5_4"><b class="lbl">P(dd)=2/5·2/5=4/25=0,16</b> — Kontrolle: 9+6+6+4=25/25=1 ✓</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="5" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 6 2. Pfadregel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">📐</span> 2. Pfadregel — quer addieren</h2>
+      <div class="defbox">Die <b>2. Pfadregel</b>: soll die Wahrscheinlichkeit eines Ereignisses berechnet werden, das MEHRERE Pfade umfasst, werden die Pfadwahrscheinlichkeiten ADDIERT.</div>
+      <div class="defbox">Beispiel: P(„genau ein defektes Teil") = P(id)+P(di) = 6/25+6/25 = 12/25 = 0,48.</div>
+    </div>
+  </section>
+
+  <!-- 7 Steps ohne Zuruecklegen -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Dieselbe Kiste — OHNE Zurücklegen</h2>
+      <div class="defbox">Jetzt wird zweimal gezogen, aber OHNE Zurücklegen — das gezogene Teil bleibt draußen. Die zweite Stufe hängt jetzt vom ersten Zug ab!</div>
+      <div class="step" id="s7_1"><b class="lbl">Nach „i" zuerst:</b> übrig sind 2i, 2d (4 Teile) ⟹ P(i)=2/4=1/2, P(d)=2/4=1/2.</div>
+      <div class="step" id="s7_2"><b class="lbl">Nach „d" zuerst:</b> übrig sind 3i, 1d (4 Teile) ⟹ P(i)=3/4, P(d)=1/4.</div>
+      <div class="step" id="s7_3"><b class="lbl">Pfadwahrscheinlichkeiten (1. Pfadregel):</b> P(ii)=3/5·1/2=3/10. P(id)=3/5·1/2=3/10. P(di)=2/5·3/4=3/10. P(dd)=2/5·1/4=1/10. Kontrolle: 3/10+3/10+3/10+1/10=1 ✓</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="7" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 8 Grafik Baum 2 -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Baumdiagramm ohne Zurücklegen</h2>
+      <div class="svgbox"><div id="svgBaum2"></div><div class="svgcaption">Die Äste der zweiten Stufe sind je nach erstem Zug unterschiedlich!</div></div>
+      <div class="defbox">P(„genau ein defektes Teil") = P(id)+P(di) = 3/10+3/10 = 6/10 = 3/5 — höher als mit Zurücklegen (12/25=0,48), weil ohne Zurücklegen die Verhältnisse sich stärker verschieben.</div>
+    </div>
+  </section>
+
+  <!-- 9 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Baumpfade-Labor</span><span class="sub">Pfade anklicken, Produkt & Summe live verfolgen</span></div>
+    <iframe allow="autoplay" data-src="baumpfade57_labor.html"></iframe>
+  </section>
+
+  <!-- 10 Finale: Raetsel-Aufloesung -->
+  <section class="slide explain scroll">
+    <div class="ebox">
+      <h2>🏁 Das Rätsel von Teil 1, endlich gelöst</h2>
+      <div class="defbox">Zwei Kinder, jedes unabhängig Junge (J) oder Mädchen (M) mit P=1/2. Baum mit zwei Stufen: Ω={JJ; JM; MJ; MM}, jeder Pfad hat P=1/2·1/2=1/4 (1. Pfadregel).</div>
+      <div class="defbox">Ereignis „mindestens ein Junge" = {JJ; JM; MJ}. P = 1/4+1/4+1/4 = 3/4 (2. Pfadregel). Das sind DREI gleich wahrscheinliche Fälle, nicht zwei!</div>
+      <div class="warnbox">Die naive Antwort „1/2" übersieht, dass JM und MJ ZWEI verschiedene, gleich wahrscheinliche Ergebnisse sind. Von den drei übrig gebliebenen, gleich wahrscheinlichen Fällen (JJ, JM, MJ) ist nur EINER — JJ — „zwei Jungen".</div>
+      <div class="defbox">Wenden wir Laplace auf diese eingeschränkte Ergebnismenge an: P(„zwei Jungen" innerhalb „mindestens ein Junge") = 1/3 von den drei Fällen — nicht 1/2!</div>
+    </div>
+  </section>
+
+  <!-- 11 Eselsbruecke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Längs mal (1. Pfadregel), quer plus (2. Pfadregel)." Und beim Zählen von Fällen: schreibe IMMER alle Reihenfolgen einzeln auf (JM ≠ MJ) — sonst zählst du zu wenige gleich wahrscheinliche Fälle.</div>
+    </div>
+  </section>
+
+  <!-- 12 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Mehrstufige Qualitätsprüfung</h2>
+      <div class="defbox">Durchläuft ein Bauteil zwei unabhängige Prüfstationen nacheinander, lässt sich die Wahrscheinlichkeit für „beide Stationen bestanden" mit der 1. Pfadregel berechnen, und „mindestens eine Station durchgefallen" über die 2. Pfadregel aus den Gegenpfaden.</div>
+    </div>
+  </section>
+
+  <!-- 13 Intuitions-Regler -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Schätz mal: wie hoch ist P(dd)?</h2>
+      <div class="defbox">Eine Münze wird zweimal geworfen, P(Kopf)=P(Zahl)=1/2 je Wurf, unabhängig. Wie hoch ist P(„zweimal Zahl") in Prozent?</div>
+      <div id="estZufall57"></div>
+    </div>
+  </section>
+
+  <!-- 14 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>1. Pfadregel</td><td>„längs multiplizieren"</td><td>Wahrscheinlichkeit eines Pfades = Produkt der Astwahrscheinlichkeiten</td></tr>
+        <tr><td>2. Pfadregel</td><td>„quer addieren"</td><td>Wahrscheinlichkeit eines Ereignisses = Summe der zugehörigen Pfadwahrscheinlichkeiten</td></tr>
+        <tr><td>mit / ohne Zurücklegen</td><td>—</td><td>bestimmt, ob die zweite Stufe von der ersten abhängt</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 15 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Schritt</th><th>Was passiert</th></tr>
+      <tr><td>1</td><td>Baumdiagramm mit allen Stufen und Astwahrscheinlichkeiten zeichnen</td></tr>
+      <tr><td>2</td><td>Pro Pfad: Wahrscheinlichkeiten längs multiplizieren (1. Pfadregel)</td></tr>
+      <tr><td>3</td><td>Für ein Ereignis: passende Pfadwahrscheinlichkeiten quer addieren (2. Pfadregel)</td></tr>
+    </table>
+  </section>
+
+  <!-- 16 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Eine Münze wird zweimal geworfen (P(Kopf)=P(Zahl)=1/2). Berechne P(„mindestens einmal Kopf").
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>P(KK)+P(KZ)+P(ZK)=1/4+1/4+1/4=3/4</details>
+        </li>
+        <li style="margin-top:10px;">Eine Urne enthält 4 rote (r) und 1 blaue (b) Kugel. Es wird zweimal MIT Zurücklegen gezogen. Berechne P(„beide rot").
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>P(rr)=4/5·4/5=16/25=0,64</details>
+        </li>
+        <li style="margin-top:10px;">Dieselbe Urne, aber OHNE Zurücklegen. Berechne P(„beide rot").
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>P(rr)=4/5·3/4=12/20=3/5=0,6</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 17 Themenbereich-Abschluss-Check -->
+  <section class="slide explain scroll">
+    <div class="ebox">
+      <h2>🏁 Themenbereich-Abschluss-Check</h2>
+      <div class="defbox">Der Themenbereich „Zufall &amp; Wahrscheinlichkeit" ist jetzt komplett. Diese Aufgaben mischen alle drei Teile — von Ereignis-Mengen über Häufigkeit bis Baumdiagramm.</div>
+      <ol class="bul">
+        <li>Ω={1;...;6}, A={2;4;6}, B={1;2;3}. Berechne A∩B.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung</summary>A∩B={2}</details>
+        </li>
+        <li style="margin-top:10px;">Bei 60 Messungen tritt E 15-mal ein. Berechne h60(E).
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung</summary>h60(E)=15/60=0,25=25%</details>
+        </li>
+        <li style="margin-top:10px;">Ein idealer 8-seitiger Würfel: berechne P(„Zahl größer als 6").
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung</summary>E={7;8}, P=2/8=1/4=25%</details>
+        </li>
+        <li style="margin-top:10px;">Zwei Münzwürfe, P(Kopf)=1/2: berechne P(„beide gleich", also KK oder ZZ).
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung</summary>P(KK)+P(ZZ)=1/4+1/4=1/2</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 18 Pruefungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Ein mehrstufiges Zufallsexperiment als Baumdiagramm darstellen — mit und ohne Zurücklegen unterscheiden.</b></li>
+        <li><b>Pfadwahrscheinlichkeiten mit der 1. Pfadregel (längs multiplizieren) berechnen.</b></li>
+        <li><b>Ereigniswahrscheinlichkeiten mit der 2. Pfadregel (quer addieren) über mehrere Pfade berechnen.</b></li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">🏁 Damit ist der gesamte Themenbereich „Zufall &amp; Wahrscheinlichkeit" vollständig durchgearbeitet.</div>
+    </div>
+  </section>
+
+  <!-- 19 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+(function(){
+  let s='<svg viewBox="0 0 300 190" style="width:100%;max-width:340px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="20" y1="95" x2="100" y2="30" stroke="#4a5568" stroke-width="2"/>';
+  s+='<line x1="20" y1="95" x2="100" y2="160" stroke="#4a5568" stroke-width="2"/>';
+  s+='<line x1="100" y1="30" x2="180" y2="10" stroke="#4a5568" stroke-width="2"/>';
+  s+='<line x1="100" y1="30" x2="180" y2="50" stroke="#4a5568" stroke-width="2"/>';
+  s+='<line x1="100" y1="160" x2="180" y2="140" stroke="#4a5568" stroke-width="2"/>';
+  s+='<line x1="100" y1="160" x2="180" y2="180" stroke="#4a5568" stroke-width="2"/>';
+  s+='<text x="55" y="55" fill="#5fd0c7" font-size="11">3/5</text>';
+  s+='<text x="55" y="135" fill="#e06fa0" font-size="11">2/5</text>';
+  s+='<text x="135" y="15" fill="#5fd0c7" font-size="11">3/5</text>';
+  s+='<text x="135" y="45" fill="#e06fa0" font-size="11">2/5</text>';
+  s+='<text x="135" y="145" fill="#5fd0c7" font-size="11">3/5</text>';
+  s+='<text x="135" y="180" fill="#e06fa0" font-size="11">2/5</text>';
+  s+='<text x="190" y="14" fill="#f2a63c" font-size="12">ii = 9/25</text>';
+  s+='<text x="190" y="54" fill="#f2a63c" font-size="12">id = 6/25</text>';
+  s+='<text x="190" y="144" fill="#f2a63c" font-size="12">di = 6/25</text>';
+  s+='<text x="190" y="184" fill="#f2a63c" font-size="12">dd = 4/25</text>';
+  s+='</svg>';
+  document.getElementById('svgBaum1').innerHTML=s;
+})();
+(function(){
+  let s='<svg viewBox="0 0 300 190" style="width:100%;max-width:340px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="20" y1="95" x2="100" y2="30" stroke="#4a5568" stroke-width="2"/>';
+  s+='<line x1="20" y1="95" x2="100" y2="160" stroke="#4a5568" stroke-width="2"/>';
+  s+='<line x1="100" y1="30" x2="180" y2="10" stroke="#4a5568" stroke-width="2"/>';
+  s+='<line x1="100" y1="30" x2="180" y2="50" stroke="#4a5568" stroke-width="2"/>';
+  s+='<line x1="100" y1="160" x2="180" y2="140" stroke="#4a5568" stroke-width="2"/>';
+  s+='<line x1="100" y1="160" x2="180" y2="180" stroke="#4a5568" stroke-width="2"/>';
+  s+='<text x="55" y="55" fill="#5fd0c7" font-size="11">3/5</text>';
+  s+='<text x="55" y="135" fill="#e06fa0" font-size="11">2/5</text>';
+  s+='<text x="135" y="15" fill="#5fd0c7" font-size="11">1/2</text>';
+  s+='<text x="135" y="45" fill="#e06fa0" font-size="11">1/2</text>';
+  s+='<text x="135" y="145" fill="#5fd0c7" font-size="11">3/4</text>';
+  s+='<text x="135" y="180" fill="#e06fa0" font-size="11">1/4</text>';
+  s+='<text x="190" y="14" fill="#f2a63c" font-size="12">ii = 3/10</text>';
+  s+='<text x="190" y="54" fill="#f2a63c" font-size="12">id = 3/10</text>';
+  s+='<text x="190" y="144" fill="#f2a63c" font-size="12">di = 3/10</text>';
+  s+='<text x="190" y="184" fill="#f2a63c" font-size="12">dd = 1/10</text>';
+  s+='</svg>';
+  document.getElementById('svgBaum2').innerHTML=s;
+})();
+
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Mehrstufige Zufallsexperimente als Baum", "📐 Schritt für Schritt: Ersatzteilkiste mit Zurücklegen", "Baumdiagramm mit Zurücklegen", "📐 Schritt für Schritt: 1. Pfadregel", "2. Pfadregel — quer addieren", "📐 Schritt für Schritt: ohne Zurücklegen", "Baumdiagramm ohne Zurücklegen", "🧪 Baumpfade-Labor", "🏁 Das Rätsel von Teil 1, endlich gelöst", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Mehrstufige Qualitätsprüfung", "Schätz mal: wie hoch ist P(dd)?", "Symbol-Legende", "Zusammenfassung", "✏️ Stift & Papier", "🏁 Themenbereich-Abschluss-Check", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=20;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck57_s1_Charon.mp3",txt:"Baumdiagramm und Pfadregeln. Längs mal, quer plus. Mit diesen zwei Regeln knackst du jedes mehrstufige Zufallsexperiment - und am Ende lösen wir endlich das Rätsel von Teil eins."},
+ 2:{wav:"narration_deck57_s2_Charon.mp3",txt:"Wird ein Zufallsexperiment mehrfach durchgeführt, stellt man es als Baumdiagramm dar."},
+ 3:{wav:"narration_deck57_s3_Charon.mp3",txt:"Jetzt untersuchen wir gemeinsam eine Ersatzteilkiste, gezogen mit Zurücklegen, Schritt für Schritt."},
+ 4:{wav:"narration_deck57_s4_Charon.mp3",txt:"Hier siehst du das vollständige Baumdiagramm mit allen vier Pfaden."},
+ 5:{wav:"narration_deck57_s5_Charon.mp3",txt:"Jetzt berechnen wir gemeinsam alle Pfadwahrscheinlichkeiten mit der ersten Pfadregel, Schritt für Schritt."},
+ 6:{wav:"narration_deck57_s6_Charon.mp3",txt:"Die zweite Pfadregel: mehrere Pfade werden addiert."},
+ 7:{wav:"narration_deck57_s7_Charon.mp3",txt:"Jetzt dieselbe Kiste, aber ohne Zurücklegen - die zweite Stufe hängt jetzt vom ersten Zug ab, Schritt für Schritt."},
+ 8:{wav:"narration_deck57_s8_Charon.mp3",txt:"Hier siehst du, wie sich die Astwahrscheinlichkeiten ohne Zurücklegen verändern."},
+ 9:{wav:"narration_deck57_s9_Charon.mp3",txt:"Jetzt bist du dran: klick Pfade an und verfolge Produkt und Summe live."},
+ 10:{wav:"narration_deck57_s10_Charon.mp3",txt:"Jetzt lösen wir endlich das Rätsel von Teil eins mit dem Baumdiagramm - und die Antwort überrascht die meisten."},
+ 11:{wav:"narration_deck57_s11_Charon.mp3",txt:"Längs mal, quer plus - und beim Zählen immer alle Reihenfolgen einzeln aufschreiben."},
+ 12:{wav:"narration_deck57_s12_Charon.mp3",txt:"Auch bei mehrstufigen Qualitätsprüfungen helfen dir die Pfadregeln weiter."},
+ 13:{wav:"narration_deck57_s13_Charon.mp3",txt:"Bevor es weitergeht: schätz doch mal, wie hoch diese Wahrscheinlichkeit ist."},
+ 14:{wav:"narration_deck57_s14_Charon.mp3",txt:"Hier noch mal alle Begriffe rund um Baumdiagramm und Pfadregeln im Überblick."},
+ 15:{wav:"narration_deck57_s15_Charon.mp3",txt:"Fassen wir zusammen: Baum zeichnen, längs multiplizieren, quer addieren."},
+ 16:{wav:"narration_deck57_s16_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben rund um Baumdiagramme."},
+ 17:{wav:"narration_deck57_s17_Charon.mp3",txt:"Jetzt kommt der Abschluss-Check über den gesamten Themenbereich - von Ereignis-Mengen bis Baumdiagramm."},
+ 18:{wav:"narration_deck57_s18_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst - damit ist der gesamte Themenbereich Zufall und Wahrscheinlichkeit geschafft."},
+ 19:{wav:"narration_deck57_s19_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"Ein Baum hat zwei Stufen mit P=1/3 und P=1/4 entlang eines Pfades. Wie hoch ist die Pfadwahrscheinlichkeit?",
+  a:["1/7","1/12","7/12","1/3"],r:1,
+  why:"1. Pfadregel: längs multiplizieren — 1/3·1/4=1/12."},
+ {q:"Ein Ereignis besteht aus zwei Pfaden mit P=3/10 und P=1/5. Wie hoch ist P(Ereignis)?",
+  a:["3/50","1/2","2/3","4/15"],r:1,
+  why:"2. Pfadregel: quer addieren — 3/10+1/5=3/10+2/10=5/10=1/2."},
+ {q:"Bei welchem Vorgehen hängt die zweite Stufe des Baumes von der ersten ab?",
+  a:["Immer, egal ob mit oder ohne Zurücklegen","Nur OHNE Zurücklegen","Nur MIT Zurücklegen","Nie, die Stufen sind immer unabhängig"],r:1,
+  why:"Ohne Zurücklegen verändert sich die Zusammensetzung — die zweite Stufe hängt vom Ergebnis der ersten ab."},
+ {q:"Warum ist bei „mindestens ein Junge unter zwei Kindern“ die Antwort auf „P(zwei Jungen | mindestens ein Junge)“ 1/3 und nicht 1/2?",
+  a:["Weil Jungen seltener geboren werden","Weil JM und MJ zwei verschiedene, gleich wahrscheinliche Fälle sind — von 3 verbleibenden Fällen ist nur 1 „zwei Jungen“","Weil man das nicht berechnen kann","Die Antwort ist tatsächlich 1/2, nicht 1/3"],r:1,
+  why:"Ω={JJ,JM,MJ,MM} — nach Ausschluss von MM bleiben 3 gleich wahrscheinliche Fälle, davon nur JJ mit zwei Jungen: 1/3."},
+ {q:"Ein Mitschüler behauptet: „P(genau ein Treffer bei zwei Versuchen) = P(Treffer) + P(Niete) = 1.“ Was ist der Fehler?",
+  a:["Nichts, das stimmt","Er hat die Pfade für „genau ein Treffer“ nicht multipliziert UND dann die richtigen Pfade addiert, sondern falsche Werte verwendet","P(Treffer)+P(Niete) ist immer 1, also stimmt es zufällig","Es gibt gar keinen Fehler bei zwei Versuchen"],r:1,
+  why:"„Genau ein Treffer“ besteht aus den ZWEI Pfaden (Treffer,Niete) und (Niete,Treffer) — jeder muss erst mit der 1. Pfadregel multipliziert und dann beide mit der 2. Pfadregel addiert werden, nicht einfach P(Treffer)+P(Niete) der Einzelstufe."}
+];
+const DECK_ID="zufall/deck57";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), oi===item.r);
+        answered++; if(oi===item.r) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estZufall57', {
+    frage: 'Münze zweimal geworfen, P(Kopf)=P(Zahl)=1/2 — wie hoch ist P(zweimal Zahl) in Prozent?',
+    min: 0, max: 100, korrekt: 25, toleranz: 0,
+    begruendung: 'P(ZZ)=1/2·1/2=1/4=25% (1. Pfadregel).'
+  });
+});
+</script>
+</body>
+</html>

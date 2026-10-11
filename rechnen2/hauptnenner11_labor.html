@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Hauptnenner-Maschine</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:14px 18px;height:100%;overflow-y:auto;}
+  h3{margin:0 0 8px;font-size:18px;color:var(--accent);}
+  .hint{font-size:12.5px;color:var(--muted);margin:4px 0 10px;}
+  .fracrow{display:flex;gap:24px;justify-content:center;margin:14px 0;}
+  .fraccard{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:12px 20px;text-align:center;font-size:22px;font-weight:700;color:var(--accent);}
+  #svgHost{margin:12px 0;text-align:center;}
+  .factrow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0;}
+  .factchip{background:#1f2630;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:7px 14px;font-size:15px;font-weight:700;cursor:pointer;}
+  .factchip:disabled{opacity:0.35;cursor:default;}
+  .factchip.correctpick{background:#1c3d24;border-color:#4caf50;}
+  .factchip.wrongpick{background:#3d1c1c;border-color:#c0392b;}
+  .asklabel{text-align:center;font-size:14px;color:var(--muted);margin:10px 0 4px;}
+  #feedback{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:10px 16px;font-size:14.5px;text-align:center;min-height:22px;margin-top:10px;}
+  #feedback.ok{border-color:#4caf50;}
+  #feedback.bad{border-color:#c0392b;}
+  #resultBox{margin-top:12px;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:15px;text-align:center;display:none;}
+  #resultBox.show{display:block;border-color:#4caf50;background:#173d28;}
+  button.newbtn{display:block;margin:16px auto 0;background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:8px 18px;font-size:14px;cursor:pointer;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h3>🧪 Hauptnenner-Maschine</h3>
+  <p class="hint">Bestimme den Hauptnenner (HN) der beiden Brüche und ordne jedem Bruch den richtigen Erweiterungsfaktor zu.</p>
+  <div class="fracrow">
+    <div class="fraccard" id="fracA">5/12</div>
+    <div style="align-self:center;font-size:22px;color:var(--muted);">+</div>
+    <div class="fraccard" id="fracB">3/8</div>
+  </div>
+  <div id="svgHost"></div>
+  <div class="asklabel">Erweiterungsfaktor für Bruch A (5/12):</div>
+  <div class="factrow" id="rowA"></div>
+  <div class="asklabel">Erweiterungsfaktor für Bruch B (3/8):</div>
+  <div class="factrow" id="rowB"></div>
+  <div id="feedback">Wähle für beide Brüche den passenden Erweiterungsfaktor.</div>
+  <div id="resultBox"></div>
+  <button class="newbtn" id="newBtn">🎲 Neue Aufgabe</button>
+</div>
+<script>
+const POOL=[
+  {numA:5, denA:12, numB:3, denB:8},
+  {numA:1, denA:4, numB:1, denB:6},
+  {numA:2, denA:9, numB:1, denB:6},
+  {numA:3, denA:10, numB:1, denB:4},
+  {numA:5, denA:6, numB:1, denB:4}
+];
+let poolIdx=0;
+let cur=POOL[0];
+let pickedA=null, pickedB=null;
+
+function gcd(a,b){ return b===0? a : gcd(b,a%b); }
+function primeFactors(n){
+  const f=[]; let x=n;
+  for(let p=2;p*p<=x;p++){ while(x%p===0){ f.push(p); x/=p; } }
+  if(x>1) f.push(x);
+  return f;
+}
+function kgv(a,b){ return a*b/gcd(a,b); }
+
+function buildTilesSVG(rows, resultRow){
+  const tw=26, th=24, gap=5, labelW=52, x0=8;
+  let y=6, s='';
+  rows.forEach(row=>{
+    s+='<text x="'+x0+'" y="'+(y+th/2+5)+'" font-size="11.5" font-weight="700" fill="#9aa4b2">'+row.label+'</text>';
+    row.tiles.forEach((v,i)=>{
+      const x=x0+labelW+i*(tw+gap);
+      s+='<rect x="'+x+'" y="'+y+'" width="'+tw+'" height="'+th+'" rx="4" fill="#151b24" stroke="#2a3038" stroke-width="1.2"/>';
+      s+='<text x="'+(x+tw/2)+'" y="'+(y+th/2+4)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#e6edf3">'+v+'</text>';
+    });
+    y+=th+6;
+  });
+  const maxTiles=Math.max.apply(null, rows.map(r=>r.tiles.length).concat(resultRow?[resultRow.tiles.length]:[0]));
+  const lineW=x0+labelW+maxTiles*(tw+gap);
+  if(resultRow){
+    s+='<line x1="'+x0+'" y1="'+y+'" x2="'+lineW+'" y2="'+y+'" stroke="#4a5568" stroke-width="1.2"/>';
+    y+=8;
+    s+='<text x="'+x0+'" y="'+(y+th/2+4)+'" font-size="11.5" font-weight="700" fill="#f2a63c">'+resultRow.label+'</text>';
+    resultRow.tiles.forEach((v,i)=>{
+      const x=x0+labelW+i*(tw+gap);
+      s+='<rect x="'+x+'" y="'+y+'" width="'+tw+'" height="'+th+'" rx="4" fill="rgba(242,166,60,0.26)" stroke="#f2a63c" stroke-width="1.4"/>';
+      s+='<text x="'+(x+tw/2)+'" y="'+(y+th/2+4)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#f2a63c">'+v+'</text>';
+    });
+    y+=th+6;
+  }
+  const W=lineW+8, H=y+2;
+  return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:360px;height:auto;display:block;margin:0 auto;">'+s+'</svg>';
+}
+
+function optionsAround(correct){
+  const set=new Set([correct]);
+  while(set.size<3){
+    const delta=Math.floor(Math.random()*4)-2;
+    const cand=correct+delta;
+    if(cand>=1 && cand<=12) set.add(cand);
+  }
+  return [...set].sort((a,b)=>a-b);
+}
+
+function loadTask(){
+  cur=POOL[poolIdx];
+  pickedA=null; pickedB=null;
+  document.getElementById('fracA').textContent=cur.numA+'/'+cur.denA;
+  document.getElementById('fracB').textContent=cur.numB+'/'+cur.denB;
+  document.getElementsByClassName('asklabel')[0].textContent='Erweiterungsfaktor für Bruch A ('+cur.numA+'/'+cur.denA+'):';
+  document.getElementsByClassName('asklabel')[1].textContent='Erweiterungsfaktor für Bruch B ('+cur.numB+'/'+cur.denB+'):';
+
+  const hn=kgv(cur.denA,cur.denB);
+  const factA=hn/cur.denA, factB=hn/cur.denB;
+  cur.hn=hn; cur.factA=factA; cur.factB=factB;
+
+  document.getElementById('svgHost').innerHTML=buildTilesSVG([
+    {label:cur.denA+' =', tiles:primeFactors(cur.denA)},
+    {label:cur.denB+' =', tiles:primeFactors(cur.denB)}
+  ],{label:'HN =', tiles:primeFactors(hn)});
+
+  renderFactorRow('rowA', factA, (val)=>{ pickedA=val; checkDone(); });
+  renderFactorRow('rowB', factB, (val)=>{ pickedB=val; checkDone(); });
+
+  document.getElementById('feedback').className='';
+  document.getElementById('feedback').textContent='Wähle für beide Brüche den passenden Erweiterungsfaktor.';
+  document.getElementById('resultBox').classList.remove('show');
+}
+
+function renderFactorRow(rowId, correct, onPick){
+  const row=document.getElementById(rowId);
+  row.innerHTML='';
+  const opts=optionsAround(correct);
+  opts.forEach(v=>{
+    const b=document.createElement('button');
+    b.className='factchip';
+    b.textContent='× '+v;
+    b.onclick=()=>{
+      const rowBtns=[...row.querySelectorAll('.factchip')];
+      if(v===correct){
+        b.classList.add('correctpick');
+        rowBtns.forEach(x=>x.disabled=true);
+        onPick(v);
+      } else {
+        b.classList.add('wrongpick');
+        setTimeout(()=>b.classList.remove('wrongpick'),600);
+      }
+    };
+    row.appendChild(b);
+  });
+}
+
+function checkDone(){
+  const fb=document.getElementById('feedback');
+  if(pickedA && pickedB){
+    fb.className='ok';
+    fb.textContent='✅ Beide Erweiterungsfaktoren richtig!';
+    const newNumA=cur.numA*cur.factA, newNumB=cur.numB*cur.factB;
+    const sumNum=newNumA+newNumB, hn=cur.hn;
+    const g=gcd(sumNum,hn);
+    const redNum=sumNum/g, redDen=hn/g;
+    const box=document.getElementById('resultBox');
+    box.classList.add('show');
+    box.innerHTML = cur.numA+'/'+cur.denA+' → '+newNumA+'/'+hn+' &nbsp;·&nbsp; '+
+                    cur.numB+'/'+cur.denB+' → '+newNumB+'/'+hn+'<br/>'+
+                    '<b>'+newNumA+'/'+hn+' + '+newNumB+'/'+hn+' = '+sumNum+'/'+hn+
+                    (g>1? ' = '+redNum+'/'+redDen : '')+'</b>';
+  }
+}
+
+document.getElementById('newBtn').onclick=()=>{
+  poolIdx=(poolIdx+1)%POOL.length;
+  loadTask();
+};
+loadTask();
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

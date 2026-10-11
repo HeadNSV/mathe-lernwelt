@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Termumformungen · Teil 3 — Terme mit Potenzen &amp; Wurzeln</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+  /* Meilenstein-Panel */
+  .milestone{max-width:min(90vw,860px);text-align:center;}
+  .milegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0;}
+  @media (max-width:700px){ .milegrid{grid-template-columns:repeat(2,1fr);} }
+  .miletile{background:#173d28;border:1px solid #4caf50;border-radius:10px;padding:14px 10px;font-size:13.5px;color:#dff3df;}
+  .miletile b{display:block;font-size:16px;color:#8adf9c;margin-bottom:4px;}
+  #mileBtn{background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:10px;padding:14px 28px;font-size:min(2.4vw,19px);cursor:pointer;margin-top:14px;}
+  #mileBtn:disabled{opacity:0.5;cursor:default;}
+  #mileMsg{margin-top:12px;font-size:15px;color:var(--accent);min-height:22px;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>TERMUMFORMUNGEN <span class="accent">· Teil 3</span></h1>
+    <h2>Terme mit Potenzen &amp; Wurzeln</h2>
+    <div class="hook" style="max-width:70ch;">Eine Familie prüft, ob sich eine Solaranlage lohnt — dafür braucht sie einen Term, der Strombedarf und Eigenproduktion gegenüberstellt. Genau solche gemischten Terme sind das Prüfungs-Handwerk dieses letzten Teils.</div>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 6.3</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Potenzterme Add/Sub -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Terme mit Potenzen addieren &amp; subtrahieren</h2>
+      <div class="defbox">Gleichartige Terme (gleiche Variablen mit gleichen Exponenten) können addiert oder subtrahiert werden — die Exponenten selbst ändern sich dabei NICHT, nur die Koeffizienten.</div>
+      <ul class="bul">
+        <li>5x²y + 3x²y = 8x²y — aber 5x²y + 3xy² lässt sich NICHT zusammenfassen, da x²y und xy² unterschiedliche Terme sind!</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 3 Potenzterme Mult/Div -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🌉 Brücke</span> Terme mit Potenzen multiplizieren &amp; dividieren</h2>
+      <div class="defbox">Hier gelten exakt die Potenzgesetze aus Kapitel 4.4: gleiche Basis multiplizieren → Exponenten addieren (aⁿ·aᵐ=aⁿ⁺ᵐ); gleiche Basis dividieren → Exponenten subtrahieren (aⁿ/aᵐ=aⁿ⁻ᵐ); Potenz einer Potenz → Exponenten multiplizieren ((aⁿ)ᵐ=aⁿᵐ).</div>
+      <ul class="bul">
+        <li>(3x²y)³ = 3³·x⁶·y³ = 27x⁶y³ — jeder Faktor wird einzeln potenziert.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 4 Schritt-fuer-Schritt Potenzterm -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> (2a³b)² − a⁶b² vereinfachen</h2>
+      <div class="defbox">Aufgabe: Vereinfache den Term (2a³b)² − a⁶b².</div>
+      <div class="step" id="s4_1"><b class="lbl">Potenz auflösen:</b> (2a³b)² = 2²·(a³)²·b² = 4a⁶b².</div>
+      <div class="step" id="s4_2"><b class="lbl">Term einsetzen:</b> 4a⁶b² − a⁶b².</div>
+      <div class="step" id="s4_3"><b class="lbl">Gleichartige Terme zusammenfassen:</b> beide haben a⁶b², nur die Koeffizienten (4 und 1) werden subtrahiert.</div>
+      <div class="step" id="s4_4"><b class="lbl">Antwortsatz:</b> 4a⁶b² − a⁶b² = 3a⁶b².</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="4" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 5 Wurzelterme -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🌉 Brücke</span> Wurzelterme vereinfachen</h2>
+      <div class="defbox">Auch bei Wurzeltermen gelten die schon bekannten Werkzeuge: die Wurzelgesetze aus Kapitel 5.2 UND die Binomischen Formeln aus Kapitel 4.5 funktionieren mit Wurzeln genauso wie mit Zahlen.</div>
+      <ul class="bul">
+        <li>(√2−1)·(√2+1)+2 — das ist die 3. Binomische Formel! (√2)²−1²+2 = 2−1+2 = 3.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 6 Abschaetzung -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Neue Technik: Den Termwert abschätzen</h2>
+      <div class="defbox">Ohne Taschenrechner lässt sich der Wert eines Wurzelterms oft trotzdem eingrenzen: Man schließt die Wurzel zwischen zwei bekannte Quadratzahlen ein.</div>
+      <ul class="bul">
+        <li>√1 &lt; √3 &lt; √4, also 1 &lt; √3 &lt; 2. Damit gilt für √3+3: 4 &lt; √3+3 &lt; 5 — der Term liegt sicher zwischen 4 und 5, ganz ohne Taschenrechner.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7 Schritt-fuer-Schritt gemischt -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Gemischte Prüfungsaufgabe</h2>
+      <div class="defbox">Aufgabe: Vereinfache (√5+2)² − 4√5 und gib das Ergebnis als möglichst einfachen Term an.</div>
+      <div class="step" id="s7_1"><b class="lbl">1. Binom anwenden:</b> (√5+2)² = (√5)²+2·√5·2+2² = 5+4√5+4.</div>
+      <div class="step" id="s7_2"><b class="lbl">Term einsetzen:</b> 5+4√5+4 − 4√5.</div>
+      <div class="step" id="s7_3"><b class="lbl">Gleichartige Terme zusammenfassen:</b> 4√5 − 4√5 = 0, bleibt 5+4=9.</div>
+      <div class="step" id="s7_4"><b class="lbl">Antwortsatz:</b> (√5+2)² − 4√5 = 9 — die Wurzel verschwindet komplett!</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="7" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 8 Eselsbruecke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Neue Symbole, alte Regeln." Ob Potenz oder Wurzel im Term steht, ändert nichts an DEN Regeln selbst — gleichartige Terme zusammenfassen, Binome anwenden, ausklammern. Die Symbole wechseln, das Handwerk bleibt.</div>
+    </div>
+  </section>
+
+  <!-- 9 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Lohnt sich die Solaranlage?</h2>
+      <div class="defbox">Eine Familie verbraucht 3000 kWh Strom im Jahr. Eine Solaranlage liefert pro m² Fläche etwa 100 kWh im Jahr. Bei einer Anlage mit x m² lautet der Differenz-Term: D(x) = 3000 − 100x. Klammert man aus: D(x) = 100·(30−x) — bei x=30 m² wäre der Bedarf exakt gedeckt.</div>
+    </div>
+  </section>
+
+  <!-- 10 Intuitions-Regler -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Schätz mal: Termwert eingrenzen</h2>
+      <div class="defbox">Ohne Taschenrechner: zwischen welchen beiden ganzen Zahlen liegt der Term √10 + 1 sicher?</div>
+      <div id="estAbschaetzung19"></div>
+    </div>
+  </section>
+
+  <!-- 11 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Regel</th><th>Bedeutung</th></tr>
+        <tr><td>gleichartige Terme</td><td>gleiche Variablen MIT gleichen Exponenten</td></tr>
+        <tr><td>aⁿ·aᵐ=aⁿ⁺ᵐ</td><td>Potenzgesetz bei Multiplikation gleicher Basis</td></tr>
+        <tr><td>√n &lt; √x &lt; √m</td><td>Abschätzung über bekannte Quadratzahlen</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 12 Meilenstein -->
+  <section class="slide center">
+    <div class="milestone">
+      <h2>🏁 <span class="accent">Lernbereich 1 komplett!</span></h2>
+      <p>Du hast jetzt alle sechs Kapitel des ersten großen Lernbereichs durchgearbeitet — von der Mengenlehre bis zu den Termumformungen. Der Weg dorthin, kurz zusammengefasst:</p>
+      <div class="milegrid">
+        <div class="miletile"><b>1 ✓</b>Mengenlehre</div>
+        <div class="miletile"><b>2 ✓</b>Aussagenlogik</div>
+        <div class="miletile"><b>3 ✓</b>Ganze Zahlen</div>
+        <div class="miletile"><b>4 ✓</b>Brüche &amp; Binome</div>
+        <div class="miletile"><b>5 ✓</b>Wurzeln</div>
+        <div class="miletile"><b>6 ✓</b>Termumformungen</div>
+      </div>
+      <p style="font-size:min(1.9vw,15px);color:var(--muted);">Du kannst jetzt: Zahlen den richtigen Zahlenmengen zuordnen · Aussagen logisch verknüpfen · mit ganzen Zahlen, Brüchen, Potenzen und Wurzeln sicher rechnen · Terme ausklammern, kürzen und mithilfe der Binomischen Formeln umformen.</p>
+      <button id="mileBtn">🏆 Meilenstein einlösen (+50 XP)</button>
+      <div id="mileMsg"></div>
+    </div>
+  </section>
+
+  <!-- 13 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Begriff</th><th>Kernaussage</th></tr>
+      <tr><td>Gleichartige Terme</td><td>gleiche Variablen + gleiche Exponenten → addierbar</td></tr>
+      <tr><td>Potenzgesetze</td><td>gelten in Termen genauso wie bei reinen Zahlen</td></tr>
+      <tr><td>Wurzelterme</td><td>Wurzelgesetze + Binomische Formeln kombiniert nutzen</td></tr>
+      <tr><td>Abschätzung</td><td>Wurzel zwischen zwei Quadratzahlen einschließen</td></tr>
+    </table>
+  </section>
+
+  <!-- 14 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Fasse zusammen: 7x²y − 3x²y + xy².
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>4x²y + xy² (xy² bleibt stehen, da es kein gleichartiger Term zu x²y ist)</details>
+        </li>
+        <li style="margin-top:10px;">Vereinfache (√3+2)² auf einen Wurzelterm.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>3+4√3+4 = 7+4√3</details>
+        </li>
+        <li style="margin-top:10px;">Zwischen welchen ganzen Zahlen liegt √20?
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>√16 &lt; √20 &lt; √25 → 4 &lt; √20 &lt; 5</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 15 Pruefungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Gleichartige Terme mit Potenzen zusammenfassen</b> können.</li>
+        <li><b>Potenzgesetze und Binomische Formeln auf Wurzelterme anwenden</b> können.</li>
+        <li><b>Den Wert eines Wurzelterms ohne Taschenrechner abschätzen</b> können.</li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">Abschluss-Transfer, alle drei Kapitelteile kombiniert: <i>„Vereinfache (√2·a)² / (2a) und mache anschließend den Nenner eines Bruchterms mit diesem Ergebnis rational."</i> → (√2·a)²=2a², also 2a²/(2a)=a. Ausklammern, Wurzelgesetze UND Bruchterme — genau das Handwerk aus diesem gesamten Lernbereich.</div>
+    </div>
+  </section>
+
+  <!-- 16 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Terme mit Potenzen addieren & subtrahieren", "🌉 Brücke: Terme mit Potenzen multiplizieren & dividieren", "📐 Schritt für Schritt: (2a³b)²−a⁶b² vereinfachen", "🌉 Brücke: Wurzelterme vereinfachen", "Neue Technik: Den Termwert abschätzen", "📐 Schritt für Schritt: Gemischte Prüfungsaufgabe", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Lohnt sich die Solaranlage?", "Schätz mal: Termwert eingrenzen", "Symbol-Legende", "🏁 Lernbereich 1 komplett!", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{ s.classList.toggle('active',k===idx); });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=17;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck19_s1_Charon.mp3",txt:"Termumformungen, Teil drei. Eine Familie prüft, ob sich eine Solaranlage lohnt - dafür braucht sie einen Term, der Strombedarf und Eigenproduktion gegenüberstellt. Genau solche gemischten Terme sind das Prüfungs-Handwerk dieses letzten Teils."},
+ 2:{wav:"narration_deck19_s2_Charon.mp3",txt:"Gleichartige Terme mit gleichen Variablen und gleichen Exponenten können addiert oder subtrahiert werden - nur die Koeffizienten ändern sich, die Exponenten bleiben."},
+ 3:{wav:"narration_deck19_s3_Charon.mp3",txt:"Hier gelten exakt dieselben Potenzgesetze, die du schon aus einem früheren Kapitel kennst - nur stecken sie jetzt in etwas komplexeren Termen."},
+ 4:{wav:"narration_deck19_s4_Charon.mp3",txt:"Jetzt üben wir das gemeinsam Schritt für Schritt an einem Term, der Potenz und Zusammenfassen kombiniert."},
+ 5:{wav:"narration_deck19_s5_Charon.mp3",txt:"Auch bei Wurzeltermen gelten die schon bekannten Werkzeuge: die Wurzelgesetze und die binomischen Formeln funktionieren mit Wurzeln genauso wie mit Zahlen."},
+ 6:{wav:"narration_deck19_s6_Charon.mp3",txt:"Hier lernst du eine neue Technik: den Wert eines Wurzelterms ohne Taschenrechner abschätzen, indem du die Wurzel zwischen zwei bekannte Quadratzahlen einschließt."},
+ 7:{wav:"narration_deck19_s7_Charon.mp3",txt:"Jetzt kommt eine richtig gemischte Prüfungsaufgabe - schau, wie am Ende die Wurzel komplett verschwindet."},
+ 8:{wav:"narration_deck19_s8_Charon.mp3",txt:"Merk dir: neue Symbole, alte Regeln. Ob Potenz oder Wurzel im Term steht, das Handwerk bleibt exakt dasselbe."},
+ 9:{wav:"narration_deck19_s9_Charon.mp3",txt:"Eine Familie stellt einen Term auf, um zu prüfen, wie viel Fläche ihre Solaranlage braucht, um den kompletten Strombedarf zu decken."},
+ 10:{wav:"narration_deck19_s10_Charon.mp3",txt:"Schätz doch mal, ganz ohne Taschenrechner: zwischen welchen beiden ganzen Zahlen liegt dieser Wurzelterm sicher?"},
+ 11:{wav:"narration_deck19_s11_Charon.mp3",txt:"Hier noch mal alle Regeln zu Potenz- und Wurzeltermen im Überblick."},
+ 12:{wav:"narration_deck19_s12_Charon.mp3",txt:"Herzlichen Glückwunsch! Du hast jetzt den kompletten ersten Lernbereich durchgearbeitet - von der Mengenlehre bis zu den Termumformungen. Hol dir deinen Meilenstein-Bonus ab."},
+ 13:{wav:"narration_deck19_s13_Charon.mp3",txt:"Fassen wir zusammen: gleichartige Terme, Potenzgesetze in Termen, Wurzelterme mit Binomen, und die Abschätzung des Termwerts."},
+ 14:{wav:"narration_deck19_s14_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben zu Potenz- und Wurzeltermen."},
+ 15:{wav:"narration_deck19_s15_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst - inklusive einer Transferaufgabe, die alle drei Teile dieses Kapitels kombiniert."},
+ 16:{wav:"narration_deck19_s16_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt (mehrere Gruppen) ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Meilenstein-Panel ===
+(function(){
+  const btn=document.getElementById('mileBtn'), msg=document.getElementById('mileMsg');
+  if(!btn) return;
+  btn.onclick=function(){
+    if(window.lwAward && window.lwAward('finale')){
+      msg.textContent='🏆 Meilenstein-Bonus gutgeschrieben! Lernbereich 1 vollständig abgeschlossen.';
+    } else {
+      msg.textContent='🏆 Meilenstein bereits eingelöst.';
+    }
+    btn.disabled=true;
+  };
+})();
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"Kann man 5x²y + 3xy² zusammenfassen?",
+  a:["Ja, ergibt 8x²y²","Nein — x²y und xy² sind unterschiedliche Terme","Ja, ergibt 8x³y³","Ja, ergibt 8xy"],r:1,
+  why:"x²y und xy² haben die Exponenten in vertauschter Reihenfolge — das sind KEINE gleichartigen Terme."},
+ {q:"Wie vereinfacht man (2a³b)²?",
+  a:["4a⁶b²","2a⁶b²","4a⁵b²","2a⁵b"],r:0,
+  why:"Jeder Faktor wird potenziert: 2²=4, (a³)²=a⁶, b²=b²."},
+ {q:"Was ist (√5+2)² − 4√5?",
+  a:["9","5+4√5","9+4√5","1"],r:0,
+  why:"(√5+2)²=5+4√5+4=9+4√5, minus 4√5 bleibt 9 — die Wurzel verschwindet."},
+ {q:"Zwischen welchen ganzen Zahlen liegt √20?",
+  a:["3 und 4","4 und 5","5 und 6","2 und 3"],r:1,
+  why:"√16<√20<√25 → 4<√20<5."},
+ {q:"Was ist die Voraussetzung, damit zwei Terme mit Potenzen addiert werden dürfen?",
+  a:["Sie müssen dieselbe Zahl vor der Variable haben","Sie müssen dieselben Variablen MIT denselben Exponenten haben","Sie müssen beide positiv sein","Es gibt keine Voraussetzung"],r:1,
+  why:"Nur gleichartige Terme (gleiche Variablen, gleiche Exponenten) dürfen zusammengefasst werden."},
+ {q:"Welches Werkzeug aus einem früheren Kapitel hilft beim Vereinfachen von (√2−1)(√2+1)?",
+  a:["Die 3. Binomische Formel","Der Satz des Pythagoras","Die Quotientenregel","Das Distributivgesetz allein"],r:0,
+  why:"(a−b)(a+b)=a²−b² mit a=√2, b=1: (√2)²−1²=2−1=1."}
+];
+const DECK_ID="terme/deck19";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), oi===item.r);
+        answered++; if(oi===item.r) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estAbschaetzung19', {
+    frage: 'Ohne Taschenrechner: √10 + 1 liegt sicher zwischen welchen ganzen Zahlen? (Regler = untere Grenze)',
+    min: 1, max: 8, korrekt: 4, toleranz: 0,
+    begruendung: '√9<√10<√16 → 3<√10<4 → 4<√10+1<5. Untere Grenze ist 4.'
+  });
+});
+</script>
+</body>
+</html>

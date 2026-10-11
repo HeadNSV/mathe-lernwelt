@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>5 Fragen des Tages — Mathe</title>
+<!-- Erzeugt aus lernwelt-hub/tools/fuenf_fragen.template.html (build_fuenf_fragen.py) — Aenderungen dort machen. -->
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --dim:#5f6b7c; --accent:#f2a63c; --card:#151b24; --line:#2a3038;
+         --good:#3dbb7a; --soft:#b07a52; --ring:#232b36; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  .wrap{max-width:760px;margin:0 auto;padding:20px 16px 70px;}
+  h1{font-size:min(7vw,28px);margin:0 0 4px;}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 14px;line-height:1.5;}
+  a{color:var(--accent);}
+  a.back{font-size:13px;text-decoration:none;}
+  .headrow{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:4px 0 16px;color:var(--muted);font-size:14px;}
+  .pill{background:var(--card);border:1px solid var(--line);border-radius:99px;padding:4px 12px;}
+  .pill.streak{color:#ffb56b;font-weight:700;}
+  .pill.today{color:var(--fg);}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-top:12px;}
+  .card h2{font-size:16px;margin:0 0 10px;}
+  .srcrow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  .srcbtn{flex:1 1 140px;background:#1f2630;border:1px solid var(--line);color:var(--fg);border-radius:10px;padding:10px 12px;font-size:14px;cursor:pointer;text-align:left;}
+  .srcbtn small{display:block;color:var(--muted);font-size:12px;margin-top:3px;}
+  .srcbtn.on{border-color:var(--accent);background:#20262f;box-shadow:inset 0 0 0 1px var(--accent);}
+  .kaplist{display:none;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:4px 12px;margin:6px 0 4px;font-size:13.5px;}
+  .kaplist.show{display:grid;}
+  .kaplist label{display:flex;gap:7px;align-items:flex-start;padding:3px 2px;cursor:pointer;line-height:1.3;}
+  .setrow{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-top:10px;font-size:14px;color:var(--muted);}
+  .setrow select,.setrow input{background:#0f141b;color:var(--fg);border:1px solid var(--line);border-radius:7px;padding:5px 8px;font-size:14px;}
+  .setrow label{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+  .setrow input[type=range]{padding:0;width:120px;accent-color:var(--accent);}
+  .hint{margin-top:10px;font-size:13px;color:#e8d3b0;background:#2a2316;border-left:3px solid var(--accent);border-radius:6px;padding:8px 12px;display:none;}
+  .hint.show{display:block;}
+  .bigbtn{margin-top:14px;background:var(--accent);color:#12100a;font-weight:800;border:0;border-radius:10px;padding:13px 22px;font-size:16px;cursor:pointer;width:100%;}
+  .progress{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--muted);font-size:13px;margin:6px 0 4px;}
+  .meta{font-size:12px;color:var(--muted);margin-bottom:8px;}
+  .tag{display:inline-block;background:#1f2630;border:1px solid var(--line);border-radius:99px;padding:1px 9px;font-size:11.5px;margin-right:6px;color:var(--fg);}
+  .qtext{font-size:17px;font-weight:600;margin:0 0 14px;line-height:1.45;}
+  .opt{display:block;width:100%;text-align:left;background:#1f2630;border:1px solid var(--line);color:var(--fg);border-radius:9px;padding:12px 14px;font-size:15px;margin-bottom:9px;cursor:pointer;line-height:1.35;}
+  .opt:hover:not(:disabled){background:#283041;}
+  .opt:disabled{cursor:default;}
+  .opt.correct{background:#173d28;border-color:var(--good);}
+  .opt.wrong{background:#2a211b;border-color:var(--soft);}
+  .surebtn{background:#1f2630;border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:6px 12px;font-size:13px;cursor:pointer;margin-bottom:12px;}
+  .surebtn.on{color:var(--fg);border-color:var(--good);background:#1a3326;}
+  .feedback{display:none;margin-top:10px;padding:11px 14px;background:#111722;border-left:4px solid var(--accent);border-radius:6px;font-size:14px;line-height:1.45;color:#dfe6ee;}
+  .feedback.show{display:block;}
+  .feedback .head{font-weight:700;margin-bottom:4px;}
+  .nextbtn{margin-top:14px;background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:9px;padding:11px 20px;font-size:15px;cursor:pointer;}
+  .nextbtn:disabled{opacity:0.35;cursor:default;}
+  .ringwrap{width:46px;height:46px;flex:0 0 46px;position:relative;}
+  .ringwrap svg{width:46px;height:46px;transform:rotate(-90deg);}
+  .ringwrap .sec{position:absolute;inset:0;display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--fg);font-variant-numeric:tabular-nums;}
+  .done{text-align:center;padding:10px 4px 4px;}
+  .done .big{font-size:40px;font-weight:800;margin:6px 0 2px;}
+  .done .avg{color:var(--muted);font-size:14px;}
+  .star{font-size:46px;display:inline-block;animation:pop .6s ease-out;}
+  @keyframes pop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.15);opacity:1}100%{transform:scale(1)}}
+  @media (prefers-reduced-motion:reduce){ .star{animation:none;} }
+  .reslist{list-style:none;margin:14px 0 6px;padding:0;text-align:left;}
+  .reslist li{display:flex;gap:10px;align-items:baseline;padding:8px 4px;border-top:1px solid var(--line);font-size:14px;line-height:1.35;}
+  .reslist .ic{flex:0 0 22px;text-align:center;}
+  .reslist .qt{flex:1;min-width:0;}
+  .reslist a{white-space:nowrap;font-size:13px;text-decoration:none;}
+  .btnrow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;}
+  .secondary{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:9px;padding:10px 16px;font-size:14px;cursor:pointer;text-decoration:none;display:inline-block;}
+  #chart{width:100%;margin-top:6px;}
+  #chart svg{display:block;width:100%;height:auto;}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin:6px 0 10px;}
+  .legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px;}
+  table.hist{width:100%;border-collapse:collapse;font-size:13.5px;}
+  table.hist th,table.hist td{text-align:left;padding:6px 6px;border-top:1px solid var(--line);}
+  table.hist th{color:var(--muted);font-weight:600;font-size:12.5px;}
+  table.hist tr.extra td{color:var(--dim);}
+  .empty{color:var(--muted);font-size:14px;padding:6px 0;}
+  .foot{margin-top:26px;color:var(--dim);font-size:12.5px;line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎯 5 Fragen des Tages</h1>
+  <p class="sub">Aufwärmen wie am Stundenanfang: fünf kurze Fragen quer durch den Stoff — wenige Minuten am Tag.
+    <a class="back" href="index.html">← Zur Übersicht</a></p>
+  <div class="headrow" id="headrow"></div>
+  <div id="app"></div>
+  <div class="card" id="verlauf">
+    <h2>📈 Verlauf — richtige Antworten pro Tag</h2>
+    <div id="chart"></div>
+    <div class="legend"><span><i style="background:var(--accent)"></i>erste Runde des Tages</span><span><i style="background:#7f8ea0;height:2px"></i>7-Tage-Mittel</span><span>Tage ohne Runde bleiben leer</span></div>
+    <div id="histtable"></div>
+    <div style="margin-top:12px;"><button class="secondary" id="dlBtn">⬇️ Verlauf als Datei sichern</button></div>
+  </div>
+  <div class="foot">Alles bleibt nur in diesem Browser gespeichert. Wiederholungen planen sich selbst: was du falsch hattest
+    oder nur geraten hast, kommt bald wieder; was sitzt, immer seltener.</div>
+</div>
+
+<script src="question_pool.js"></script>
+<script src="drills.js"></script>
+
+<script>
+(function(){
+'use strict';
+const CFG = {fach:'mathe', name:'Mathe', ns:'ff_mathe_', lw:'lw_mathe_', quizKey:'ml_quiz_results', drills:true};
+const N_ROUND = 5;
+const POOL = (typeof QUESTION_POOL !== 'undefined') ? QUESTION_POOL : [];
+const KAPITEL = (typeof POOL_KAPITEL !== 'undefined') ? POOL_KAPITEL : [];
+const HAS_DRILLS = CFG.drills && typeof window.FF_DRILLS !== 'undefined';
+
+// ---------- Speicher ----------
+function lsGet(k, d){ try{ const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); }catch(e){ return d; } }
+function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function K(name){ return CFG.ns + name; }
+function setting(name, d){ return lsGet(K(name), d); }
+
+// ---------- Datum (lokal, nicht UTC — sonst gilt 0:30 Uhr noch als gestern) ----------
+function pad(n){ return (n < 10 ? '0' : '') + n; }
+function localDate(d){ return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function today(){
+  if (window.__TEST_TODAY__) return window.__TEST_TODAY__;
+  try{ const t = localStorage.getItem('__test_today__'); if (t) return t; }catch(e){}
+  return localDate(new Date());
+}
+function addDays(ds, n){ const d = new Date(ds + 'T12:00:00'); d.setDate(d.getDate() + n); return localDate(d); }
+function dayDiff(a, b){ return Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000); }
+function deDate(ds, withYear){ const p = ds.split('-'); return p[2] + '.' + p[1] + '.' + (withYear ? p[0] : ''); }
+
+// ---------- Einmalige Uebernahme alter Daten (Physik: Tagesdosis pl_srs / pl_streak) ----------
+// KOPIEREN, nicht verschieben — die alten Schluessel bleiben unberuehrt.
+const MIGRATE = null;
+if (MIGRATE && lsGet(K('migriert'), null) === null){
+  try{
+    if (MIGRATE.srs && localStorage.getItem(K('srs')) === null && localStorage.getItem(MIGRATE.srs) !== null)
+      localStorage.setItem(K('srs'), localStorage.getItem(MIGRATE.srs));
+    if (MIGRATE.streak){
+      const st = lsGet(MIGRATE.streak, null);
+      if (st && st.lastDate && st.count) lsSet(K('streak_alt'), {lastDate: st.lastDate, count: st.count});
+    }
+    lsSet(K('migriert'), 1);
+  }catch(e){}
+}
+
+// ---------- Optional: Baustellen-Decks (Physik liefert sie aus den Pruefungstrainern) ----------
+function priorityDecks(){
+  try{ return typeof window.FF_PRIORITY_DECKS === 'function' ? (window.FF_PRIORITY_DECKS() || []) : []; }catch(e){ return []; }
+}
+
+// ---------- Zufall (Test-Seed moeglich) ----------
+let rng = Math.random;
+if (window.__TEST_SEED__) { let s = window.__TEST_SEED__ >>> 0 || 1; rng = function(){ s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
+function shuffle(a){ for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+// ---------- Was wurde schon angesehen? ----------
+const DECKS = Array.from(new Set(POOL.map(q => q.deck)));
+function deckSuffix(deck){ return '_' + deck.replace(/[^a-zA-Z0-9]/g, '_'); }
+function seenDecks(){
+  const seen = new Set();
+  const suffixes = DECKS.map(d => [deckSuffix(d), d]);
+  try{
+    const pfx = CFG.lw + 'done_deck_done_';
+    for (let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      if (!k || k.indexOf(pfx) !== 0 || localStorage.getItem(k) !== '1') continue;
+      for (const [suf, d] of suffixes) if (k.endsWith(suf)) seen.add(d);
+    }
+  }catch(e){}
+  const res = lsGet(CFG.quizKey, {});
+  Object.keys(res).forEach(id => { const d = id.split('#')[0] + '.html'; if (DECKS.indexOf(d) >= 0) seen.add(d); });
+  const last = lsGet(CFG.lw + 'last', null);
+  if (last && last.path) DECKS.forEach(d => { if (last.path.endsWith('/' + d)) seen.add(d); });
+  // was hier schon einmal gefragt wurde, gilt ebenfalls als gesehen (sonst gingen Wiederholungen verloren)
+  Object.keys(setting('srs', {})).forEach(id => { const d = id.split('#')[0] + '.html'; if (DECKS.indexOf(d) >= 0) seen.add(d); });
+  return seen;
+}
+
+// ---------- Quelle -> Kandidaten ----------
+function kapTitle(knr){ const k = KAPITEL.find(x => x.knr === knr); return k ? k.kapitel : ('Kapitel ' + knr); }
+function buildSource(nPoolNeeded){
+  const mode = setting('mode', 'gesehen');
+  let cands = [], hint = '', kapSet = null;
+  if (mode === 'alles'){
+    cands = POOL.slice();
+  } else if (mode === 'bereiche'){
+    const sel = setting('bereiche', []);
+    if (!sel.length){ cands = POOL.slice(); hint = 'Keine Bereiche angehakt — ich nehme alle Kapitel.'; }
+    else { kapSet = new Set(sel); cands = POOL.filter(q => kapSet.has(q.knr)); }
+  } else {
+    const seen = seenDecks();
+    cands = POOL.filter(q => seen.has(q.deck));
+    kapSet = new Set(cands.map(q => q.knr));
+    if (cands.length < Math.max(nPoolNeeded, 1)){
+      const filled = [];
+      for (const k of KAPITEL){
+        if (cands.length >= Math.max(nPoolNeeded, 5)) break;
+        const more = POOL.filter(q => q.knr === k.knr && !seen.has(q.deck));
+        if (!more.length) continue;
+        cands = cands.concat(more); kapSet.add(k.knr); filled.push(k.knr);
+      }
+      const n = seen.size;
+      hint = (n === 0 ? 'Du hast noch kein Deck angesehen' : 'Du hast erst ' + n + (n === 1 ? ' Deck' : ' Decks') + ' angesehen')
+        + ' — ich fülle aus Kapitel ' + filled.join(', ') + ' auf (' + filled.map(kapTitle).join(', ') + ').';
+    }
+  }
+  // Baustellen gehoeren immer dazu — ausser bei bewusst gewaehlten Bereichen
+  const prio = mode === 'bereiche' ? [] : priorityDecks();
+  if (prio.length){
+    const have = new Set(cands.map(q => q.id));
+    const extra = POOL.filter(q => prio.indexOf(q.deck) >= 0 && !have.has(q.id));
+    if (extra.length){ cands = cands.concat(extra); if (kapSet) extra.forEach(q => kapSet.add(q.knr)); }
+  }
+  return {mode, cands, hint, kapSet};
+}
+function allowedDrills(src){
+  if (!HAS_DRILLS) return [];
+  return FF_DRILLS.names.filter(n => {
+    const info = FF_DRILLS.info(n);
+    if (src.mode === 'alles') return true;
+    if (src.mode === 'bereiche') return !src.kapSet || src.kapSet.has(info.knr);
+    return info.grundwissen || (src.kapSet && src.kapSet.has(info.knr));   // gesehen
+  });
+}
+
+// ---------- Spaced Repetition ----------
+function advance(id, correct, sure){
+  const srs = setting('srs', {});
+  const t = today();
+  const rec = srs[id] || {iv: 0, wrong: 0, due: t};
+  if (correct){ rec.iv = rec.iv <= 0 ? 1 : Math.min(rec.iv * (sure ? 3 : 2), 60); rec.priority = false; }
+  else { rec.wrong = (rec.wrong || 0) + 1; rec.iv = 1; rec.priority = !!sure; }
+  rec.due = addDays(t, rec.iv);
+  srs[id] = rec;
+  lsSet(K('srs'), srs);
+}
+function pickPool(cands, n, exclude){
+  const srs = setting('srs', {}), results = lsGet(CFG.quizKey, {}), t = today();
+  const byId = {}; cands.forEach(q => byId[q.id] = q);
+  const used = new Set(exclude || []), chosen = [];
+  function take(id){ if (chosen.length < n && byId[id] && !used.has(id)){ chosen.push(byId[id]); used.add(id); } }
+  // 1) faellige Wiederholungen (zuerst die "sicher, aber falsch"-markierten)
+  Object.keys(srs).filter(id => srs[id].due <= t && byId[id])
+    .sort((a, b) => (!!srs[b].priority - !!srs[a].priority) || (srs[a].due < srs[b].due ? -1 : srs[a].due > srs[b].due ? 1 : 0))
+    .forEach(take);
+  // 2) im Deck-Quiz "sicher" geantwortet und trotzdem falsch — genau die versprechen die Decks
+  Object.keys(results).filter(id => results[id] && results[id].conf === true && results[id].ok === false && !srs[id])
+    .sort((a, b) => (results[b].ts || 0) - (results[a].ts || 0)).forEach(take);
+  // 2b) Baustellen aus den Pruefungstrainern (nur wo eine Lernwelt sie liefert): deren noch nie gefragte Fragen
+  const prio = priorityDecks();
+  if (prio.length) shuffle(cands.filter(q => prio.indexOf(q.deck) >= 0 && !srs[q.id])).forEach(q => take(q.id));
+  // 3) noch nie gefragt — reihum ueber die Kapitel verteilt
+  const groups = {};
+  cands.filter(q => !srs[q.id] && !used.has(q.id)).forEach(q => (groups[q.knr] = groups[q.knr] || []).push(q));
+  const kaps = shuffle(Object.keys(groups));
+  kaps.forEach(k => shuffle(groups[k]));
+  let i = 0, guard = 0;
+  while (chosen.length < n && kaps.some(k => groups[k].length) && guard++ < 10000){
+    const g = groups[kaps[i++ % kaps.length]];
+    if (g.length) take(g.shift().id);
+  }
+  // 4) alles schon im Plan, nichts faellig: die am naechsten faelligen
+  Object.keys(srs).filter(id => byId[id]).sort((a, b) => srs[a].due < srs[b].due ? -1 : 1).forEach(take);
+  return chosen;
+}
+
+// ---------- Verlauf ----------
+function history(){ return setting('history', []); }
+function firstRounds(){ return history().filter(h => !h.extra); }
+function todayEntry(){ const t = today(); return firstRounds().find(h => h.date === t) || null; }
+function streak(){
+  const days = new Set(firstRounds().map(h => h.date));
+  const alt = setting('streak_alt', null);   // uebernommene Serie der alten Tagesdosis {lastDate, count}
+  const altDay = alt && alt.lastDate;
+  let d = today();
+  if (!days.has(d) && d !== altDay) d = addDays(d, -1);
+  let n = 0;
+  while (days.has(d) || d === altDay){
+    if (d === altDay){ n += alt.count; break; }   // die alte Serie zaehlt diesen und alle frueheren Tage schon mit
+    n++; d = addDays(d, -1);
+  }
+  return n;
+}
+
+// ---------- Runde ----------
+let round = null;
+const TIME_SCALE = window.__TEST_TIME_SCALE__ || 1;
+function timeLimit(q){
+  const z = setting('zeit', 25);
+  if (!z) return 0;
+  return q.art === 'drill' ? Math.round(z * 0.8) : z;
+}
+function startRound(){
+  const drillWish = HAS_DRILLS ? Math.max(0, Math.min(5, setting('drills', 2))) : 0;
+  let src = buildSource(N_ROUND - drillWish);
+  let gens = shuffle(allowedDrills(src));
+  let nDrill = gens.length ? drillWish : 0;
+  const notes = [];
+  if (drillWish && !gens.length) notes.push('Für diese Auswahl gibt es noch keine Rechen-Drills — dafür mehr Fragen.');
+  const exclude = round ? round.items.filter(x => x.art !== 'drill').map(x => x.id) : [];
+  let poolQs = pickPool(src.cands, N_ROUND - nDrill, exclude);
+  if (poolQs.length < N_ROUND - nDrill && gens.length) nDrill = N_ROUND - poolQs.length;   // Pool zu klein -> mehr Drills
+  const drills = [];
+  for (let i = 0; i < nDrill; i++) drills.push(FF_DRILLS.generate(gens[i % gens.length], rng));
+  const items = shuffle(poolQs.concat(drills));
+  const isExtra = !!todayEntry();
+  round = {items, idx: 0, res: [], mode: src.mode, hint: [src.hint].concat(notes).filter(Boolean).join(' '), extra: isExtra};
+  if (!items.length){ renderEmpty(); return; }
+  renderQuestion();
+}
+
+// ---------- Anzeige: Start ----------
+function renderHead(){
+  const te = todayEntry(), st = streak();
+  document.getElementById('headrow').innerHTML =
+    '<span class="pill">' + deDate(today(), true) + '</span>' +
+    '<span class="pill today">' + (te ? ('Heute: ' + te.correct + ' / ' + te.n + ' ✓') : 'Heute noch offen') + '</span>' +
+    (st ? '<span class="pill streak">🔥 ' + st + (st === 1 ? ' Tag' : ' Tage') + ' in Folge</span>' : '');
+}
+// Waehrend einer Runde nur die Frage zeigen (kein Verlauf darunter) und immer oben beginnen
+function focusMode(on){
+  document.getElementById('verlauf').style.display = on ? 'none' : '';
+  window.scrollTo(0, 0);
+}
+function renderStart(){
+  focusMode(false);
+  renderHead();
+  const mode = setting('mode', 'gesehen');
+  const app = document.getElementById('app');
+  const sel = new Set(setting('bereiche', []));
+  const kapHtml = KAPITEL.map(k => '<label><input type="checkbox" value="' + k.knr + '"' + (sel.has(k.knr) ? ' checked' : '') + '/> <span>' + k.knr + '. ' + escapeHtml(k.kapitel) + '</span></label>').join('');
+  const zeit = setting('zeit', 25);
+  app.innerHTML =
+    '<div class="card"><h2>Woher kommen die Fragen?</h2>' +
+    '<div class="srcrow">' +
+      '<button class="srcbtn" data-mode="gesehen">👀 Gesehen<small>nur aus Decks, die du schon geöffnet hast</small></button>' +
+      '<button class="srcbtn" data-mode="alles">🌍 Alles<small>der ganze Stoff</small></button>' +
+      '<button class="srcbtn" data-mode="bereiche">🎛️ Bereiche<small>bestimmte Kapitel — z. B. was gerade in der Schule dran ist</small></button>' +
+    '</div>' +
+    '<div class="kaplist" id="kaplist">' + kapHtml + '</div>' +
+    '<div class="setrow">' +
+      (HAS_DRILLS ? '<label>🧮 Rechen-Drills: <input type="range" id="drillIn" min="0" max="5" step="1" value="' + setting('drills', 2) + '"/> <b id="drillVal"></b></label>' : '') +
+      '<label>⏱ Zeit je Frage: <select id="zeitIn"><option value="15">15 s</option><option value="25">25 s</option><option value="40">40 s</option><option value="0">aus</option></select></label>' +
+    '</div>' +
+    '<div class="hint" id="srcHint"></div>' +
+    '<button class="bigbtn" id="startBtn">' + (todayEntry() ? 'Noch eine Runde (zählt nicht für die Kurve) ▸' : 'Runde starten ▸') + '</button>' +
+    '</div>';
+  app.querySelectorAll('.srcbtn').forEach(b => {
+    b.classList.toggle('on', b.dataset.mode === mode);
+    b.onclick = () => { lsSet(K('mode'), b.dataset.mode); renderStart(); };
+  });
+  document.getElementById('kaplist').classList.toggle('show', mode === 'bereiche');
+  app.querySelectorAll('#kaplist input').forEach(cb => cb.onchange = () => {
+    const v = Array.from(app.querySelectorAll('#kaplist input:checked')).map(x => parseInt(x.value, 10));
+    lsSet(K('bereiche'), v); updatePreview();
+  });
+  const zs = document.getElementById('zeitIn'); zs.value = String(zeit);
+  zs.onchange = () => lsSet(K('zeit'), parseInt(zs.value, 10));
+  const di = document.getElementById('drillIn');
+  if (di){
+    const show = () => { const v = parseInt(di.value, 10); document.getElementById('drillVal').textContent = v + ' von 5' + (v ? '' : ' (nur Fragen)'); };
+    di.oninput = () => { lsSet(K('drills'), parseInt(di.value, 10)); show(); updatePreview(); };
+    show();
+  }
+  document.getElementById('startBtn').onclick = startRound;
+  updatePreview();
+}
+function updatePreview(){
+  const drillWish = HAS_DRILLS ? setting('drills', 2) : 0;
+  const src = buildSource(N_ROUND - drillWish);
+  const h = document.getElementById('srcHint');
+  if (!h) return;
+  const parts = [];
+  if (src.hint) parts.push(src.hint);
+  else parts.push(src.cands.length + ' Fragen stehen zur Auswahl.');
+  if (drillWish && HAS_DRILLS && !allowedDrills(src).length) parts.push('Für diese Auswahl gibt es noch keine Rechen-Drills — dafür mehr Fragen.');
+  h.textContent = parts.join(' ');
+  h.classList.add('show');
+}
+function renderEmpty(){
+  focusMode(false);
+  document.getElementById('app').innerHTML = '<div class="card"><div class="empty">Für diese Auswahl gibt es gerade keine Fragen. Wähle oben eine andere Quelle.</div><button class="secondary" id="backBtn">Zurück</button></div>';
+  document.getElementById('backBtn').onclick = renderStart;
+}
+
+// ---------- Anzeige: Frage ----------
+function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+let timer = null;
+function stopTimer(){ if (timer){ cancelAnimationFrame(timer.raf); timer = null; } }
+function renderQuestion(){
+  stopTimer();
+  focusMode(true);
+  const q = round.items[round.idx];
+  const lim = timeLimit(q);
+  const app = document.getElementById('app');
+  const isDrill = q.art === 'drill';
+  app.innerHTML =
+    '<div class="progress"><span>Frage ' + (round.idx + 1) + ' / ' + round.items.length + (round.extra ? ' · Zusatzrunde' : '') + '</span>' +
+      (lim ? '<div class="ringwrap" id="ring"><svg viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" style="stroke:var(--ring)" stroke-width="5"/>' +
+        '<circle id="ringArc" cx="23" cy="23" r="19" fill="none" style="stroke:var(--accent)" stroke-width="5" stroke-linecap="round" stroke-dasharray="119.38" stroke-dashoffset="0"/></svg><span class="sec" id="ringSec">' + lim + '</span></div>' : '') +
+    '</div>' +
+    (round.idx === 0 && round.hint ? '<div class="hint show" style="margin:0 0 8px;">' + escapeHtml(round.hint) + '</div>' : '') +
+    '<div class="card">' +
+      '<div class="meta">' + (isDrill ? '<span class="tag">🧮 Rechen-Drill</span>' : '') + escapeHtml((q.kapitel ? q.knr + '. ' + q.kapitel : '') + (q.titel && !isDrill ? ' · ' + q.titel : (isDrill ? ' · ' + q.titel : ''))) + '</div>' +
+      '<div class="qtext" id="qtext"></div>' +
+      (isDrill ? '' : '<button class="surebtn" id="sureBtn" title="Optional: tippen, wenn du dir sicher bist">🟢 Ich bin mir sicher</button>') +
+      '<div id="opts"></div>' +
+      '<div class="feedback" id="fb"></div>' +
+      '<button class="nextbtn" id="nextBtn" disabled>' + (round.idx >= round.items.length - 1 ? 'Auswertung ▸' : 'Nächste Frage ▸') + '</button>' +
+    '</div>';
+  document.getElementById('qtext').textContent = q.q;
+  let sure = false;
+  const sb = document.getElementById('sureBtn');
+  if (sb) sb.onclick = () => { sure = !sure; sb.classList.toggle('on', sure); };
+  const opts = document.getElementById('opts');
+  const t0 = performance.now();
+  let answered = false;
+  function finish(status, chosen){
+    if (answered) return;
+    answered = true;
+    stopTimer();
+    const ms = Math.round((performance.now() - t0) / TIME_SCALE);
+    opts.querySelectorAll('.opt').forEach(b => { b.disabled = true; if (parseInt(b.dataset.oi, 10) === q.r) b.classList.add('correct'); });
+    if (chosen !== null && chosen !== q.r) opts.querySelector('[data-oi="' + chosen + '"]').classList.add('wrong');
+    const fb = document.getElementById('fb');
+    const head = status === 'richtig' ? '✓ Richtig.' : status === 'langsam' ? '⏱ Zeit um — kein Problem, hier die Lösung.' : 'Nicht ganz — die Lösung ist markiert.';
+    fb.innerHTML = '<div class="head"></div><div class="why"></div>' + (sure && status !== 'richtig' ? '<div style="margin-top:6px;">⚠️ Genau die merken sich die 5 Fragen des Tages — sie kommt bald wieder.</div>' : '');
+    fb.querySelector('.head').textContent = head;
+    fb.querySelector('.why').textContent = q.why || '';
+    fb.classList.add('show');
+    if (!isDrill) advance(q.id, status === 'richtig', sure && status !== 'langsam');
+    round.res.push({id: q.id, art: q.art || 'pool', status, ms, q: q.q, deck: q.deck || null, knr: q.knr, gen: q.gen || null});
+    const nb = document.getElementById('nextBtn');
+    nb.disabled = false;
+    nb.focus({preventScroll: true});
+  }
+  q.a.forEach((txt, oi) => {
+    const b = document.createElement('button');
+    b.className = 'opt'; b.textContent = txt; b.dataset.oi = oi;
+    b.onclick = () => finish(oi === q.r ? 'richtig' : 'falsch', oi);
+    opts.appendChild(b);
+  });
+  document.getElementById('nextBtn').onclick = () => { if (round.idx < round.items.length - 1){ round.idx++; renderQuestion(); } else renderDone(); };
+  if (lim){
+    const total = lim * 1000 * TIME_SCALE, arc = document.getElementById('ringArc'), sec = document.getElementById('ringSec');
+    const tick = () => {
+      const left = Math.max(0, total - (performance.now() - t0));
+      arc.setAttribute('stroke-dashoffset', String(119.38 * (1 - left / total)));
+      sec.textContent = String(Math.ceil(left / 1000 / TIME_SCALE));
+      if (left / total < 0.25) arc.style.stroke = '#c9a25e';
+      if (left <= 0){ finish('langsam', null); return; }
+      timer.raf = requestAnimationFrame(tick);
+    };
+    timer = {raf: requestAnimationFrame(tick)};
+  }
+  round.finish = finish;
+}
+
+// ---------- Anzeige: Auswertung ----------
+function firstDeckOfKapitel(knr){ const q = POOL.find(x => x.knr === knr); return q ? q.deck : 'index.html'; }
+function renderDone(){
+  stopTimer();
+  focusMode(false);
+  const t = today();
+  const correct = round.res.filter(r => r.status === 'richtig').length;
+  const n = round.res.length;
+  const avg = n ? Math.round(round.res.reduce((s, r) => s + r.ms, 0) / n) : 0;
+  const hist = history();
+  const isFirst = !hist.some(h => h.date === t && !h.extra);
+  const entry = {date: t, correct, n, avg_ms: avg, mode: round.mode, ids: round.res.map(r => r.id)};
+  if (!isFirst) entry.extra = true;
+  hist.push(entry);
+  lsSet(K('history'), hist);
+  if (isFirst && setting('xpday', '') !== t){
+    lsSet(K('xpday'), t);
+    try{ if (window.lwAward) window.lwAward('mission', 'ff_' + t); }catch(e){}
+  }
+  renderHead();
+  const st = streak();
+  const app = document.getElementById('app');
+  const icon = s => s === 'richtig' ? '✅' : s === 'langsam' ? '⏱' : '✗';
+  const rows = round.res.map(r => {
+    const href = r.deck ? r.deck : firstDeckOfKapitel(r.knr);
+    const label = r.deck ? '🔧 Nachlesen' : '🔧 Kapitel ansehen';
+    return '<li><span class="ic">' + icon(r.status) + '</span><span class="qt">' + escapeHtml(r.q.length > 110 ? r.q.slice(0, 107) + '…' : r.q) +
+      (r.status === 'langsam' ? ' <span style="color:var(--muted)">(zu langsam)</span>' : '') + '</span>' +
+      (r.status !== 'richtig' ? '<a href="' + escapeHtml(href) + '">' + label + '</a>' : '') + '</li>';
+  }).join('');
+  app.innerHTML =
+    '<div class="card"><div class="done">' +
+      (correct === n && n === 5 ? '<div class="star" aria-hidden="true">🌟</div>' : '') +
+      '<div class="big" id="scoreLine">' + correct + ' / ' + n + ' richtig</div>' +
+      '<div class="avg">Ø ' + Math.round(avg / 1000) + ' s pro Frage' + (round.extra ? ' · Zusatzrunde (zählt nicht für die Kurve)' : '') + '</div>' +
+      (st ? '<div style="margin-top:8px;color:#ffb56b;font-weight:700;">🔥 ' + st + (st === 1 ? ' Tag' : ' Tage') + ' in Folge</div>' : '') +
+    '</div>' +
+    '<ul class="reslist">' + rows + '</ul>' +
+    '<div class="btnrow"><button class="secondary" id="againBtn">Noch eine Runde</button><a class="secondary" href="index.html">← Zur Übersicht</a></div></div>';
+  document.getElementById('againBtn').onclick = startRound;
+  renderVerlauf();
+}
+
+// ---------- Verlauf: Kurve + Tabelle ----------
+function renderVerlauf(){
+  const box = document.getElementById('chart');
+  const W = Math.max(280, Math.min(720, box.clientWidth || 600)), H = 210;
+  const L = 30, R = 14, T = 14, B = 34;
+  const t = today(), DAYS = 30;
+  const byDate = {}; firstRounds().forEach(h => { byDate[h.date] = h; });
+  const xs = i => L + i * (W - L - R) / (DAYS - 1);
+  const ys = v => T + (5 - v) * (H - T - B) / 5;
+  const days = []; for (let i = 0; i < DAYS; i++) days.push(addDays(t, i - (DAYS - 1)));
+  let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Verlauf der letzten 30 Tage">';
+  for (let v = 0; v <= 5; v++){
+    s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + ys(v) + '" y2="' + ys(v) + '" stroke="#202833" stroke-width="1"/>';
+    s += '<text x="' + (L - 8) + '" y="' + (ys(v) + 4) + '" fill="#7f8ea0" font-size="11" text-anchor="end">' + v + '</text>';
+  }
+  days.forEach((d, i) => {
+    if ((DAYS - 1 - i) % 7 === 0){
+      s += '<line x1="' + xs(i) + '" x2="' + xs(i) + '" y1="' + T + '" y2="' + (H - B) + '" stroke="#1a212b" stroke-width="1"/>';
+      s += '<text x="' + xs(i) + '" y="' + (H - B + 18) + '" fill="#7f8ea0" font-size="11" text-anchor="' + (i === DAYS - 1 ? 'end' : 'middle') + '">' + (i === DAYS - 1 ? 'heute' : deDate(d, false)) + '</text>';
+    }
+  });
+  // 7-Tage-Mittel (nur wo im Fenster ueberhaupt eine Runde liegt)
+  const mean = days.map((d, i) => { const vals = []; for (let k = 0; k < 7; k++){ const e = byDate[addDays(d, -k)]; if (e) vals.push(e.correct / e.n * 5); } return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null; });
+  s += segments(mean, xs, ys, '#7f8ea0', 1.6, 'meanLine');
+  // Tageswerte: verbunden nur zwischen direkt aufeinanderfolgenden Tagen — Pausen bleiben Luecken
+  const vals = days.map(d => byDate[d] ? byDate[d].correct / byDate[d].n * 5 : null);
+  s += segments(vals, xs, ys, 'var(--accent)', 2.6, 'dayLine');
+  days.forEach((d, i) => { const e = byDate[d]; if (e) s += '<circle class="pt" cx="' + xs(i) + '" cy="' + ys(e.correct / e.n * 5) + '" r="4.5" style="fill:var(--accent)"><title>' + deDate(d, true) + ': ' + e.correct + ' / ' + e.n + '</title></circle>'; });
+  s += '</svg>';
+  box.innerHTML = s;
+  const all = history().slice().reverse().slice(0, 40);
+  const modeName = h => h.mode === 'alles' ? 'Alles' : h.mode === 'bereiche' ? 'Bereiche' : 'Gesehen';
+  document.getElementById('histtable').innerHTML = all.length
+    ? '<table class="hist"><tr><th>Datum</th><th>richtig</th><th>Ø Zeit</th><th>Quelle</th></tr>' + all.map(h =>
+        '<tr' + (h.extra ? ' class="extra"' : '') + '><td>' + deDate(h.date, true) + (h.extra ? ' +' : '') + '</td><td>' + h.correct + ' / ' + h.n + '</td><td>' + Math.round((h.avg_ms || 0) / 1000) + ' s</td><td>' + modeName(h) + '</td></tr>').join('') + '</table>' +
+      '<div style="color:var(--dim);font-size:12px;margin-top:6px;">„+" = weitere Runde am selben Tag (zählt nicht für die Kurve)</div>'
+    : '<div class="empty">Noch keine Runde gespielt — die Kurve füllt sich ab heute.</div>';
+}
+function segments(vals, xs, ys, color, w, cls){
+  let out = '', cur = [];
+  const flush = () => { if (cur.length >= 2) out += '<polyline class="' + cls + '" points="' + cur.join(' ') + '" fill="none" style="stroke:' + color + '" stroke-width="' + w + '" stroke-linejoin="round" stroke-linecap="round"/>'; cur = []; };
+  vals.forEach((v, i) => { if (v === null) flush(); else cur.push(xs(i).toFixed(1) + ',' + ys(v).toFixed(1)); });
+  flush();
+  return out;
+}
+document.getElementById('dlBtn').onclick = () => {
+  const blob = new Blob([JSON.stringify({fach: CFG.fach, exportiert: new Date().toISOString(), verlauf: history()}, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = '5-fragen-' + CFG.fach + '-' + today() + '.json';
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+};
+let rz = null;
+window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(renderVerlauf, 150); });
+
+// ---------- Test-Hooks ----------
+window.FF = {
+  cfg: CFG,
+  today, streak, history, seenDecks: () => Array.from(seenDecks()),
+  source: () => { const s = buildSource(N_ROUND - (HAS_DRILLS ? setting('drills', 2) : 0)); return {mode: s.mode, n: s.cands.length, hint: s.hint, decks: Array.from(new Set(s.cands.map(q => q.deck))), knr: Array.from(new Set(s.cands.map(q => q.knr)))}; },
+  round: () => round ? {ids: round.items.map(q => q.id), arts: round.items.map(q => q.art || 'pool'), knr: round.items.map(q => q.knr), decks: round.items.map(q => q.deck || null), idx: round.idx, res: round.res, hint: round.hint, extra: round.extra} : null,
+  current: () => round ? round.items[round.idx] : null,
+  answer: (oi) => { const b = document.querySelector('#opts [data-oi="' + oi + '"]'); if (b) b.click(); },
+  answerCorrect: () => { const q = round.items[round.idx]; window.FF.answer(q.r); },
+  answerWrong: () => { const q = round.items[round.idx]; window.FF.answer((q.r + 1) % q.a.length); },
+  next: () => document.getElementById('nextBtn').click(),
+  start: startRound, renderStart, priorityDecks
+};
+
+renderStart();
+renderVerlauf();
+})();
+</script>
+<script src="gamify.js" defer></script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf eine andere Lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+</body>
+</html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Text → Gleichung-Übersetzer — Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{max-width:820px;margin:0 auto;padding:18px 20px 40px;}
+  h3{margin:0 0 6px;}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  .modebar{display:flex;gap:8px;margin-bottom:14px;}
+  .modebar button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;}
+  .modebar button.on{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  .part{display:none;}
+  .part.show{display:block;}
+  #matchCols{display:flex;gap:18px;margin-top:10px;}
+  .col{flex:1;display:flex;flex-direction:column;gap:8px;}
+  .col h4{margin:0 0 4px;color:var(--muted);font-size:13px;font-weight:600;}
+  .mbtn{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14.5px;cursor:pointer;text-align:left;}
+  .mbtn.sel{border-color:var(--accent);background:#2a2415;}
+  .mbtn.matched{background:#173d28;border-color:#4caf50;opacity:0.75;cursor:default;}
+  .mbtn.flash{border-color:#c0392b;background:#3d1c1c;}
+  #matchFeedback{margin-top:12px;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:14.5px;text-align:center;min-height:24px;}
+  #matchDone{display:none;background:#173d28;border:1px solid #4caf50;border-radius:8px;padding:14px 18px;font-size:15px;color:#dff3df;text-align:center;margin-top:10px;}
+  #matchDone.show{display:block;}
+  button.resetbtn{display:block;margin:14px auto 0;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 16px;font-size:13.5px;cursor:pointer;}
+  #puzzleWrap .quest{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:14px 18px;font-size:15px;margin-bottom:10px;}
+  #puzzleOpts{display:flex;flex-direction:column;gap:8px;}
+  #puzzleOpts button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer;text-align:left;}
+  #puzzleFeedback{margin-top:10px;font-size:14px;min-height:20px;}
+  #puzzleFeedback.ok{color:#4caf50;}
+  #puzzleFeedback.bad{color:#e05a5a;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="modebar">
+    <button id="modeMatch" class="on">🧩 Zuordnen</button>
+    <button id="modePuzzle">🕵️ Übersetzungsfehler finden</button>
+  </div>
+
+  <div class="part show" id="partMatch">
+    <h3>🧩 Ordne Sachtext und Term einander zu</h3>
+    <p class="hint">Klick zuerst einen Sachtext links, dann den passenden Term rechts. Bei einem Treffer bleiben beide grün stehen.</p>
+    <div id="matchCols">
+      <div class="col" id="colPhrase"><h4>Alltagssprache</h4></div>
+      <div class="col" id="colTerm"><h4>Term</h4></div>
+    </div>
+    <div id="matchFeedback">Wähle zuerst einen Sachtext.</div>
+    <div id="matchDone"></div>
+    <button class="resetbtn" id="resetMatchBtn">↺ Neu mischen</button>
+  </div>
+
+  <div class="part" id="partPuzzle">
+    <h3>🕵️ Richtig oder falsch übersetzt?</h3>
+    <div id="puzzleWrap"></div>
+  </div>
+</div>
+<script>
+// === Zuordnen-Modus ===
+const PAIRS=[
+  {phrase:"die Summe aus x und 5", term:"x + 5"},
+  {phrase:"das Doppelte von x", term:"2x"},
+  {phrase:"die Hälfte von x", term:"x / 2"},
+  {phrase:"x vermindert um 4", term:"x − 4"},
+  {phrase:"4 vermindert um x", term:"4 − x"},
+  {phrase:"um 3 mehr als das Doppelte von x", term:"2x + 3"}
+];
+let termOrder=[], leftSel=null, matchedCount=0;
+function shuffle(arr){
+  const a=arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+function renderMatch(){
+  const colP=document.getElementById('colPhrase'), colT=document.getElementById('colTerm');
+  colP.querySelectorAll('.mbtn').forEach(b=>b.remove());
+  colT.querySelectorAll('.mbtn').forEach(b=>b.remove());
+  PAIRS.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='mbtn'; b.textContent=p.phrase; b.dataset.idx=i;
+    if(p.matched) b.classList.add('matched');
+    b.onclick=()=>pickPhrase(i,b);
+    colP.appendChild(b);
+  });
+  termOrder.forEach(i=>{
+    const p=PAIRS[i];
+    const b=document.createElement('button');
+    b.className='mbtn'; b.textContent=p.term; b.dataset.idx=i;
+    if(p.matched) b.classList.add('matched');
+    b.onclick=()=>pickTerm(i,b);
+    colT.appendChild(b);
+  });
+}
+function pickPhrase(i,btn){
+  if(PAIRS[i].matched) return;
+  leftSel=i;
+  document.querySelectorAll('#colPhrase .mbtn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('matchFeedback').textContent='Jetzt den passenden Term rechts wählen.';
+}
+function pickTerm(i,btn){
+  if(PAIRS[i].matched) return;
+  if(leftSel===null){
+    document.getElementById('matchFeedback').textContent='Erst links einen Sachtext auswählen.';
+    return;
+  }
+  const fb=document.getElementById('matchFeedback');
+  if(i===leftSel){
+    PAIRS[i].matched=true;
+    matchedCount++;
+    fb.className=''; fb.textContent='✅ Richtig: „'+PAIRS[i].phrase+'" = '+PAIRS[i].term;
+    leftSel=null;
+    renderMatch();
+    if(matchedCount===PAIRS.length){
+      document.getElementById('matchDone').classList.add('show');
+      document.getElementById('matchDone').textContent='🎉 Alle 6 Paare richtig zugeordnet!';
+      window.lwAward && window.lwAward('mission');
+    }
+  } else {
+    btn.classList.add('flash');
+    const leftBtn=document.querySelector('#colPhrase .mbtn[data-idx="'+leftSel+'"]');
+    if(leftBtn) leftBtn.classList.add('flash');
+    fb.className=''; fb.textContent='❌ Das passt nicht zusammen — nochmal versuchen.';
+    setTimeout(()=>{ renderMatch(); leftSel=null; }, 700);
+  }
+}
+document.getElementById('resetMatchBtn').onclick=()=>{
+  PAIRS.forEach(p=>{ delete p.matched; });
+  matchedCount=0; leftSel=null;
+  termOrder=shuffle(PAIRS.map((_,i)=>i));
+  document.getElementById('matchDone').classList.remove('show');
+  document.getElementById('matchFeedback').textContent='Wähle zuerst einen Sachtext.';
+  renderMatch();
+};
+termOrder=shuffle(PAIRS.map((_,i)=>i));
+renderMatch();
+
+// === Raetselmodus: Uebersetzungsfehler finden ===
+const SCENARIOS=[
+  {desc:'„um 3 mehr als das Doppelte von x" → 2x + 3', ok:true, why:"Richtig — zuerst x verdoppeln (2x), dann 3 addieren, genau in dieser Reihenfolge."},
+  {desc:'„um 3 mehr als das Doppelte von x" → 2·(x + 3)', ok:false, why:"Falsch — hier wird zuerst x+3 gebildet und DANN verdoppelt, das verdoppelt auch die 3 mit. Richtig wäre 2x+3."},
+  {desc:'„das Dreifache der Summe aus x und 2" → 3·(x + 2)', ok:true, why:"Richtig — „Summe aus x und 2“ ist zuerst x+2, und GENAU DAS wird verdreifacht, deshalb die Klammer."},
+  {desc:'„das Dreifache der Summe aus x und 2" → 3x + 2', ok:false, why:"Falsch — hier wird nur x verdreifacht, die 2 aber nicht mit einbezogen. Die ganze Summe muss in Klammern, bevor verdreifacht wird: 3·(x+2)."},
+  {desc:'„x um 7 verringert" → x − 7', ok:true, why:"Richtig — x ist der Ausgangswert, davon werden 7 abgezogen."},
+  {desc:'„7 um x verringert" → x − 7', ok:false, why:"Falsch — hier ist 7 der Ausgangswert, nicht x. Richtig wäre 7−x, die Reihenfolge bei Minus zählt!"}
+];
+(function(){
+  const wrap=document.getElementById('puzzleWrap');
+  let si=0;
+  function loadScenario(){
+    wrap.innerHTML='';
+    if(si>=SCENARIOS.length){
+      wrap.innerHTML='<div class="quest">🎉 Alle Szenarien durchgespielt! Starte von vorn, indem du die Seite neu lädst.</div>';
+      return;
+    }
+    const sc=SCENARIOS[si];
+    const q=document.createElement('div'); q.className='quest'; q.textContent=sc.desc;
+    wrap.appendChild(q);
+    const opts=document.createElement('div'); opts.id='puzzleOpts';
+    const fb=document.createElement('div'); fb.id='puzzleFeedback';
+    ['✅ Richtig übersetzt','❌ Falsch übersetzt'].forEach((label,oi)=>{
+      const b=document.createElement('button');
+      b.textContent=label;
+      b.onclick=()=>{
+        const said=(oi===0);
+        if(said===sc.ok){ fb.className='ok'; fb.textContent='✅ '+sc.why; }
+        else { fb.className='bad'; fb.textContent='❌ '+sc.why; }
+        setTimeout(()=>{ si++; loadScenario(); }, 1800);
+      };
+      opts.appendChild(b);
+    });
+    wrap.appendChild(opts);
+    wrap.appendChild(fb);
+  }
+  loadScenario();
+})();
+
+// mode switch
+const modeMatch=document.getElementById('modeMatch'), modePuzzle=document.getElementById('modePuzzle');
+const partMatch=document.getElementById('partMatch'), partPuzzle=document.getElementById('partPuzzle');
+modeMatch.onclick=()=>{ modeMatch.classList.add('on'); modePuzzle.classList.remove('on'); partMatch.classList.add('show'); partPuzzle.classList.remove('show'); };
+modePuzzle.onclick=()=>{ modePuzzle.classList.add('on'); modeMatch.classList.remove('on'); partPuzzle.classList.add('show'); partMatch.classList.remove('show'); };
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

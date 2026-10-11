@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Wachstumssimulator</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:16px 22px 40px;max-width:900px;margin:0 auto;}
+  h2{margin:0 0 4px;font-size:22px;}
+  .lead{color:var(--muted);font-size:15px;margin:0 0 14px;}
+  .panel{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:14px;}
+  .row{display:flex;align-items:center;gap:12px;margin:10px 0;flex-wrap:wrap;}
+  .row label{min-width:150px;font-size:15px;}
+  input[type=range]{flex:1;min-width:160px;}
+  .val{font-weight:700;color:var(--accent);min-width:50px;text-align:right;}
+  #svgHost{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;}
+  .info{font-size:15px;line-height:1.6;margin-top:10px;text-align:center;}
+  .mission{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:10px 16px;margin-top:10px;font-size:15px;}
+  .mission.solved{background:#1c3d24;border-left-color:#4caf50;}
+  button.act{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 16px;font-size:15px;cursor:pointer;margin-top:6px;}
+  button.act.active{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h2>🧪 Wachstumssimulator</h2>
+  <p class="lead">Stelle a und b für f(x)=b·aˣ ein und beobachte die Kurve — blende zum Vergleich eine Gerade ein.</p>
+
+  <div class="panel">
+    <div class="row">
+      <label for="aSlide">Faktor a</label>
+      <input type="range" id="aSlide" min="0.3" max="3" step="0.1" value="1.2">
+      <span class="val" id="aVal">1,2</span>
+    </div>
+    <div class="row">
+      <label for="bSlide">Startwert b</label>
+      <input type="range" id="bSlide" min="1" max="20" step="1" value="5">
+      <span class="val" id="bVal">5</span>
+    </div>
+    <button class="act" id="btnLine">Vergleichsgerade y=10x einblenden</button>
+    <div id="svgHost"></div>
+    <div class="info" id="info"></div>
+    <div class="mission" id="mission">🎯 Mission: Stelle a&gt;1 ein, blende die Vergleichsgerade ein, und finde heraus, ab welchem x die Kurve JEDE Gerade überholt.</div>
+  </div>
+</div>
+
+<script>
+const de1=(x)=>{ const r=Math.round(x*10)/10; return r.toString().replace('.',','); };
+let a=1.2, b=5, showLine=false;
+let missionSolved=false;
+
+function crossingX(){
+  if(a<=1) return null;
+  for(let x=0; x<=20; x+=0.5){
+    if(b*Math.pow(a,x) > 10*x && x>0) return x;
+  }
+  return null;
+}
+
+function render(){
+  const w=280,h=200,ox=30,oy=180,scaleX=12,scaleY=0.9;
+  let s='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;max-width:340px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="'+ox+'" y1="'+oy+'" x2="270" y2="'+oy+'" stroke="#4a5568" stroke-width="1.5"/>';
+  s+='<line x1="'+ox+'" y1="10" x2="'+ox+'" y2="'+oy+'" stroke="#4a5568" stroke-width="1.5"/>';
+  let curve='';
+  for(let x=0; x<=20; x+=0.25){
+    const y=b*Math.pow(a,x);
+    const sx=ox+x*scaleX, sy=oy-y*scaleY;
+    if(sy<5) break;
+    curve+=sx+','+sy+' ';
+  }
+  s+='<polyline points="'+curve.trim()+'" fill="none" stroke="#5fd0c7" stroke-width="2.5"/>';
+  if(showLine){
+    let line='';
+    for(let x=0; x<=20; x+=1){
+      const y=10*x;
+      const sx=ox+x*scaleX, sy=oy-y*scaleY;
+      if(sy<5) { line+=sx+','+'5 '; break; }
+      line+=sx+','+sy+' ';
+    }
+    s+='<polyline points="'+line.trim()+'" fill="none" stroke="#f2a63c" stroke-width="2" stroke-dasharray="5,4"/>';
+  }
+  s+='</svg>';
+  document.getElementById('svgHost').innerHTML=s;
+
+  const cx=crossingX();
+  document.getElementById('info').innerHTML='f(x)=' + de1(b) + '·' + de1(a) + 'ˣ &nbsp;·&nbsp; f(5)≈' + Math.round(b*Math.pow(a,5)*100)/100;
+
+  const box=document.getElementById('mission');
+  if(showLine && a>1 && cx!==null){
+    missionSolved=true;
+    box.classList.add('solved');
+    box.innerHTML='✅ Bei a=' + de1(a) + ' überholt die Kurve die Gerade y=10x ab etwa x≈' + de1(cx) + ' — danach bleibt sie für immer darüber.';
+  } else if(missionSolved){
+    box.classList.add('solved');
+    box.innerHTML='✅ Mission bereits erfüllt (Regler seither verändert).';
+  } else {
+    box.classList.remove('solved');
+    box.innerHTML='🎯 Mission: Stelle a&gt;1 ein, blende die Vergleichsgerade ein, und finde heraus, ab welchem x die Kurve JEDE Gerade überholt.';
+  }
+}
+
+document.getElementById('aSlide').addEventListener('input', e=>{ a=parseFloat(e.target.value); document.getElementById('aVal').textContent=de1(a); render(); });
+document.getElementById('bSlide').addEventListener('input', e=>{ b=parseFloat(e.target.value); document.getElementById('bVal').textContent=b; render(); });
+document.getElementById('btnLine').addEventListener('click', e=>{ showLine=!showLine; e.target.classList.toggle('active', showLine); e.target.textContent = showLine ? 'Vergleichsgerade ausblenden' : 'Vergleichsgerade y=10x einblenden'; render(); });
+
+render();
+
+window.LAB={
+  state(){
+    return { a, b, showLine, crossingX: crossingX(), missionSolved };
+  },
+  setA(v){ a=v; document.getElementById('aSlide').value=v; document.getElementById('aVal').textContent=de1(v); render(); },
+  setB(v){ b=v; document.getElementById('bSlide').value=v; document.getElementById('bVal').textContent=v; render(); },
+  toggleLine(){ document.getElementById('btnLine').click(); }
+};
+</script>
+</body>
+</html>

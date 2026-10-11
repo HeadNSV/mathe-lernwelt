@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Kombi-Maschine — Mensa &amp; Term-Baukasten</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:14px 18px;height:100%;overflow-y:auto;}
+  h3{margin:0 0 8px;font-size:18px;color:var(--accent);}
+  .modebar{display:flex;gap:8px;margin-bottom:14px;}
+  .modebar button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 16px;font-size:13.5px;cursor:pointer;}
+  .modebar button.on{background:var(--accent);color:#12100a;font-weight:700;}
+  .part{display:none;}
+  .part.show{display:block;}
+  .chiprow{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px;}
+  .toggle{background:#1f2630;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:7px 14px;font-size:14px;cursor:pointer;}
+  .toggle.active{background:#1c3d24;border-color:#4caf50;color:#dff3df;}
+  .toggle.off{opacity:0.4;text-decoration:line-through;}
+  #grid{display:grid;grid-template-columns:repeat(4, 1fr);gap:6px;max-width:520px;margin:12px 0;}
+  .pair{background:#151b24;border:1px solid var(--line);border-radius:6px;padding:6px 4px;text-align:center;font-size:14px;}
+  #countBox{font-size:20px;color:var(--accent);margin:10px 0;}
+  #missionA{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin-top:10px;}
+  #missionA.ok{border-color:#4caf50;background:#173d28;}
+  .numchip{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+    width:56px;height:56px;border-radius:10px;border:2px solid var(--line);background:#151b24;
+    margin:4px;cursor:pointer;font-size:17px;font-weight:700;color:var(--fg);}
+  .numchip .memb{font-size:10px;font-weight:400;color:var(--muted);}
+  .numchip.hlAB{border-color:#5fd0c7;background:#123a38;}
+  .numchip.hlFinal{border-color:var(--accent);background:#3d2f12;color:var(--accent);}
+  .numchip.picked{border-color:#4caf50;background:#173d28;}
+  #stepFeedback,#missionBFeedback{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-top:12px;font-size:14.5px;min-height:24px;}
+  #stepFeedback.ok,#missionBFeedback.ok{border-color:#4caf50;}
+  #stepFeedback.bad,#missionBFeedback.bad{border-color:#c0392b;}
+  button.stepbtn{background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:9px 16px;font-size:14px;cursor:pointer;margin-right:8px;}
+  button.stepbtn:disabled{opacity:0.4;cursor:default;}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:6px;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="modebar">
+    <button id="modeA" class="on">🍽️ Teil A: Mensa-Kombinator</button>
+    <button id="modeB">🧩 Teil B: Term-Baukasten</button>
+  </div>
+
+  <!-- TEIL A -->
+  <div class="part show" id="partA">
+    <h3>Mensa-Kombinator</h3>
+    <p class="hint">Wähle Gerichte und Getränke aus — das Paar-Gitter (A × B) wächst live mit.</p>
+    <div><b>Gerichte (A):</b></div>
+    <div class="chiprow" id="dishesRow"></div>
+    <div><b>Getränke (B):</b></div>
+    <div class="chiprow" id="drinksRow"></div>
+    <div id="countBox">|A×B| = 0</div>
+    <div id="grid"></div>
+    <div id="missionA">🎯 Mission: Stelle A und B so ein, dass genau <b>6</b> Paare entstehen.</div>
+  </div>
+
+  <!-- TEIL B -->
+  <div class="part" id="partB">
+    <h3>Term-Baukasten: D = C ∩ (A\B)</h3>
+    <p class="hint">A = {1;2;3;4;5} · B = {−2;−1;0;1;2} · C = {4;5;6;7} · Grundmenge G = ℤ (Ausschnitt −2 … 7)</p>
+    <div id="numLine"></div>
+    <div>
+      <button class="stepbtn" id="step1Btn">1️⃣ A\B berechnen</button>
+      <button class="stepbtn" id="step2Btn" disabled>2️⃣ C ∩ (A\B) bilden</button>
+      <button class="stepbtn" id="resetBtn">↺ Zurücksetzen</button>
+    </div>
+    <div id="stepFeedback">Klick „A\B berechnen", um den ersten Schritt zu sehen.</div>
+
+    <h3 style="margin-top:22px;">🎯 Missions-Check</h3>
+    <p class="hint">Klick jetzt (ohne Hilfe) genau die Zahlen an, die zu D = C∩(A\B) gehören.</p>
+    <div id="numLineMission"></div>
+    <div id="missionBFeedback">Noch nichts ausgewählt.</div>
+  </div>
+</div>
+<script>
+// === Teil A: Mensa-Kombinator ===
+const DISHES=[{k:"F",n:"Fleisch"},{k:"N",n:"Nudel"},{k:"S",n:"Salat"}];
+const DRINKS=[{k:"W",n:"Wasser"},{k:"L",n:"Limo"},{k:"K",n:"Kaffee"},{k:"O",n:"O-Saft"}];
+let activeDishes=new Set(DISHES.map(d=>d.k));
+let activeDrinks=new Set(DRINKS.map(d=>d.k));
+
+function renderChipRow(container, items, activeSet, redraw){
+  container.innerHTML='';
+  items.forEach(it=>{
+    const b=document.createElement('button');
+    b.className='toggle'+(activeSet.has(it.k)?' active':' off');
+    b.textContent=it.k+' ('+it.n+')';
+    b.onclick=()=>{
+      if(activeSet.has(it.k)) activeSet.delete(it.k); else activeSet.add(it.k);
+      renderChipRow(container, items, activeSet, redraw);
+      redraw();
+    };
+    container.appendChild(b);
+  });
+}
+function redrawGridA(){
+  const grid=document.getElementById('grid');
+  grid.innerHTML='';
+  const dishesActive=DISHES.filter(d=>activeDishes.has(d.k));
+  const drinksActive=DRINKS.filter(d=>activeDrinks.has(d.k));
+  dishesActive.forEach(d=>{
+    drinksActive.forEach(dr=>{
+      const el=document.createElement('div');
+      el.className='pair';
+      el.textContent='('+d.k+'|'+dr.k+')';
+      grid.appendChild(el);
+    });
+  });
+  const count=dishesActive.length*drinksActive.length;
+  document.getElementById('countBox').textContent='|A×B| = '+dishesActive.length+' · '+drinksActive.length+' = '+count;
+  const mission=document.getElementById('missionA');
+  if(count===6){
+    mission.classList.add('ok');
+    mission.textContent='🎉 Mission erfüllt! Genau 6 Paare — Beweis, dass |A×B| = |A| · |B| aufgeht.';
+    window.lwAward && window.lwAward('mission','a');
+  } else {
+    mission.classList.remove('ok');
+    mission.textContent='🎯 Mission: Stelle A und B so ein, dass genau 6 Paare entstehen. (Aktuell: '+count+')';
+  }
+}
+renderChipRow(document.getElementById('dishesRow'), DISHES, activeDishes, redrawGridA);
+renderChipRow(document.getElementById('drinksRow'), DRINKS, activeDrinks, redrawGridA);
+redrawGridA();
+
+// === Teil B: Term-Baukasten ===
+const NUMS=[-2,-1,0,1,2,3,4,5,6,7];
+const SET_A=new Set([1,2,3,4,5]);
+const SET_B=new Set([-2,-1,0,1,2]);
+const SET_C=new Set([4,5,6,7]);
+const AminusB=[...SET_A].filter(x=>!SET_B.has(x)); // {3,4,5}
+const FINAL_D=AminusB.filter(x=>SET_C.has(x));      // {4,5}
+
+function membershipStr(x){
+  const m=[];
+  if(SET_A.has(x)) m.push('A');
+  if(SET_B.has(x)) m.push('B');
+  if(SET_C.has(x)) m.push('C');
+  return m.join(',')||'—';
+}
+function buildNumLine(containerId, clickable){
+  const el=document.getElementById(containerId);
+  el.innerHTML='';
+  NUMS.forEach(x=>{
+    const chip=document.createElement('div');
+    chip.className='numchip';
+    chip.dataset.n=x;
+    chip.innerHTML=x+'<span class="memb">'+membershipStr(x)+'</span>';
+    if(clickable){
+      chip.style.cursor='pointer';
+      chip.onclick=()=>{ chip.classList.toggle('picked'); checkMissionB(); };
+    }
+    el.appendChild(chip);
+  });
+}
+buildNumLine('numLine', false);
+buildNumLine('numLineMission', true);
+
+let stepState=0;
+document.getElementById('step1Btn').onclick=()=>{
+  document.querySelectorAll('#numLine .numchip').forEach(chip=>{
+    const n=parseInt(chip.dataset.n);
+    if(AminusB.includes(n)) chip.classList.add('hlAB');
+  });
+  document.getElementById('stepFeedback').textContent='A\\B = {3; 4; 5} — alle Elemente aus A, die NICHT in B stehen.';
+  document.getElementById('step1Btn').disabled=true;
+  document.getElementById('step2Btn').disabled=false;
+  stepState=1;
+};
+document.getElementById('step2Btn').onclick=()=>{
+  document.querySelectorAll('#numLine .numchip').forEach(chip=>{
+    const n=parseInt(chip.dataset.n);
+    if(FINAL_D.includes(n)) chip.classList.add('hlFinal');
+  });
+  document.getElementById('stepFeedback').textContent='D = C ∩ (A\\B) = {4; 5} — die Elemente, die sowohl in C als auch in A\\B stehen.';
+  document.getElementById('step2Btn').disabled=true;
+  stepState=2;
+};
+document.getElementById('resetBtn').onclick=()=>{
+  document.querySelectorAll('#numLine .numchip').forEach(chip=>{ chip.classList.remove('hlAB','hlFinal'); });
+  document.getElementById('stepFeedback').textContent='Klick „A\\B berechnen", um den ersten Schritt zu sehen.';
+  document.getElementById('step1Btn').disabled=false;
+  document.getElementById('step2Btn').disabled=true;
+  stepState=0;
+};
+
+function checkMissionB(){
+  const picked=[...document.querySelectorAll('#numLineMission .numchip.picked')].map(c=>parseInt(c.dataset.n));
+  const fb=document.getElementById('missionBFeedback');
+  const pickedSet=new Set(picked);
+  const targetSet=new Set(FINAL_D);
+  const same = pickedSet.size===targetSet.size && [...targetSet].every(x=>pickedSet.has(x));
+  if(picked.length===0){ fb.className=''; fb.textContent='Noch nichts ausgewählt.'; return; }
+  if(same){
+    fb.className='ok';
+    fb.textContent='🎉 Richtig! D = C∩(A\\B) = {4; 5}.';
+    window.lwAward && window.lwAward('mission','b');
+  } else {
+    fb.className='bad';
+    fb.textContent='Noch nicht ganz — du hast '+picked.length+' Zahl(en) markiert. Denk an: erst A\\B, dann davon nur die, die auch in C liegen.';
+  }
+}
+
+// mode switch
+const modeA=document.getElementById('modeA'), modeB=document.getElementById('modeB');
+const partA=document.getElementById('partA'), partB=document.getElementById('partB');
+modeA.onclick=()=>{ modeA.classList.add('on'); modeB.classList.remove('on'); partA.classList.add('show'); partB.classList.remove('show'); };
+modeB.onclick=()=>{ modeB.classList.add('on'); modeA.classList.remove('on'); partB.classList.add('show'); partA.classList.remove('show'); };
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

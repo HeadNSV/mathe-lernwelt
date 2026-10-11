@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Verfahrens-Wahl</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:16px 22px 40px;max-width:960px;margin:0 auto;}
+  h2{margin:0 0 4px;font-size:22px;}
+  .lead{color:var(--muted);font-size:15px;margin:0 0 14px;}
+  #score{font-size:15px;color:var(--accent);margin-bottom:10px;font-weight:700;}
+  .card{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:10px 0;}
+  .card h3{margin:0 0 8px;font-size:17px;color:var(--accent);}
+  .sysline{font-size:15px;margin:2px 0;}
+  .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .vbtn{flex:1;min-width:120px;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px;cursor:pointer;}
+  .vbtn:hover{background:#283041;}
+  .vbtn.picked{border-color:var(--accent);}
+  .rating{margin-top:8px;font-size:14px;display:none;}
+  .rating.show{display:block;}
+  .rating.ideal{color:#7be08a;}
+  .rating.geht{color:#f2c063;}
+  .rating.umstaendlich{color:#ff9d8a;}
+  .solvebtn{margin-top:8px;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 14px;font-size:14px;cursor:pointer;}
+  .solvebtn:hover{background:#283041;}
+  .solution{margin-top:8px;font-size:14px;color:var(--muted);display:none;}
+  .solution.show{display:block;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h2>🧪 Verfahrens-Wahl</h2>
+  <p class="lead">Begründe für jedes System, welches Verfahren am direktesten zum Ziel führt — mehrere Antworten können vertretbar sein.</p>
+  <div id="score">Bewertet: 0 / 5</div>
+  <div id="cards"></div>
+</div>
+
+<script>
+const SYSTEMS=[
+  {id:'s1', eq1:'y = 3x − 2', eq2:'y = −x + 6', sol:'x=2, y=4 → L={(2|4)}',
+   ratings:{einsetzen:'geht', gleichsetzen:'ideal', addieren:'umstaendlich'},
+   why:{ideal:'Beide Gleichungen sind schon nach y aufgelöst — direktes Gleichsetzen.', geht:'Funktioniert auch, ist aber ein Umweg gegenüber dem direkten Gleichsetzen.', umstaendlich:'Erst müssten beide Gleichungen umgestellt werden — unnötiger Aufwand.'}},
+  {id:'s2', eq1:'x = 2y + 1', eq2:'3x − y = 8', sol:'x=3, y=1 → L={(3|1)}',
+   ratings:{einsetzen:'ideal', gleichsetzen:'umstaendlich', addieren:'geht'},
+   why:{ideal:'x steht in (I) schon isoliert — direkt in (II) einsetzen.', geht:'Funktioniert nach Vorbereiten, aber weniger direkt als Einsetzen.', umstaendlich:'(II) müsste erst mühsam nach x oder y aufgelöst werden.'}},
+  {id:'s3', eq1:'4x + 3y = 11', eq2:'2x − 3y = 1', sol:'x=2, y=1 → L={(2|1)}',
+   ratings:{einsetzen:'umstaendlich', gleichsetzen:'umstaendlich', addieren:'ideal'},
+   why:{ideal:'+3y und −3y heben sich beim direkten Addieren sofort auf.', geht:'Möglich, aber mit mehr Rechenaufwand als Addieren.', umstaendlich:'Keine Variable steht isoliert — Umstellen erzeugt Brüche.'}},
+  {id:'s4', eq1:'5x + 2y = 16', eq2:'3x + 2y = 12', sol:'x=2, y=3 → L={(2|3)}',
+   ratings:{einsetzen:'geht', gleichsetzen:'umstaendlich', addieren:'ideal'},
+   why:{ideal:'Gleicher y-Koeffizient (2) — durch Subtrahieren fällt y direkt weg.', geht:'Funktioniert nach Umstellen, aber weniger direkt.', umstaendlich:'Beide Gleichungen erst nach derselben Variablen umzustellen lohnt sich hier nicht.'}},
+  {id:'s5', eq1:'x + y = 9', eq2:'x − y = 3', sol:'x=6, y=3 → L={(6|3)}',
+   ratings:{einsetzen:'geht', gleichsetzen:'geht', addieren:'ideal'},
+   why:{ideal:'+y und −y heben sich beim direkten Addieren sofort auf.', geht:'Funktioniert auch gut, ist aber ein kleiner Umweg gegenüber Addieren.', umstaendlich:'—'}}
+];
+const LABEL={ideal:'✅ Ideal', geht:'🟡 Geht', umstaendlich:'🔴 Umständlich'};
+const cardsHost=document.getElementById('cards');
+let ratedCount=0, solvedCount=0;
+const state={};
+
+SYSTEMS.forEach(sys=>{
+  state[sys.id]={picked:null, solved:false};
+  const card=document.createElement('div'); card.className='card';
+  card.innerHTML='<h3>System '+sys.id.slice(1)+'</h3>'
+    +'<div class="sysline">(I) '+sys.eq1+'</div>'
+    +'<div class="sysline">(II) '+sys.eq2+'</div>';
+  const row=document.createElement('div'); row.className='row';
+  const rating=document.createElement('div'); rating.className='rating';
+  ['einsetzen','gleichsetzen','addieren'].forEach(v=>{
+    const b=document.createElement('button'); b.className='vbtn';
+    b.textContent=v.charAt(0).toUpperCase()+v.slice(1)+'verfahren';
+    b.onclick=()=>{
+      row.querySelectorAll('.vbtn').forEach(x=>x.classList.remove('picked'));
+      b.classList.add('picked');
+      const r=sys.ratings[v];
+      if(!state[sys.id].picked){ ratedCount++; }
+      state[sys.id].picked=v;
+      rating.className='rating show '+r;
+      rating.textContent=LABEL[r]+' — '+sys.why[r];
+      document.getElementById('score').textContent='Bewertet: '+ratedCount+' / '+SYSTEMS.length;
+    };
+    row.appendChild(b);
+  });
+  card.appendChild(row);
+  card.appendChild(rating);
+  const solveBtn=document.createElement('button'); solveBtn.className='solvebtn'; solveBtn.textContent='🔍 Lösung anzeigen';
+  const solDiv=document.createElement('div'); solDiv.className='solution';
+  solveBtn.onclick=()=>{
+    if(!state[sys.id].solved){ solvedCount++; state[sys.id].solved=true; }
+    solDiv.classList.add('show');
+    solDiv.textContent=sys.sol;
+  };
+  card.appendChild(solveBtn);
+  card.appendChild(solDiv);
+  cardsHost.appendChild(card);
+});
+
+window.LAB={
+  state(){
+    return {
+      ratedCount: ratedCount,
+      solvedCount: solvedCount,
+      allDone: ratedCount===SYSTEMS.length && solvedCount===SYSTEMS.length,
+      details: JSON.parse(JSON.stringify(state))
+    };
+  },
+  rate(sysId, verfahren){
+    const idx=SYSTEMS.findIndex(s=>s.id===sysId);
+    const btns=cardsHost.children[idx].querySelectorAll('.vbtn');
+    const order=['einsetzen','gleichsetzen','addieren'];
+    const bi=order.indexOf(verfahren);
+    if(bi>=0) btns[bi].click();
+  },
+  solve(sysId){
+    const idx=SYSTEMS.findIndex(s=>s.id===sysId);
+    cardsHost.children[idx].querySelector('.solvebtn').click();
+  },
+  systemIds(){ return SYSTEMS.map(s=>s.id); }
+};
+</script>
+</body>
+</html>

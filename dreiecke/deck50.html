@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Dreieckslehre · Trigonometrie im rechtwinkligen Dreieck</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .warnbox{background:#3d1c1c;border-left:5px solid #c0392b;border-radius:8px;padding:10px 16px;font-size:min(1.9vw,16px);color:#ffd9d0;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+  .threebox{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>TRIGONOMETRIE</h1>
+    <h2>Kapitel 16 · Teil 2 — Trigonometrie im rechtwinkligen Dreieck</h2>
+    <div class="hook" style="max-width:70ch;">Wie misst man die Höhe eines Turms, ohne hochzuklettern? Man steht in bekanntem Abstand, misst den Winkel zur Spitze — und der Tangens verrät den Rest.</div>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 16.2</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Seitenverhaeltnisse Merksatz -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Seitenverhältnisse im rechtwinkligen Dreieck</h2>
+      <div class="svgbox"><div id="svgDef"></div><div class="svgcaption">Bezeichnungen zum Winkel α</div></div>
+      <div class="defbox">sin α = Gegenkathete/Hypotenuse = a/c &nbsp;·&nbsp; cos α = Ankathete/Hypotenuse = b/c<br>
+      tan α = Gegenkathete/Ankathete = a/b &nbsp;·&nbsp; cot α = Ankathete/Gegenkathete = b/a</div>
+      <div class="defbox">Diese vier eindeutigen Zuordnungen zwischen Winkel und Seitenverhältnis heißen <b>Winkelfunktionen</b> — Sinus, Kosinus, Tangens und Kotangens.</div>
+    </div>
+  </section>
+
+  <!-- 3 Beispielaufgabe Setup -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Beispielaufgabe: Winkelfunktionswerte berechnen</h2>
+      <div class="defbox">Berechne zum Winkel α die Werte von sin, cos, tan und cot, wenn die Gegenkathete a=5m, die Ankathete b=12m und die Hypotenuse c=13m betragen.</div>
+    </div>
+  </section>
+
+  <!-- 4 Steps Winkelfunktionswerte -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Winkelfunktionswerte berechnen</h2>
+      <div class="step" id="s4_1"><b class="lbl">sin α:</b> Gegenkathete/Hypotenuse = 5/13 ≈ 0,3846.</div>
+      <div class="step" id="s4_2"><b class="lbl">cos α:</b> Ankathete/Hypotenuse = 12/13 ≈ 0,9231.</div>
+      <div class="step" id="s4_3"><b class="lbl">tan α:</b> Gegenkathete/Ankathete = 5/12 ≈ 0,4167.</div>
+      <div class="step" id="s4_4"><b class="lbl">cot α:</b> Ankathete/Gegenkathete = 12/5 = 2,4.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="4" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 5 Einheitskreis -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Der Einheitskreis</h2>
+      <div class="svgbox"><div id="svgEinheitskreis"></div><div class="svgcaption">Radius r=1: Gegenkathete = sin α, Ankathete = cos α</div></div>
+      <div class="defbox">Im Einheitskreis mit Radius r=1 lässt sich jedem Winkel α unmittelbar sein sin α (Höhe/Gegenkathete) und cos α (Ankathete) zuordnen — ohne dass ein konkretes Dreieck mit realen Maßen nötig ist.</div>
+    </div>
+  </section>
+
+  <!-- 6 Gradmass Bogenmass -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Gradmaß &amp; Bogenmaß</h2>
+      <div class="defbox">Der Vollkreis hat Umfang U=2π (bei r=1). Für einen Winkel α kleiner als 360° entspricht das dem Kreisbogen x = π·α/180°. Diese Einheit heißt <b>Radiant (rad)</b> und wird oft weggelassen.</div>
+      <div class="defbox">Umrechnung: x = π·α/180° &nbsp;·&nbsp; α = 180°·x/π</div>
+    </div>
+  </section>
+
+  <!-- 7 Steps Bogenmass -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Zwischen Gradmaß und Bogenmaß umrechnen</h2>
+      <div class="step" id="s7_1"><b class="lbl">a) Bogenmaß für α=120°:</b> x = π·120°/180° = 2π/3 ≈ 2,09.</div>
+      <div class="step" id="s7_2"><b class="lbl">b) Winkel für Bogenmaß x=2,5:</b> α = 180°·2,5/π ≈ 143,24°.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="7" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 8 Umkehrfunktionen -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Umkehrfunktionen: arcsin, arccos, arctan</h2>
+      <div class="defbox">Die Funktionen Arkussinus (arcsin), Arkuskosinus (arccos) und Arkustangens (arctan) sind die Umkehrfunktionen von Sinus, Kosinus und Tangens — sie ordnen einem Seitenverhältnis den passenden Winkel zu.</div>
+      <div class="defbox">sin α = a/c &nbsp;⟹&nbsp; α = arcsin(a/c). Am Taschenrechner: Taste [SHIFT] bzw. [INV] vor der Funktionstaste drücken.</div>
+    </div>
+  </section>
+
+  <!-- 9 Steps Umkehrfunktion Beispiel -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Steigungswinkel aus der Umkehrfunktion</h2>
+      <div class="defbox">Ein Verkehrsschild zeigt eine Steigung von 9% an. Welcher Winkel gegenüber der Horizontalen entspricht das?</div>
+      <div class="step" id="s9_1"><b class="lbl">Schritt 1 — Steigung deuten:</b> 9% entspricht 9/100 — Verhältnis von Gegenkathete zu Ankathete, also tan α.</div>
+      <div class="step" id="s9_2"><b class="lbl">Schritt 2 — Gleichung aufstellen:</b> tan α = 0,09.</div>
+      <div class="step" id="s9_3"><b class="lbl">Schritt 3 — Umkehrfunktion anwenden:</b> α = arctan(0,09) ≈ 5,14°.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="9" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 10 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Winkelfunktionen-Labor</span><span class="sub">Winkel per Regler einstellen, sin/cos/tan/cot live ablesen</span></div>
+    <iframe allow="autoplay" data-src="winkelfunktionen50_labor.html"></iframe>
+  </section>
+
+  <!-- 11 Eselsbruecke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Sinus schaut zur Gegenkathete hoch, Kosinus bleibt brav bei der Ankathete, Tangens teilt Gegen durch An — und Kotangens macht es genau andersrum."</div>
+    </div>
+  </section>
+
+  <!-- 12 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Turmhöhe per Tangens</h2>
+      <div class="defbox">Steht man 30m von einem Turm entfernt und misst zur Turmspitze einen Winkel von 40°, dann gilt tan(40°) = Höhe/30m. Aufgelöst: Höhe = 30m · tan(40°) ≈ 25,2m — die Turmhöhe lässt sich messen, ohne den Turm zu betreten.</div>
+    </div>
+  </section>
+
+  <!-- 13 Intuitions-Regler -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Schätz mal: bei welchem Winkel ist tan α = 1?</h2>
+      <div class="defbox">Bei welchem Winkel α (in Grad) sind Gegenkathete und Ankathete gleich lang, sodass tan α genau 1 ergibt?</div>
+      <div id="estTrig50"></div>
+    </div>
+  </section>
+
+  <!-- 14 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>sin α, cos α</td><td>„Sinus/Kosinus von alpha"</td><td>Seitenverhältnisse im rechtwinkligen Dreieck</td></tr>
+        <tr><td>arcsin, arctan</td><td>„Arkussinus/Arkustangens"</td><td>Umkehrfunktionen — liefern den Winkel aus dem Verhältnis</td></tr>
+        <tr><td>rad</td><td>„Radiant"</td><td>Einheit des Bogenmaßes</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 15 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Gesucht</th><th>Rechenweg</th></tr>
+      <tr><td>Seitenverhältnis aus Winkel</td><td>sin/cos/tan/cot direkt anwenden</td></tr>
+      <tr><td>Winkel aus Seitenverhältnis</td><td>Umkehrfunktion arcsin/arccos/arctan anwenden</td></tr>
+      <tr><td>Bogenmaß ↔ Gradmaß</td><td>x=π·α/180° bzw. α=180°·x/π</td></tr>
+    </table>
+  </section>
+
+  <!-- 16 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Ein rechtwinkliges Dreieck hat Gegenkathete a=8m und Hypotenuse c=17m. Berechne sin α.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>sin α = 8/17 ≈ 0,4706</details>
+        </li>
+        <li style="margin-top:10px;">Berechne das Bogenmaß für α=90°.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>x=π·90°/180°=π/2≈1,57</details>
+        </li>
+        <li style="margin-top:10px;">tan α = 0,5. Berechne α mit der Umkehrfunktion.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>α=arctan(0,5)≈26,57°</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 17 Pruefungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>sin, cos, tan und cot aus den Seitenlängen eines rechtwinkligen Dreiecks berechnen.</b></li>
+        <li><b>Mit den Umkehrfunktionen arcsin/arccos/arctan aus einem Seitenverhältnis den Winkel bestimmen.</b></li>
+        <li><b>Zwischen Gradmaß und Bogenmaß umrechnen.</b></li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">Kapitel-Brücke zum nächsten Deck: <i>„Es gibt noch einen zweiten, ganz anderen Zusammenhang zwischen den drei Seiten eines rechtwinkligen Dreiecks — benannt nach einem griechischen Gelehrten."</i> Genau darum geht es im nächsten Deck.</div>
+    </div>
+  </section>
+
+  <!-- 18 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+function toX50(x, ox, scale){ return ox+x*scale; }
+function toY50(y, oy, scale){ return oy-y*scale; }
+(function(){
+  const w=280,h=190, ox=40, oy=160, s=32;
+  const A=[toX50(0,ox,s),toY50(0,oy,s)], B=[toX50(6,ox,s),toY50(0,oy,s)], C=[toX50(0,ox,s),toY50(4,oy,s)];
+  let sv='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;max-width:280px;height:auto;display:block;margin:0 auto;">';
+  sv+='<polygon points="'+A.join(',')+' '+B.join(',')+' '+C.join(',')+'" fill="none" stroke="#5fd0c7" stroke-width="2.4"/>';
+  sv+='<text x="'+(A[0]-10)+'" y="'+(A[1]+14)+'" fill="#f2a63c" font-size="14" text-anchor="end">A</text>';
+  sv+='<text x="'+(B[0]+8)+'" y="'+(B[1]+14)+'" fill="#f2a63c" font-size="14">B</text>';
+  sv+='<text x="'+(C[0]-8)+'" y="'+(C[1]-6)+'" fill="#f2a63c" font-size="14" text-anchor="end">C</text>';
+  sv+='<text x="'+((A[0]+B[0])/2)+'" y="'+(A[1]+22)+'" fill="#e6edf3" font-size="13" text-anchor="middle">Ankathete b</text>';
+  sv+='<text x="'+(A[0]-16)+'" y="'+((A[1]+C[1])/2)+'" fill="#e6edf3" font-size="13" text-anchor="end" transform="rotate(-90 '+(A[0]-16)+' '+((A[1]+C[1])/2)+')">Gegenkathete a</text>';
+  sv+='<text x="'+((B[0]+C[0])/2+10)+'" y="'+((B[1]+C[1])/2-6)+'" fill="#e6edf3" font-size="13">Hypotenuse c</text>';
+  sv+='</svg>';
+  document.getElementById('svgDef').innerHTML=sv;
+})();
+(function(){
+  const w=260,h=260, cx=130, cy=170, r=90;
+  const alphaDeg=35, a=alphaDeg*Math.PI/180;
+  const px=cx+r*Math.cos(a), py=cy-r*Math.sin(a);
+  let sv='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;max-width:260px;height:auto;display:block;margin:0 auto;">';
+  sv+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#4a5568" stroke-width="1.5"/>';
+  sv+='<line x1="'+(cx-r-10)+'" y1="'+cy+'" x2="'+(cx+r+10)+'" y2="'+cy+'" stroke="#9aa4b2" stroke-width="1"/>';
+  sv+='<line x1="'+cx+'" y1="'+(cy-r-10)+'" x2="'+cx+'" y2="'+(cy+10)+'" stroke="#9aa4b2" stroke-width="1"/>';
+  sv+='<line x1="'+cx+'" y1="'+cy+'" x2="'+px+'" y2="'+py+'" stroke="#5fd0c7" stroke-width="2.4"/>';
+  sv+='<line x1="'+px+'" y1="'+py+'" x2="'+px+'" y2="'+cy+'" stroke="#f2a63c" stroke-width="2.4"/>';
+  sv+='<line x1="'+cx+'" y1="'+cy+'" x2="'+px+'" y2="'+cy+'" stroke="#e06fa0" stroke-width="2.4"/>';
+  sv+='<text x="'+(px+6)+'" y="'+((py+cy)/2)+'" fill="#f2a63c" font-size="13">sin α</text>';
+  sv+='<text x="'+((cx+px)/2)+'" y="'+(cy+18)+'" fill="#e06fa0" font-size="13" text-anchor="middle">cos α</text>';
+  sv+='<text x="'+(cx+18)+'" y="'+(cy-14)+'" fill="#e6edf3" font-size="12">α</text>';
+  sv+='</svg>';
+  document.getElementById('svgEinheitskreis').innerHTML=sv;
+})();
+
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Seitenverhältnisse im rechtwinkligen Dreieck", "Beispielaufgabe: Winkelfunktionswerte berechnen", "📐 Schritt für Schritt: Winkelfunktionswerte berechnen", "Der Einheitskreis", "Gradmaß & Bogenmaß", "📐 Schritt für Schritt: Zwischen Gradmaß und Bogenmaß umrechnen", "Umkehrfunktionen: arcsin, arccos, arctan", "📐 Schritt für Schritt: Steigungswinkel aus der Umkehrfunktion", "🧪 Winkelfunktionen-Labor", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Turmhöhe per Tangens", "Schätz mal: bei welchem Winkel ist tan α = 1?", "Symbol-Legende", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=19;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck50_s1_Charon.mp3",txt:"Trigonometrie im rechtwinkligen Dreieck. Wie misst man die Höhe eines Turms, ohne hochzuklettern? Man steht in bekanntem Abstand, misst den Winkel zur Spitze - und der Tangens verrät den Rest."},
+ 2:{wav:"narration_deck50_s2_Charon.mp3",txt:"Sinus, Kosinus, Tangens und Kotangens sind Seitenverhältnisse im rechtwinkligen Dreieck - eindeutig einem Winkel zugeordnet."},
+ 3:{wav:"narration_deck50_s3_Charon.mp3",txt:"Jetzt berechnen wir zu einem konkreten Dreieck alle vier Winkelfunktionswerte."},
+ 4:{wav:"narration_deck50_s4_Charon.mp3",txt:"Rechnen wir die vier Winkelfunktionswerte gemeinsam durch, Schritt für Schritt."},
+ 5:{wav:"narration_deck50_s5_Charon.mp3",txt:"Im Einheitskreis mit Radius eins lässt sich jedem Winkel direkt sein Sinus und Kosinus zuordnen."},
+ 6:{wav:"narration_deck50_s6_Charon.mp3",txt:"Neben dem Gradmaß gibt es das Bogenmaß, gemessen in Radiant - besonders in der Technik gebräuchlich."},
+ 7:{wav:"narration_deck50_s7_Charon.mp3",txt:"Jetzt rechnen wir gemeinsam zwischen Gradmaß und Bogenmaß um, Schritt für Schritt."},
+ 8:{wav:"narration_deck50_s8_Charon.mp3",txt:"Arkussinus, Arkuskosinus und Arkustangens sind die Umkehrfunktionen - sie liefern aus einem Seitenverhältnis den passenden Winkel."},
+ 9:{wav:"narration_deck50_s9_Charon.mp3",txt:"Jetzt berechnen wir gemeinsam einen Steigungswinkel mit der Umkehrfunktion, Schritt für Schritt."},
+ 10:{wav:"narration_deck50_s10_Charon.mp3",txt:"Jetzt bist du dran: stelle einen Winkel per Regler ein und lies Sinus, Kosinus, Tangens und Kotangens live ab."},
+ 11:{wav:"narration_deck50_s11_Charon.mp3",txt:"Sinus schaut zur Gegenkathete hoch, Kosinus bleibt brav bei der Ankathete, Tangens teilt Gegen durch An."},
+ 12:{wav:"narration_deck50_s12_Charon.mp3",txt:"Auch die Höhe eines Turms lässt sich per Tangens berechnen, ganz ohne ihn zu betreten."},
+ 13:{wav:"narration_deck50_s13_Charon.mp3",txt:"Bevor du ins Labor gehst: schätz doch mal, bei welchem Winkel der Tangens genau eins ergibt."},
+ 14:{wav:"narration_deck50_s14_Charon.mp3",txt:"Hier noch mal alle Symbole rund um Trigonometrie im Überblick."},
+ 15:{wav:"narration_deck50_s15_Charon.mp3",txt:"Fassen wir zusammen, welcher Rechenweg zu welcher Fragestellung passt."},
+ 16:{wav:"narration_deck50_s16_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben rund um Trigonometrie."},
+ 17:{wav:"narration_deck50_s17_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst - und einen Ausblick auf das nächste Thema."},
+ 18:{wav:"narration_deck50_s18_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"sin α = Gegenkathete/Hypotenuse. In einem Dreieck mit Gegenkathete 9m und Hypotenuse 15m — wie groß ist sin α?",
+  a:["0,6","1,67","0,4","6"],r:0,
+  why:"sin α = 9/15 = 0,6."},
+ {q:"Ein Mitschüler behauptet: „Die Hypotenuse ist die längste Kathete des Dreiecks.“ Was ist daran falsch?",
+  a:["Nichts, das stimmt","Die Hypotenuse ist gar KEINE Kathete — Katheten sind nur die beiden Schenkel des rechten Winkels, die Hypotenuse liegt ihm gegenüber","Die Hypotenuse ist immer die kürzeste Seite","Kathete und Hypotenuse sind exakt dasselbe"],r:1,
+  why:"Hypotenuse und Kathete sind zwei unterschiedliche Begriffe — die Hypotenuse ist eine eigene Seite, keine dritte Kathete."},
+ {q:"tan α = a/b = 0,75. Wie berechnet man daraus den Winkel α?",
+  a:["α = tan(0,75)","α = arctan(0,75)","α = 0,75/tan","α = 1/0,75"],r:1,
+  why:"Um von einem Seitenverhältnis auf den Winkel zu schließen, braucht man die UMKEHRFUNKTION arctan, nicht tan selbst."},
+ {q:"Welches Bogenmaß entspricht einem Winkel von 180°?",
+  a:["π","2π","π/2","180"],r:0,
+  why:"x = π·180°/180° = π — der Halbkreis entspricht dem Bogenmaß π."},
+ {q:"Bei einem Steigungsschild mit 20% Steigung — welche Winkelfunktion beschreibt direkt dieses Verhältnis?",
+  a:["Sinus, da 20% der Hypotenuse entspricht","Kosinus, da 20% der Ankathete entspricht","Tangens, da die Prozentangabe das Verhältnis Gegenkathete zu Ankathete beschreibt","Keine der drei Funktionen passt hier"],r:2,
+  why:"Eine Steigungsangabe in % ist das Verhältnis von Höhenunterschied (Gegenkathete) zu horizontaler Strecke (Ankathete) — genau das ist der Tangens."}
+];
+const DECK_ID="dreiecke/deck50";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), oi===item.r);
+        answered++; if(oi===item.r) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estTrig50', {
+    frage: 'Bei welchem Winkel α (in Grad) sind Gegenkathete und Ankathete gleich lang, sodass tan α genau 1 ergibt?',
+    min: 0, max: 90, korrekt: 45, toleranz: 0,
+    begruendung: 'tan α = Gegenkathete/Ankathete = 1 genau dann, wenn beide Seiten gleich lang sind — das ist bei α=45° der Fall.'
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Rechnen mit ganzen Zahlen · Teil 2 — Multiplikation, Potenz &amp; Division</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .svggrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  @media (max-width:760px){ .svggrid{grid-template-columns:1fr;} }
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+  .confrow{display:flex;gap:8px;margin-bottom:10px;}
+  .confchip{flex:1;background:#1f2630;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:7px 10px;font-size:13px;cursor:pointer;}
+  .confchip.sure.on{background:#1e4a34;border-color:#4caf50;}
+  .confchip.unsure.on{background:#4a3d1e;border-color:var(--accent);}
+  .quizoptswrap{opacity:0.4;pointer-events:none;transition:opacity .2s;}
+  .quizoptswrap.enabled{opacity:1;pointer-events:auto;}
+  .quizwarn{margin-top:8px;padding:8px 12px;background:#3d2a12;border-left:3px solid #c0392b;border-radius:6px;font-size:min(1.9vw,14px);color:#ffd9c2;display:none;}
+  .quizwarn.show{display:block;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>RECHNEN MIT GANZEN ZAHLEN <span class="accent">· Teil 2</span></h1>
+    <h2>Multiplikation, Potenz &amp; Division</h2>
+    <p>„Minus mal Minus gibt Plus" — das hast du bestimmt schon auswendig gelernt. Aber warum ist das eigentlich so? Und wie erkennst du auf den ersten Blick, ob ein Term eine Summe oder ein Produkt ist?</p>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 3.2</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Multiplikation + Vorzeichen -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Die Multiplikation &amp; die Vorzeichenregel</h2>
+      <div class="svgbox"><div id="svgS2"></div><div class="svgcaption">Vorzeichen-Matrix: gleiche Vorzeichen → Plus, unterschiedliche Vorzeichen → Minus</div></div>
+      <div class="defbox">Bei der Multiplikation werden zwei Faktoren mit „·" verbunden. Der Term heißt Produkt. Kommutativ- und Assoziativgesetz gelten hier wieder beide.</div>
+      <ul class="bul">
+        <li>(+a)·(+b) = +ab &nbsp;·&nbsp; (−a)·(+b) = −ab &nbsp;·&nbsp; (+a)·(−b) = −ab &nbsp;·&nbsp; (−a)·(−b) = +ab</li>
+      </ul>
+      <div class="alltagbox">🏠 Zwei Richtungsumkehrungen heben sich auf: drehst du einen Schalter zweimal um (negiere zweimal), ist er wieder im Ursprungszustand.</div>
+    </div>
+  </section>
+
+  <!-- 3 Multiplikation von Termen + Notation -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Multiplikation von Termen &amp; Notation</h2>
+      <div class="svgbox"><div id="svgS3"></div><div class="svgcaption">4 Zeilen à 5 Bausteine = 20 Bausteine der Sorte ab</div></div>
+      <div class="defbox">Terme mit Variablen werden multipliziert, indem Koeffizienten und Variablen jeweils getrennt miteinander verrechnet werden: 4a · 5b = (4·5)·(a·b) = 20ab.</div>
+      <ul class="bul">
+        <li>Zwischen Zahl und Variable darf der Malpunkt weggelassen werden: 10a statt 10·a.</li>
+        <li>Der Koeffizient 1 wird nicht explizit geschrieben: a statt 1a. Der Koeffizient −1 wird als −a geschrieben, nicht als −1a.</li>
+        <li>7x · (−8y) · 4 = 7·(−8)·4 · xy = −224xy — Vorzeichen zuerst verrechnen, dann Beträge.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 4 Distributivgesetz Rechteck -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Distributivgesetz — Zahl mal Summe</h2>
+      <div class="svgbox"><div id="svgS4"></div><div class="svgcaption">Rechteck-Modell: die Gesamtfläche a·(b+c) = a·b + a·c, in zwei Teilflächen zerlegt</div></div>
+      <div class="defbox">Eine Zahl/Variable wird mit einer Klammer multipliziert, indem sie mit JEDEM Summanden in der Klammer multipliziert wird: a·(b+c) = a·b + a·c.</div>
+      <ul class="bul">
+        <li>5·(2x+4) = 5·2x + 5·4 = 10x + 20</li>
+        <li>−2·(5−y) = −2·5 + (−2)·(−y) = −10 + 2y</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 5 Multiplikation zweier Summen -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Multiplikation zweier Summen</h2>
+      <div class="svgbox"><div id="svgS5"></div><div class="svgcaption">Rechteck-Modell in 4 Feldern: (a+b)·(c+d) = ac + ad + bc + bd</div></div>
+      <div class="defbox">Zwei Klammerausdrücke werden multipliziert, indem JEDER Summand der ersten Klammer mit JEDEM Summanden der zweiten Klammer multipliziert wird: (a+b)·(c+d) = a·c + a·d + b·c + b·d.</div>
+      <ul class="bul">
+        <li>(2x+1)·(1−y) = 2x·1 + 2x·(−y) + 1·1 + 1·(−y) = 2x − 2xy + 1 − y</li>
+        <li>Steht vor der ersten Klammer ein Minuszeichen, kannst du entweder zuerst ausmultiplizieren und danach alle Vorzeichen drehen, oder zuerst die Vorzeichen in einer Klammer drehen — das Ergebnis ist gleich.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 6 Schritt-für-Schritt: Ausmultiplizieren -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Klammern ausmultiplizieren</h2>
+      <div class="defbox">Aufgabe: Multipliziere −(x+1)·(2+3y) aus und fasse zusammen.</div>
+      <div class="step" id="s6_1"><b class="lbl">Zuerst ausmultiplizieren</b> (Minuszeichen vorerst ignorieren): (x+1)·(2+3y) = 2x + 3xy + 2 + 3y.</div>
+      <div class="step" id="s6_2"><b class="lbl">Jetzt das Minuszeichen anwenden:</b> −(2x + 3xy + 2 + 3y) — Minusklammer dreht alle Vorzeichen um.</div>
+      <div class="step" id="s6_3"><b class="lbl">Vorzeichen gedreht:</b> −2x − 3xy − 2 − 3y.</div>
+      <div class="step" id="s6_4"><b class="lbl">Antwortsatz:</b> −(x+1)·(2+3y) = −2x − 3xy − 2 − 3y.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="6" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 7 Potenz -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Der Begriff Potenz</h2>
+      <div class="svggrid">
+        <div class="svgbox"><div id="svgS7"></div><div class="svgcaption">5⁴ = 5 · 5 · 5 · 5 — ein Produkt aus 4 gleichen Faktoren</div></div>
+        <div class="svgbox"><div id="svgPow7b"></div><div class="svgcaption">Gehört das Minus zur Basis? Klammer entscheidet!</div></div>
+      </div>
+      <div class="defbox">Besteht ein Produkt aus mehreren gleichen Faktoren, wird der Faktor einmal geschrieben und erhält eine Hochzahl (Exponent), die angibt, wie oft er vorkommt. xⁿ heißt Potenz, x ist die Basis, n der Exponent.</div>
+      <ul class="bul">
+        <li>2³ = 2·2·2 = 8 &nbsp;·&nbsp; x² = x·x &nbsp;·&nbsp; (x+1)⁴ = (x+1)·(x+1)·(x+1)·(x+1)</li>
+        <li>⚠️ (−2)² ≠ −2²: bei (−2)² steht das Minus MIT in der Klammer und gehört zur Basis → Ergebnis 4. Bei −2² gehört das Minus NICHT zur Basis, es wird erst nach dem Potenzieren angewendet → Ergebnis −4.</li>
+        <li>Die Potenzgesetze selbst (Rechnen MIT Potenzen) folgen in einem späteren Kapitel — hier zählt erstmal nur die Notation.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 8 Division -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Die Division</h2>
+      <div class="defbox">Dividend und Divisor werden mit „:" verbunden. Der Term heißt (unausgerechneter) Quotient, das Ergebnis (ausgerechneter) Quotient. Division ist die Umkehrung der Multiplikation — WEDER Kommutativ- NOCH Assoziativgesetz gelten, das Distributivgesetz aber schon: (a+b):c = a:c + b:c.</div>
+      <ul class="bul">
+        <li>Vorzeichenregel wie bei der Multiplikation: gleiche Vorzeichen → positiver Quotient, unterschiedliche Vorzeichen → negativer Quotient.</li>
+        <li>Sonderregeln: a:a = 1 (a≠0) &nbsp;·&nbsp; a:1 = a &nbsp;·&nbsp; a:0 ist NICHT definiert.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 9 Bestimmung der Rechenart -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Bestimmung der Rechenart</h2>
+      <div class="defbox">Die LETZTE Rechenoperation, die zum Berechnen des Termwerts ausgeführt werden muss, legt die Bezeichnung des Terms fest.</div>
+      <ul class="bul">
+        <li>10·(3+2): zuerst die Klammer (3+2=5), dann 10·5 — die LETZTE Operation ist eine Multiplikation → der Term ist ein Produkt.</li>
+        <li>3·2 − 4·3: zuerst beide Multiplikationen, dann die Subtraktion — die LETZTE Operation ist eine Subtraktion → der Term ist eine Differenz.</li>
+        <li>Bei Termen mit Variablen: einfach eine beliebige Zahl ≠ 0 einsetzen und nachrechnen, welche Operation zuletzt drankommt.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10 Eselsbrücke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Minus mal Minus ist ein doppeltes Verneinen: »Ich hab KEINE Ahnung, dass das NICHT stimmt« heißt am Ende, dass es doch stimmt — zwei Minus heben sich zu einem Plus auf."</div>
+    </div>
+  </section>
+
+  <!-- 11 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Flächenberechnung mit Distributivgesetz</h2>
+      <div class="defbox">Eine Werkstatthalle soll um einen rechteckigen Anbau (Breite 5 m, Länge x+4 m) erweitert werden. Die Fläche berechnet sich als 5·(x+4) = 5x + 20 m² — genau das Rechteck-Modell aus dieser Folie, nur mit echten Metern statt Buchstaben.</div>
+    </div>
+  </section>
+
+  <!-- 12 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>a · b</td><td>„a mal b"</td><td>Multiplikation, Ergebnis = Produktwert</td></tr>
+        <tr><td>a : b</td><td>„a durch b"</td><td>Division, Ergebnis = (ausgerechneter) Quotient</td></tr>
+        <tr><td>xⁿ</td><td>„x hoch n"</td><td>Potenz — x ist Basis, n ist Exponent</td></tr>
+        <tr><td>a·(b+c)=ab+ac</td><td>—</td><td>Distributivgesetz</td></tr>
+        <tr><td>a : 0</td><td>—</td><td>nicht definiert</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 13 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Vorzeichen-Maschine</span><span class="sub">Rätselmodus: Finde den Vorzeichenfehler</span></div>
+    <iframe allow="autoplay" data-src="vorzeichen8_labor.html"></iframe>
+  </section>
+
+  <!-- 14 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Begriff</th><th>Kernaussage</th></tr>
+      <tr><td>Multiplikation</td><td>Kommutativ- UND Assoziativgesetz gelten</td></tr>
+      <tr><td>Vorzeichenregel</td><td>gleiche VZ → Plus, unterschiedliche VZ → Minus (Mult. &amp; Div.)</td></tr>
+      <tr><td>Distributivgesetz</td><td>a·(b+c) = ab+ac — Rechteck-Modell</td></tr>
+      <tr><td>Potenz</td><td>xⁿ = x·x·…·x (n-mal), x=Basis, n=Exponent</td></tr>
+      <tr><td>Division</td><td>weder kommutativ noch assoziativ, a:0 nicht definiert</td></tr>
+      <tr><td>Rechenart bestimmen</td><td>die LETZTE Operation entscheidet</td></tr>
+    </table>
+  </section>
+
+  <!-- 15 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Berechne (−4)·(−6) und (−4)·6.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>(−4)·(−6) = +24 · (−4)·6 = −24</details>
+        </li>
+        <li style="margin-top:10px;">Multipliziere aus: 3·(2x − 5).
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>3·(2x−5) = 6x − 15</details>
+        </li>
+        <li style="margin-top:10px;">Bestimme die Rechenart von 4 − 2·5.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>Erst 2·5=10, dann 4−10 — letzte Operation ist eine Subtraktion → der Term ist eine Differenz.</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 16 Prüfungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Die Vorzeichenregel bei Multiplikation und Division korrekt anwenden.</b></li>
+        <li><b>Das Distributivgesetz anwenden</b> können — Zahl mal Summe UND Summe mal Summe.</li>
+        <li><b>Basis und Exponent einer Potenz benennen</b> können.</li>
+        <li><b>Die Rechenart eines Terms anhand der letzten Operation bestimmen</b> können.</li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">Typische Prüfungsfrage: <i>„Welche Rechenart stellt der Term 2·(3+4) dar — trotz des Pluszeichens in der Klammer?"</i> → Ein Produkt: die Klammer wird zuerst berechnet (3+4=7), die letzte auszuführende Operation ist aber die Multiplikation 2·7 — deshalb ist der GESAMTE Term ein Produkt, nicht eine Summe.</div>
+    </div>
+  </section>
+
+  <!-- 17 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+// === SVG-Helfer ===
+// Vorzeichen-Matrix 2x2
+function buildSignMatrixSVG(){
+  const cell=76, x0=70, y0=40;
+  const W=x0+2*cell+16, H=y0+2*cell+16;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:320px;height:auto;display:block;margin:0 auto;">';
+  const rows=['+','−'], cols=['+','−'];
+  s+='<text x="'+(x0+cell)+'" y="18" text-anchor="middle" font-size="14" fill="#9aa4b2">2. Faktor</text>';
+  s+='<text x="14" y="'+(y0+cell)+'" text-anchor="middle" font-size="14" fill="#9aa4b2" transform="rotate(-90 14 '+(y0+cell)+')">1. Faktor</text>';
+  cols.forEach((c,ci)=>{ s+='<text x="'+(x0+ci*cell+cell/2)+'" y="'+(y0-8)+'" text-anchor="middle" font-size="18" font-weight="700" fill="#5fd0c7">'+c+'</text>'; });
+  rows.forEach((r,ri)=>{ s+='<text x="'+(x0-14)+'" y="'+(y0+ri*cell+cell/2+6)+'" text-anchor="middle" font-size="18" font-weight="700" fill="#5fd0c7">'+r+'</text>'; });
+  const result=[['+','−'],['−','+']];
+  rows.forEach((r,ri)=>{
+    cols.forEach((c,ci)=>{
+      const x=x0+ci*cell, y=y0+ri*cell;
+      const val=result[ri][ci];
+      const fill=(val==='+')?'rgba(76,175,80,0.20)':'rgba(192,57,43,0.20)';
+      const stroke=(val==='+')?'#4caf50':'#c0392b';
+      s+='<rect x="'+x+'" y="'+y+'" width="'+cell+'" height="'+cell+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.5"/>';
+      s+='<text x="'+(x+cell/2)+'" y="'+(y+cell/2+9)+'" text-anchor="middle" font-size="26" font-weight="700" fill="'+stroke+'">'+val+'</text>';
+    });
+  });
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgS2').innerHTML=buildSignMatrixSVG();
+
+// Rechteck-Modell fuer a*(b+c)
+function buildRectModelSVG(){
+  const x0=40, y0=30, hB=90, wB=100, wC=60;
+  const W=x0+wB+wC+40, H=y0+hB+40;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:340px;height:auto;display:block;margin:0 auto;">';
+  s+='<rect x="'+x0+'" y="'+y0+'" width="'+wB+'" height="'+hB+'" fill="rgba(242,166,60,0.22)" stroke="#f2a63c" stroke-width="2"/>';
+  s+='<text x="'+(x0+wB/2)+'" y="'+(y0+hB/2+5)+'" text-anchor="middle" font-size="16" font-weight="700" fill="#f2a63c">a·b</text>';
+  s+='<rect x="'+(x0+wB)+'" y="'+y0+'" width="'+wC+'" height="'+hB+'" fill="rgba(95,208,199,0.22)" stroke="#5fd0c7" stroke-width="2"/>';
+  s+='<text x="'+(x0+wB+wC/2)+'" y="'+(y0+hB/2+5)+'" text-anchor="middle" font-size="16" font-weight="700" fill="#5fd0c7">a·c</text>';
+  s+='<text x="'+(x0-16)+'" y="'+(y0+hB/2+5)+'" text-anchor="middle" font-size="15" fill="#9aa4b2" transform="rotate(-90 '+(x0-16)+' '+(y0+hB/2+5)+')">a</text>';
+  s+='<text x="'+(x0+wB/2)+'" y="'+(y0+hB+20)+'" text-anchor="middle" font-size="15" fill="#9aa4b2">b</text>';
+  s+='<text x="'+(x0+wB+wC/2)+'" y="'+(y0+hB+20)+'" text-anchor="middle" font-size="15" fill="#9aa4b2">c</text>';
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgS4').innerHTML=buildRectModelSVG();
+
+// Potenz-Diagramm: Basis/Exponent beschriftet
+function buildPowerSVG(){
+  const W=220, H=110;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:240px;height:auto;display:block;margin:0 auto;">';
+  s+='<text x="70" y="60" font-size="46" font-weight="700" fill="#f2a63c">5</text>';
+  s+='<text x="102" y="34" font-size="26" font-weight="700" fill="#5fd0c7">4</text>';
+  s+='<line x1="60" y1="76" x2="122" y2="76" stroke="#4a5568" stroke-width="1.5"/>';
+  s+='<text x="60" y="96" font-size="13" fill="#9aa4b2">Basis</text>';
+  s+='<line x1="60" y1="82" x2="60" y2="90" stroke="#4a5568" stroke-width="1.5"/>';
+  s+='<text x="130" y="30" font-size="13" fill="#9aa4b2">Exponent</text>';
+  s+='<line x1="118" y1="20" x2="118" y2="26" stroke="#4a5568" stroke-width="1.5"/>';
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgS7').innerHTML=buildPowerSVG();
+
+// === SVG: Bausteine-Grafik fuer Koeffizient*Variable (4a * 5b = 20ab) ===
+function buildCoeffGridSVG(rows,cols,rowLabel,colLabel,resultLabel){
+  const cs=20, x0=44, y0=26;
+  let s='';
+  s+='<text x="'+(x0+cols*cs/2)+'" y="14" text-anchor="middle" font-size="12" font-weight="700" fill="#5fd0c7">'+colLabel+'</text>';
+  s+='<text x="14" y="'+(y0+rows*cs/2)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#5fd0c7" transform="rotate(-90 14 '+(y0+rows*cs/2)+')">'+rowLabel+'</text>';
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const x=x0+c*cs, y=y0+r*cs;
+      s+='<rect x="'+x+'" y="'+y+'" width="'+(cs-2)+'" height="'+(cs-2)+'" rx="2" fill="rgba(242,166,60,0.22)" stroke="#f2a63c" stroke-width="1"/>';
+    }
+  }
+  const W=x0+cols*cs+10, H=y0+rows*cs+30;
+  s+='<text x="'+(W/2)+'" y="'+(H-6)+'" text-anchor="middle" font-size="14" font-weight="700" fill="#f2a63c">'+resultLabel+'</text>';
+  return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:260px;height:auto;display:block;margin:0 auto;">'+s+'</svg>';
+}
+document.getElementById('svgS3').innerHTML=buildCoeffGridSVG(4,5,'4a','5b','4a · 5b = 20ab');
+
+// === SVG: Rechteck-Modell 2x2 fuer (a+b)*(c+d) ===
+function buildRect2SVG(){
+  const x0=50,y0=30, wC=90, wD=70, hA=70, hB=55;
+  const W=x0+wC+wD+30, H=y0+hA+hB+30;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:340px;height:auto;display:block;margin:0 auto;">';
+  s+='<rect x="'+x0+'" y="'+y0+'" width="'+wC+'" height="'+hA+'" fill="rgba(242,166,60,0.22)" stroke="#f2a63c" stroke-width="1.6"/>';
+  s+='<text x="'+(x0+wC/2)+'" y="'+(y0+hA/2+5)+'" text-anchor="middle" font-size="14" font-weight="700" fill="#f2a63c">a·c</text>';
+  s+='<rect x="'+(x0+wC)+'" y="'+y0+'" width="'+wD+'" height="'+hA+'" fill="rgba(95,208,199,0.22)" stroke="#5fd0c7" stroke-width="1.6"/>';
+  s+='<text x="'+(x0+wC+wD/2)+'" y="'+(y0+hA/2+5)+'" text-anchor="middle" font-size="14" font-weight="700" fill="#5fd0c7">a·d</text>';
+  s+='<rect x="'+x0+'" y="'+(y0+hA)+'" width="'+wC+'" height="'+hB+'" fill="rgba(111,207,111,0.22)" stroke="#6fcf6f" stroke-width="1.6"/>';
+  s+='<text x="'+(x0+wC/2)+'" y="'+(y0+hA+hB/2+5)+'" text-anchor="middle" font-size="14" font-weight="700" fill="#6fcf6f">b·c</text>';
+  s+='<rect x="'+(x0+wC)+'" y="'+(y0+hA)+'" width="'+wD+'" height="'+hB+'" fill="rgba(192,57,43,0.22)" stroke="#e07a68" stroke-width="1.6"/>';
+  s+='<text x="'+(x0+wC+wD/2)+'" y="'+(y0+hA+hB/2+5)+'" text-anchor="middle" font-size="14" font-weight="700" fill="#e07a68">b·d</text>';
+  s+='<text x="'+(x0-14)+'" y="'+(y0+hA/2+5)+'" text-anchor="middle" font-size="13" fill="#9aa4b2" transform="rotate(-90 '+(x0-14)+' '+(y0+hA/2+5)+')">a</text>';
+  s+='<text x="'+(x0-14)+'" y="'+(y0+hA+hB/2+5)+'" text-anchor="middle" font-size="13" fill="#9aa4b2" transform="rotate(-90 '+(x0-14)+' '+(y0+hA+hB/2+5)+')">b</text>';
+  s+='<text x="'+(x0+wC/2)+'" y="'+(y0+hA+hB+18)+'" text-anchor="middle" font-size="13" fill="#9aa4b2">c</text>';
+  s+='<text x="'+(x0+wC+wD/2)+'" y="'+(y0+hA+hB+18)+'" text-anchor="middle" font-size="13" fill="#9aa4b2">d</text>';
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgS5').innerHTML=buildRect2SVG();
+
+// === SVG: Potenz-Vergleich (−2)² vs −2² ===
+function buildPowerCompareSVG(){
+  const W=360,H=140;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:380px;height:auto;display:block;margin:0 auto;">';
+  s+='<rect x="8" y="8" width="164" height="122" rx="10" fill="rgba(76,175,80,0.12)" stroke="#4caf50" stroke-width="1.6"/>';
+  s+='<text x="90" y="30" text-anchor="middle" font-size="22" font-weight="700" fill="#e6edf3">(−2)²</text>';
+  s+='<text x="90" y="52" text-anchor="middle" font-size="10.5" fill="#9aa4b2">Basis = −2 (ganze Klammer)</text>';
+  s+='<text x="90" y="80" text-anchor="middle" font-size="14" fill="#e6edf3">(−2)·(−2)</text>';
+  s+='<text x="90" y="108" text-anchor="middle" font-size="20" font-weight="700" fill="#4caf50">= 4</text>';
+  s+='<rect x="188" y="8" width="164" height="122" rx="10" fill="rgba(192,57,43,0.12)" stroke="#c0392b" stroke-width="1.6"/>';
+  s+='<text x="270" y="30" text-anchor="middle" font-size="22" font-weight="700" fill="#e6edf3">−2²</text>';
+  s+='<text x="270" y="52" text-anchor="middle" font-size="10.5" fill="#9aa4b2">Basis = 2 (Minus NICHT dabei)</text>';
+  s+='<text x="270" y="80" text-anchor="middle" font-size="14" fill="#e6edf3">−(2·2)</text>';
+  s+='<text x="270" y="108" text-anchor="middle" font-size="20" font-weight="700" fill="#c0392b">= −4</text>';
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgPow7b').innerHTML=buildPowerCompareSVG();
+
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Die Multiplikation & die Vorzeichenregel", "Multiplikation von Termen & Notation", "Distributivgesetz — Zahl mal Summe", "Multiplikation zweier Summen", "📐 Schritt für Schritt: Klammern ausmultiplizieren", "Der Begriff Potenz", "Die Division", "Bestimmung der Rechenart", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Flächenberechnung", "Symbol-Legende", "🧪 Vorzeichen-Maschine", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=19;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck8_s1_Charon.mp3",txt:"Rechnen mit ganzen Zahlen, Teil zwei. Minus mal Minus gibt Plus - das hast du bestimmt schon auswendig gelernt. Aber warum ist das eigentlich so? Und wie erkennst du auf den ersten Blick, ob ein Term eine Summe oder ein Produkt ist? Genau darum geht's jetzt."},
+ 2:{wav:"narration_deck8_s2_Charon.mp3",txt:"Schau auf die Vorzeichen-Matrix: haben beide Faktoren dasselbe Vorzeichen, kommt ein Plus heraus. Haben sie unterschiedliche Vorzeichen, kommt ein Minus heraus. Kommutativ- und Assoziativgesetz gelten bei der Multiplikation übrigens genau wie bei der Addition."},
+ 3:{wav:"narration_deck8_s3_Charon.mp3",txt:"Terme mit Variablen multiplizierst du, indem du Zahlen und Buchstaben getrennt voneinander verrechnest. Und ein paar Schreibregeln: der Malpunkt zwischen Zahl und Buchstabe darf weg, und die Eins als Koeffizient wird nie hingeschrieben."},
+ 4:{wav:"narration_deck8_s4_Charon.mp3",txt:"Schau auf das Rechteck: die Gesamtfläche a mal die Klammer b plus c lässt sich in zwei kleinere Rechtecke aufteilen - a mal b und a mal c. Genau das ist das Distributivgesetz, ganz anschaulich als Fläche."},
+ 5:{wav:"narration_deck8_s5_Charon.mp3",txt:"Werden zwei Klammern miteinander multipliziert, muss JEDER Summand der ersten Klammer mit JEDEM Summanden der zweiten Klammer verrechnet werden - vier Multiplikationen insgesamt bei zwei mal zwei Summanden."},
+ 6:{wav:"narration_deck8_s6_Charon.mp3",txt:"Jetzt üben wir das an einem Beispiel mit einem Minuszeichen davor. Überleg schon mal: multiplizierst du zuerst aus oder drehst du zuerst die Vorzeichen? Beides führt zum selben Ergebnis - klick dich durch die Schritte."},
+ 7:{wav:"narration_deck8_s7_Charon.mp3",txt:"Besteht ein Produkt aus lauter gleichen Faktoren, schreibst du den Faktor nur einmal und hängst eine Hochzahl dran. Fünf hoch vier ist die Basis fünf, viermal mit sich selbst multipliziert."},
+ 8:{wav:"narration_deck8_s8_Charon.mp3",txt:"Bei der Division gilt dieselbe Vorzeichenregel wie bei der Multiplikation. Und drei Sonderfälle solltest du auswendig können: a durch a ist eins, a durch eins ist a, und a durch null ist schlicht nicht definiert."},
+ 9:{wav:"narration_deck8_s9_Charon.mp3",txt:"Um die Rechenart eines Terms zu bestimmen, schaust du auf die LETZTE Operation, die ausgeführt werden muss. Zehn mal die Klammer drei plus zwei ist trotz der Klammer ein Produkt, weil die Multiplikation ganz am Ende steht."},
+ 10:{wav:"narration_deck8_s10_Charon.mp3",txt:"Merk's dir so: zwei Verneinungen heben sich auf, genau wie zwei Minuszeichen sich zu einem Plus aufheben."},
+ 11:{wav:"narration_deck8_s11_Charon.mp3",txt:"Eine Werkstatthalle wird um einen rechteckigen Anbau erweitert - fünf Meter mal die Klammer x plus vier Meter. Genau dasselbe Rechteck-Modell wie eben, nur mit echten Metern."},
+ 12:{wav:"narration_deck8_s12_Charon.mp3",txt:"Hier noch mal alle Symbole dieser Folie im Überblick."},
+ 13:{wav:"narration_deck8_s13_Charon.mp3",txt:"Jetzt bist du dran: lass Terme durch die Vorzeichen-Maschine laufen und sag das Ergebnis-Vorzeichen voraus, bevor du es aufdeckst."},
+ 14:{wav:"narration_deck8_s14_Charon.mp3",txt:"Fassen wir zusammen: bei Multiplikation und Division entscheidet allein das Vorzeichen-Paar über das Ergebnis-Vorzeichen, und die letzte Rechenoperation bestimmt immer die Termart."},
+ 15:{wav:"narration_deck8_s15_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben zu Vorzeichen, Ausklammern und Rechenart."},
+ 16:{wav:"narration_deck8_s16_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst - inklusive einer klassischen Falle mit einer Klammer trotz Pluszeichen."},
+ 17:{wav:"narration_deck8_s17_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"Was ergibt (−7) · (−3)?",
+  a:["−21","21","−10","10"],r:1,
+  why:"Gleiche Vorzeichen (beide minus) → das Ergebnis ist positiv: (−7)·(−3)=21."},
+ {q:"Was ergibt (−4) · 6?",
+  a:["24","−24","−10","10"],r:1,
+  why:"Unterschiedliche Vorzeichen → das Ergebnis ist negativ: (−4)·6=−24."},
+ {q:"Multipliziere aus: 4·(3x − 2).",
+  a:["12x − 2","12x − 8","7x − 2","3x − 8"],r:1,
+  why:"4·(3x−2) = 4·3x + 4·(−2) = 12x − 8."},
+ {q:"Welche Rechenart stellt der Term 2·(3+4) dar?",
+  a:["Summe, wegen des Pluszeichens in der Klammer","Produkt, weil die letzte auszuführende Operation eine Multiplikation ist","Differenz","Das lässt sich nicht bestimmen"],r:1,
+  why:"Die Klammer wird zuerst berechnet, aber die LETZTE Operation ist die Multiplikation 2·7 — der ganze Term ist also ein Produkt."},
+ {q:"Was gilt für a : 0?",
+  a:["Das Ergebnis ist 0","Das Ergebnis ist 1","Nicht definiert","Das Ergebnis ist a"],r:2,
+  why:"Eine Division durch 0 ist mathematisch nicht definiert."},
+ {q:"In 5⁴ — was ist die 4?",
+  a:["Die Basis","Der Exponent","Das Produkt","Der Koeffizient"],r:1,
+  why:"Bei xⁿ ist x die Basis und n der Exponent — hier ist 4 der Exponent, 5 die Basis."}
+];
+const DECK_ID="rechnen/deck8";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, conf:conf, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+
+    let sureChoice='unsure';
+    const confrow=document.createElement('div'); confrow.className='confrow';
+    const sureBtn=document.createElement('button'); sureBtn.className='confchip sure'; sureBtn.textContent='🟢 sicher'; sureBtn.type='button';
+    const unsureBtn=document.createElement('button'); unsureBtn.className='confchip unsure'; unsureBtn.textContent='🟡 unsicher'; unsureBtn.type='button';
+    confrow.appendChild(sureBtn); confrow.appendChild(unsureBtn);
+    box.appendChild(confrow);
+
+    const optsWrap=document.createElement('div'); optsWrap.className='quizoptswrap';
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    const warn=document.createElement('div'); warn.className='quizwarn'; warn.textContent='⚠️ Genau die merken sich die 5 Fragen des Tages.';
+
+    function chooseSure(which){
+      sureChoice=which;
+      sureBtn.classList.toggle('on', which==='sure');
+      unsureBtn.classList.toggle('on', which==='unsure');
+      optsWrap.classList.add('enabled');
+    }
+    sureBtn.onclick=()=>chooseSure('sure');
+    unsureBtn.onclick=()=>chooseSure('unsure');
+
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        const ok=(oi===item.r), conf=(sureChoice==='sure');
+        optsWrap.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(!ok) b.classList.add('wrong');
+        why.classList.add('show');
+        if(conf && !ok) warn.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), ok, conf);
+        answered++; if(ok) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      optsWrap.appendChild(b);
+    });
+    box.appendChild(optsWrap);
+    box.appendChild(why);
+    box.appendChild(warn);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

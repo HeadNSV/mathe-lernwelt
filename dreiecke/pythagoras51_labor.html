@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Pythagoras-Werkstatt</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:16px 22px 40px;max-width:900px;margin:0 auto;}
+  h2{margin:0 0 4px;font-size:22px;}
+  .lead{color:var(--muted);font-size:15px;margin:0 0 14px;}
+  .modebar{display:flex;gap:8px;margin-bottom:14px;}
+  .modebtn{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 16px;font-size:15px;cursor:pointer;}
+  .modebtn.active{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  .panel{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:14px;}
+  .row{display:flex;align-items:center;gap:12px;margin:10px 0;flex-wrap:wrap;}
+  .row label{min-width:90px;font-size:15px;}
+  input[type=range]{flex:1;min-width:180px;}
+  .val{font-weight:700;color:var(--accent);min-width:40px;text-align:right;}
+  #svgHost{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;}
+  .eqline{font-size:17px;text-align:center;margin-top:10px;font-weight:700;color:var(--accent);}
+  .mission{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:10px 16px;margin-top:10px;font-size:15px;}
+  .mission.solved{background:#1c3d24;border-left-color:#4caf50;}
+  .triplecard{background:#1f2630;border-radius:8px;padding:10px 14px;margin:8px 0;}
+  .triplebtns{display:flex;gap:8px;margin-top:6px;}
+  .tbtn{flex:1;background:#151b24;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:14px;cursor:pointer;}
+  .tbtn:hover{background:#283041;}
+  .tbtn.correct{background:#1c3d24;border-color:#4caf50;}
+  .tbtn.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .tbtn:disabled{cursor:default;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h2>🧪 Pythagoras-Werkstatt</h2>
+  <p class="lead">Vergleiche Flächen per Regler — oder löse das Rechtwinkligkeits-Rätsel.</p>
+  <div class="modebar">
+    <button class="modebtn active" id="btnModeA">Modus: Flächenvergleich</button>
+    <button class="modebtn" id="btnModeB">Modus: Rechtwinkligkeits-Rätsel</button>
+  </div>
+
+  <div class="panel" id="panelA">
+    <div class="row">
+      <label for="aSlide">Kathete a</label>
+      <input type="range" id="aSlide" min="2" max="10" step="1" value="6">
+      <span class="val" id="aVal">6</span>
+    </div>
+    <div class="row">
+      <label for="bSlide">Kathete b</label>
+      <input type="range" id="bSlide" min="2" max="10" step="1" value="8">
+      <span class="val" id="bVal">8</span>
+    </div>
+    <div id="svgHostA"></div>
+    <div class="eqline" id="eqLine"></div>
+    <div class="mission" id="missionA">🎯 Mission: Probiere mindestens 3 verschiedene Kathetenpaare aus — bestätige jedes Mal a²+b²=c².</div>
+  </div>
+
+  <div class="panel" id="panelB" style="display:none;">
+    <div id="tripleHost"></div>
+    <div class="mission" id="missionB">🎯 Mission: Klassifiziere alle 5 Seitentripel richtig als rechtwinklig oder nicht rechtwinklig.</div>
+  </div>
+</div>
+
+<script>
+function toX(x,ox,sx){ return ox+x*sx; }
+function toY(y,oy,sy){ return oy-y*sy; }
+
+// ===== Modus A: Flaechenvergleich =====
+let a=6, b=8;
+let triedSetA=new Set();
+let missionASolved=false;
+function renderA(){
+  const c=Math.sqrt(a*a+b*b);
+  const w=340,h=220, s=12, pad=14;
+  const ox=20, oy=h-pad;
+  const tri=[[toX(0,ox,s),toY(0,oy,s)], [toX(a,ox,s),toY(0,oy,s)], [toX(a,ox,s),toY(b,oy,s)]];
+  let sv='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;max-width:380px;height:auto;display:block;margin:0 auto;">';
+  sv+='<polygon points="'+tri.map(p=>p.join(',')).join(' ')+'" fill="none" stroke="#5fd0c7" stroke-width="2.4"/>';
+  sv+='<rect x="'+(ox-a*s)+'" y="'+(oy-a*s)+'" width="'+(a*s)+'" height="'+(a*s)+'" fill="rgba(95,208,199,0.15)" stroke="#5fd0c7" stroke-width="1.2"/>';
+  sv+='<rect x="'+toX(a,ox,s)+'" y="'+toY(b,oy,s)+'" width="'+(b*s)+'" height="'+(b*s)+'" fill="rgba(242,166,60,0.15)" stroke="#f2a63c" stroke-width="1.2"/>';
+  sv+='<text x="'+(ox-a*s/2)+'" y="'+(oy-a*s/2)+'" fill="#5fd0c7" font-size="13" text-anchor="middle">a²='+(a*a)+'</text>';
+  sv+='<text x="'+(toX(a,ox,s)+b*s/2)+'" y="'+(toY(b,oy,s)+b*s/2)+'" fill="#f2a63c" font-size="13" text-anchor="middle">b²='+(b*b)+'</text>';
+  sv+='</svg>';
+  document.getElementById('svgHostA').innerHTML=sv;
+  document.getElementById('eqLine').textContent='a²+b² = '+(a*a)+'+'+(b*b)+' = '+(a*a+b*b)+'  ·  c² = '+(a*a+b*b)+'  →  c = √'+(a*a+b*b)+' ≈ '+c.toFixed(2);
+  triedSetA.add(a+'_'+b);
+  const box=document.getElementById('missionA');
+  if(triedSetA.size>=3 && !missionASolved) missionASolved=true;
+  if(missionASolved){
+    box.classList.add('solved');
+    box.innerHTML='✅ In jedem Fall gilt a²+b²=c² — du hast '+triedSetA.size+' Kathetenpaare bestätigt.';
+  } else {
+    box.innerHTML='🎯 Mission: Probiere mindestens 3 verschiedene Kathetenpaare aus — bestätige jedes Mal a²+b²=c². ('+triedSetA.size+'/3)';
+  }
+}
+document.getElementById('aSlide').addEventListener('input', e=>{ a=parseInt(e.target.value); document.getElementById('aVal').textContent=a; renderA(); });
+document.getElementById('bSlide').addEventListener('input', e=>{ b=parseInt(e.target.value); document.getElementById('bVal').textContent=b; renderA(); });
+renderA();
+
+// ===== Modus B: Rechtwinkligkeits-Raetsel =====
+const TRIPLES=[
+  {t:[3,4,5], ok:true},
+  {t:[5,6,8], ok:false},
+  {t:[6,8,10], ok:true},
+  {t:[7,8,9], ok:false},
+  {t:[8,15,17], ok:true}
+];
+let classified={};
+function renderB(){
+  const host=document.getElementById('tripleHost');
+  host.innerHTML='';
+  TRIPLES.forEach((tr,ti)=>{
+    const card=document.createElement('div'); card.className='triplecard';
+    const [x,y,z]=tr.t;
+    card.innerHTML='<b>Tripel '+(ti+1)+': '+x+' - '+y+' - '+z+'</b>';
+    const btns=document.createElement('div'); btns.className='triplebtns';
+    ['Rechtwinklig','Nicht rechtwinklig'].forEach((label,li)=>{
+      const isOkChoice = (li===0);
+      const btn=document.createElement('button'); btn.className='tbtn'; btn.textContent=label;
+      btn.onclick=()=>{
+        if(classified[ti]!==undefined) return;
+        const correct = (isOkChoice===tr.ok);
+        classified[ti]=correct;
+        btns.querySelectorAll('.tbtn').forEach(b=>b.disabled=true);
+        btn.classList.add(correct?'correct':'wrong');
+        if(!correct){
+          const rightLabel = tr.ok?'Rechtwinklig':'Nicht rechtwinklig';
+          btns.querySelectorAll('.tbtn').forEach(b=>{ if(b.textContent===rightLabel) b.classList.add('correct'); });
+        }
+        updateMissionB();
+      };
+      btns.appendChild(btn);
+    });
+    card.appendChild(btns);
+    host.appendChild(card);
+  });
+  updateMissionB();
+}
+function updateMissionB(){
+  const box=document.getElementById('missionB');
+  const done=Object.keys(classified).length;
+  const correct=Object.values(classified).filter(v=>v).length;
+  const allCorrect = done===TRIPLES.length && correct===TRIPLES.length;
+  if(allCorrect){
+    box.classList.add('solved');
+    box.innerHTML='✅ Mission erfüllt: alle 5 Tripel richtig klassifiziert!';
+  } else {
+    box.classList.remove('solved');
+    box.innerHTML='🎯 Mission: Klassifiziere alle 5 Seitentripel richtig als rechtwinklig oder nicht rechtwinklig. ('+correct+'/'+TRIPLES.length+' richtig, '+done+'/'+TRIPLES.length+' bearbeitet)';
+  }
+}
+renderB();
+
+// ===== Modus-Umschaltung =====
+const btnModeA=document.getElementById('btnModeA'), btnModeB=document.getElementById('btnModeB');
+const panelA=document.getElementById('panelA'), panelB=document.getElementById('panelB');
+let mode='flaeche';
+btnModeA.onclick=()=>{ mode='flaeche'; btnModeA.classList.add('active'); btnModeB.classList.remove('active'); panelA.style.display='block'; panelB.style.display='none'; };
+btnModeB.onclick=()=>{ mode='raetsel'; btnModeB.classList.add('active'); btnModeA.classList.remove('active'); panelA.style.display='none'; panelB.style.display='block'; };
+
+window.LAB={
+  state(){
+    const done=Object.keys(classified).length;
+    const correct=Object.values(classified).filter(v=>v).length;
+    return {
+      mode: mode,
+      a: a, b: b,
+      triedCountA: triedSetA.size,
+      missionASolved: missionASolved,
+      classifiedCount: done,
+      correctCount: correct,
+      missionBSolved: done===TRIPLES.length && correct===TRIPLES.length
+    };
+  },
+  setMode(m){ if(m==='flaeche') btnModeA.onclick(); else btnModeB.onclick(); },
+  setAB(av,bv){
+    a=av; b=bv;
+    document.getElementById('aSlide').value=av; document.getElementById('aVal').textContent=av;
+    document.getElementById('bSlide').value=bv; document.getElementById('bVal').textContent=bv;
+    renderA();
+  },
+  classify(tripleIdx, choice){
+    const host=document.getElementById('tripleHost');
+    const card=host.children[tripleIdx];
+    const btns=card.querySelectorAll('.tbtn');
+    btns[choice==='rechtwinklig'?0:1].click();
+  },
+  tripleCount(){ return TRIPLES.length; }
+};
+</script>
+</body>
+</html>

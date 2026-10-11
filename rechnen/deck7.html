@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Rechnen mit ganzen Zahlen · Teil 1 — Addition &amp; Subtraktion</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .svggrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  @media (max-width:760px){ .svggrid{grid-template-columns:1fr;} }
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+  .confrow{display:flex;gap:8px;margin-bottom:10px;}
+  .confchip{flex:1;background:#1f2630;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:7px 10px;font-size:13px;cursor:pointer;}
+  .confchip.sure.on{background:#1e4a34;border-color:#4caf50;}
+  .confchip.unsure.on{background:#4a3d1e;border-color:var(--accent);}
+  .quizoptswrap{opacity:0.4;pointer-events:none;transition:opacity .2s;}
+  .quizoptswrap.enabled{opacity:1;pointer-events:auto;}
+  .quizwarn{margin-top:8px;padding:8px 12px;background:#3d2a12;border-left:3px solid #c0392b;border-radius:6px;font-size:min(1.9vw,14px);color:#ffd9c2;display:none;}
+  .quizwarn.show{display:block;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>RECHNEN MIT GANZEN ZAHLEN <span class="accent">· Teil 1</span></h1>
+    <h2>Addition &amp; Subtraktion in ℤ</h2>
+    <p>Dein Kontostand zeigt −80 €, dann bucht die Bank +120 € Gehalt. Auf welcher Zahl landest du? Und warum wird aus „minus minus 5" auf einmal ein Plus? Die Antwort steckt im Zahlenstrahl.</p>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 3.1</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Addition -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Die Addition</h2>
+      <div class="svgbox"><div id="svgS2"></div><div class="svgcaption">a + b: beide Pfeile zeigen in dieselbe Richtung, der Ergebnis-Pfeil reiht sie aneinander</div></div>
+      <div class="defbox">Bei der Addition werden zwei Summanden mit dem Rechenzeichen „+" verbunden. Der Term heißt Summe, das Ergebnis Summenwert.</div>
+      <ul class="bul">
+        <li><b>Kommutativgesetz:</b> a + b = b + a — die Reihenfolge der Summanden ist egal.</li>
+        <li><b>Assoziativgesetz:</b> (a + b) + c = a + (b + c) — die Klammerposition ist egal.</li>
+      </ul>
+      <div class="alltagbox">🏠 Ob du erst 40 € und dann 15 € auf dein Konto einzahlst oder umgekehrt — der Kontostand danach ist identisch.</div>
+    </div>
+  </section>
+
+  <!-- 3 gleichartige Terme addieren -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Gleichartige Terme addieren</h2>
+      <div class="svgbox"><div id="svgS3"></div><div class="svgcaption">Bausteine derselben Sorte werden einfach gezählt: 5a + 10a = 15a</div></div>
+      <div class="defbox">Terme mit derselben Variable heißen gleichartige Terme. Zwei gleichartige Terme werden addiert, indem ihre Koeffizienten addiert werden — die Variable bleibt unverändert.</div>
+      <ul class="bul">
+        <li>5a + 10a = (5+10)a = 15a</li>
+        <li>7b + 3b = (7+3)b = 10b</li>
+        <li>Stehen nicht gleichartige Terme in einer Summe, dürfen NUR die gleichartigen Terme untereinander verrechnet werden: 3a + 7b + 10a + 2b = 13a + 9b.</li>
+      </ul>
+      <div class="alltagbox">🏠 Wie beim Sortieren von Schrauben nach Größe vor dem Abzählen: erst nach „Sorte" (Variable) gruppieren, dann erst zählen (addieren).</div>
+    </div>
+  </section>
+
+  <!-- 4 Subtraktion -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Die Subtraktion</h2>
+      <div class="svggrid">
+        <div class="svgbox"><div id="svgS4"></div><div class="svgcaption">−(a + b): beide Pfeile zeigen nach links, das Ergebnis ist ebenfalls negativ</div></div>
+        <div class="svgbox"><div id="svgVZ4"></div><div class="svgcaption">Dasselbe „−"-Symbol, zwei Rollen: Vorzeichen einer Zahl vs. Rechenzeichen zwischen zwei Zahlen</div></div>
+      </div>
+      <div class="defbox">Bei der Subtraktion werden Minuend und Subtrahend mit dem Rechenzeichen „−" verbunden. Der Term heißt Differenz.</div>
+      <ul class="bul">
+        <li>⚠️ Bei der Subtraktion gelten WEDER Kommutativ- NOCH Assoziativgesetz. Gegenbeispiel: 5−3 = 2, aber 3−5 = −2 — das ist NICHT dasselbe.</li>
+        <li>Gleichartige Terme werden subtrahiert wie addiert — nur die Koeffizienten werden verrechnet: 13a − 4a = 9a.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 5 Klammern auflösen -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Plus- und Minusklammern auflösen</h2>
+      <div class="svgbox"><div id="svgS5"></div><div class="svgcaption">Vorher/Nachher: bei der Minusklammer dreht sich das rot markierte Vorzeichen um</div></div>
+      <div class="defbox">Eine Plusklammer (Rechenzeichen + direkt davor) darf einfach weggelassen werden — sie ändert nichts am Wert. Eine Minusklammer (Rechenzeichen − direkt davor) dreht beim Auflösen ALLE Vorzeichen der Klammerglieder um.</div>
+      <ul class="bul">
+        <li>Plusklammer: a + (b + c) = a + b + c &nbsp;·&nbsp; a + (b − c) = a + b − c</li>
+        <li>Minusklammer: a − (b + c) = a − b − c &nbsp;·&nbsp; a − (b − c) = a − b + c</li>
+      </ul>
+      <div class="alltagbox">🏠 Denk an die Kontoauszug-Buchung „−(Rückbuchung von 20 € Gutschrift)" — die Rückbuchung einer Gutschrift wird selbst zur Belastung, das Vorzeichen dreht sich.</div>
+    </div>
+  </section>
+
+  <!-- 6 Schritt-für-Schritt: Klammern auflösen -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Klammerausdruck zusammenfassen</h2>
+      <div class="defbox">Aufgabe: Fasse den Term 4x − (2x + 7) so weit wie möglich zusammen.</div>
+      <div class="step" id="s6_1"><b class="lbl">Klammerart erkennen:</b> Vor der Klammer steht ein „−" → Minusklammer. Alle Vorzeichen innerhalb drehen sich beim Auflösen um.</div>
+      <div class="step" id="s6_2"><b class="lbl">Auflösen:</b> 4x − (2x + 7) = 4x − 2x − 7.</div>
+      <div class="step" id="s6_3"><b class="lbl">Gleichartige Terme sortieren:</b> 4x − 2x − 7 → (4−2)x − 7.</div>
+      <div class="step" id="s6_4"><b class="lbl">Antwortsatz:</b> 4x − (2x + 7) = 2x − 7.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="6" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 7 Mehrere Klammerausdrücke -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Verschachtelte Klammern</h2>
+      <div class="defbox">Aufgabe: Löse 10 − [3x − (4 + 5x)] auf. Regel: Verschachtelte Klammern werden von INNEN nach AUSSEN aufgelöst.</div>
+      <div class="step" id="s7_1"><b class="lbl">Innerste Klammer zuerst:</b> (4 + 5x) ist eine Plusklammer → einfach weglassen: 10 − [3x − 4 − 5x].</div>
+      <div class="step" id="s7_2"><b class="lbl">Innerhalb der eckigen Klammer sortieren:</b> 3x − 4 − 5x → −2x − 4.</div>
+      <div class="step" id="s7_3"><b class="lbl">Äußere Klammer auflösen:</b> Vor der eckigen Klammer steht „−" → Minusklammer, alle Vorzeichen drehen: 10 − [−2x − 4] = 10 + 2x + 4.</div>
+      <div class="step" id="s7_4"><b class="lbl">Antwortsatz:</b> 10 − [3x − (4 + 5x)] = 2x + 14.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="7" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 8 Eselsbrücke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Die Minusklammer ist ein Spiegel: alles, was durchgeht, dreht sein Vorzeichen um. Die Plusklammer ist ein Fenster aus Klarglas: alles bleibt, wie es ist."</div>
+    </div>
+  </section>
+
+  <!-- 9 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Kontostand &amp; Temperaturdifferenz</h2>
+      <div class="svgbox"><div id="svgS9"></div><div class="svgcaption">Der Kontostand wandert mit jeder Buchung einen Sprung weiter</div></div>
+      <div class="defbox">Ein Konto zeigt −80 € (Dispo). Nach Gehaltseingang von +650 € und einer Miet-Abbuchung von −540 € steht der Kontostand bei: −80 + 650 − 540 = 30 €.</div>
+      <ul class="bul">
+        <li>Genauso bei Temperaturdifferenzen: von −8 °C (nachts) auf +3 °C (mittags) sind es +3 − (−8) = 11 Grad Unterschied.</li>
+      </ul>
+      <div id="estKonto7"></div>
+    </div>
+  </section>
+
+  <!-- 10 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>a + b</td><td>„Summe von a und b"</td><td>Addition, Ergebnis = Summenwert</td></tr>
+        <tr><td>a − b</td><td>„Differenz von a und b"</td><td>Subtraktion, Ergebnis = Differenzwert</td></tr>
+        <tr><td>+(…)</td><td>„Plusklammer"</td><td>darf weggelassen werden, Vorzeichen bleiben</td></tr>
+        <tr><td>−(…)</td><td>„Minusklammer"</td><td>alle Vorzeichen innerhalb drehen sich um</td></tr>
+        <tr><td>[ … ]</td><td>„eckige Klammer"</td><td>umschließt eine bereits aufgelöste runde Klammer</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 11 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Zahlenstrahl-Rechner</span><span class="sub">Missions-Modus: Lande genau auf −3</span></div>
+    <iframe allow="autoplay" data-src="zahlpfeil7_labor.html"></iframe>
+  </section>
+
+  <!-- 12 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Begriff</th><th>Kernaussage</th></tr>
+      <tr><td>Addition</td><td>Kommutativ- UND Assoziativgesetz gelten</td></tr>
+      <tr><td>Subtraktion</td><td>WEDER Kommutativ- NOCH Assoziativgesetz gelten</td></tr>
+      <tr><td>Gleichartige Terme</td><td>nur Koeffizienten verrechnen, Variable bleibt</td></tr>
+      <tr><td>Plusklammer</td><td>darf weggelassen werden</td></tr>
+      <tr><td>Minusklammer</td><td>dreht alle Vorzeichen der Klammerglieder um</td></tr>
+      <tr><td>Verschachtelte Klammern</td><td>von innen nach außen auflösen</td></tr>
+    </table>
+  </section>
+
+  <!-- 13 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Fasse zusammen: 6x + 9x − 4x.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>6x + 9x − 4x = 11x</details>
+        </li>
+        <li style="margin-top:10px;">Löse die Klammer auf und fasse zusammen: 5a − (3a + 8).
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>5a − (3a + 8) = 5a − 3a − 8 = 2a − 8</details>
+        </li>
+        <li style="margin-top:10px;">Löse auf: 12 − [4x − (3 + 2x)].
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>12 − [4x − 3 − 2x] = 12 − [2x − 3] = 12 − 2x + 3 = 15 − 2x</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 14 Prüfungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Gleichartige Terme addieren/subtrahieren</b> können.</li>
+        <li><b>Plus- und Minusklammern korrekt auflösen</b> können — insbesondere die Vorzeichen-Drehung bei der Minusklammer.</li>
+        <li><b>Verschachtelte Klammerausdrücke von innen nach außen</b> auflösen können.</li>
+        <li><b>Begründen, warum Kommutativ-/Assoziativgesetz bei der Subtraktion NICHT gelten.</b></li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">Typische Prüfungsfrage: <i>„Ein Mitschüler behauptet: −(5x − 3) = −5x − 3. Stimmt das?"</i> → Nein: bei einer Minusklammer drehen sich ALLE Vorzeichen — richtig ist −(5x−3) = −5x + 3. Der Fehler: das zweite Vorzeichen wurde nicht mit gedreht.</div>
+    </div>
+  </section>
+
+  <!-- 15 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+// === SVG-Helfer: Zahlenstrahl mit gestapelten Pfeilen (Addition/Subtraktion visualisieren) ===
+function buildArrowLineSVG(min, max, arrows){
+  const stepPx=28, x0=22;
+  const rows=arrows.length, rowH=24;
+  const lineY=20+rows*rowH+14;
+  const width=x0+(max-min)*stepPx+20;
+  const height=lineY+30;
+  const xOf=v=>x0+(v-min)*stepPx;
+  let s='<svg viewBox="0 0 '+width+' '+height+'" style="width:100%;max-width:'+Math.min(560,width)+'px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="'+(x0-12)+'" y1="'+lineY+'" x2="'+(width-10)+'" y2="'+lineY+'" stroke="#4a5568" stroke-width="2"/>';
+  s+='<polygon points="'+(width-10)+','+lineY+' '+(width-18)+','+(lineY-5)+' '+(width-18)+','+(lineY+5)+'" fill="#4a5568"/>';
+  for(let v=min;v<=max;v++){
+    const x=xOf(v);
+    s+='<line x1="'+x+'" y1="'+(lineY-5)+'" x2="'+x+'" y2="'+(lineY+5)+'" stroke="#4a5568" stroke-width="1.2"/>';
+    s+='<text x="'+x+'" y="'+(lineY+20)+'" text-anchor="middle" font-size="11" fill="#9aa4b2">'+v+'</text>';
+  }
+  arrows.forEach((a,i)=>{
+    const y=lineY-14-i*rowH;
+    const x1=xOf(a.from), x2=xOf(a.to);
+    const dir=(x2>x1)?1:-1;
+    s+='<line x1="'+x1+'" y1="'+y+'" x2="'+x2+'" y2="'+y+'" stroke="'+a.color+'" stroke-width="2.2"/>';
+    s+='<polygon points="'+x2+','+y+' '+(x2-dir*7)+','+(y-4)+' '+(x2-dir*7)+','+(y+4)+'" fill="'+a.color+'"/>';
+    s+='<circle cx="'+x1+'" cy="'+y+'" r="2.5" fill="'+a.color+'"/>';
+    s+='<text x="'+((x1+x2)/2)+'" y="'+(y-6)+'" text-anchor="middle" font-size="12" fill="'+a.color+'">'+a.label+'</text>';
+  });
+  s+='</svg>';
+  return s;
+}
+// Slide 2: a+b (a=3 bei 0->3, b=2 bei 3->5, Ergebnis 0->5)
+document.getElementById('svgS2').innerHTML=buildArrowLineSVG(-1,6,[
+  {from:0,to:5,color:'#f2a63c',label:'a+b'},
+  {from:0,to:3,color:'#5fd0c7',label:'a'},
+  {from:3,to:5,color:'#6fcf6f',label:'b'}
+]);
+// Slide 4: -(a+b) (-a bei 0->-3, -b bei -3->-5, Ergebnis 0->-5)
+document.getElementById('svgS4').innerHTML=buildArrowLineSVG(-6,1,[
+  {from:0,to:-5,color:'#f2a63c',label:'−(a+b)'},
+  {from:0,to:-3,color:'#5fd0c7',label:'−a'},
+  {from:-3,to:-5,color:'#6fcf6f',label:'−b'}
+]);
+
+// === SVG: Bausteine-Grafik fuer gleichartige Terme (5a + 10a = 15a) ===
+function buildLikeTermsSVG(n1,n2,varLabel,color1,colorSum){
+  const bs=17, gap=3, maxPerRow=10, labelW=54, padTop=6, padLeft=6;
+  function blockRow(count,color,y0,maxRow){
+    let s='', rows=Math.ceil(count/maxRow);
+    for(let i=0;i<count;i++){
+      const col=i%maxRow, row=Math.floor(i/maxRow);
+      const x=padLeft+labelW+col*(bs+gap), y=y0+row*(bs+gap);
+      s+='<rect x="'+x+'" y="'+y+'" width="'+bs+'" height="'+bs+'" rx="3" fill="'+color+'"/>';
+      s+='<text x="'+(x+bs/2)+'" y="'+(y+bs/2+4)+'" text-anchor="middle" font-size="9" font-weight="700" fill="#0b0e13">'+varLabel+'</text>';
+    }
+    return {svg:s, rows:rows};
+  }
+  let y=padTop;
+  const r1=blockRow(n1,color1,y,maxPerRow);
+  let s='<text x="'+padLeft+'" y="'+(y+13)+'" font-size="13" font-weight="700" fill="'+color1+'">'+n1+varLabel+'</text>'+r1.svg;
+  y += r1.rows*(bs+gap)+8;
+  s+='<text x="'+padLeft+'" y="'+(y+13)+'" font-size="15" font-weight="700" fill="#9aa4b2">+</text>';
+  const r2=blockRow(n2,color1,y,maxPerRow);
+  s+='<text x="'+padLeft+'" y="'+(y+13)+'" font-size="13" font-weight="700" fill="'+color1+'">'+n2+varLabel+'</text>'+r2.svg;
+  y += r2.rows*(bs+gap)+12;
+  const lineW=padLeft+labelW+maxPerRow*(bs+gap);
+  s+='<line x1="'+padLeft+'" y1="'+y+'" x2="'+lineW+'" y2="'+y+'" stroke="#4a5568" stroke-width="1.5"/>';
+  y+=10;
+  const sum=n1+n2;
+  const r3=blockRow(sum,colorSum,y,8);
+  s+='<text x="'+padLeft+'" y="'+(y+13)+'" font-size="13" font-weight="700" fill="'+colorSum+'">'+sum+varLabel+'</text>'+r3.svg;
+  const H=y+r3.rows*(bs+gap)+8;
+  const W=lineW+8;
+  return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:340px;height:auto;display:block;margin:0 auto;">'+s+'</svg>';
+}
+document.getElementById('svgS3').innerHTML=buildLikeTermsSVG(5,10,'a','#5fd0c7','#f2a63c');
+
+// === SVG: Vorzeichen vs. Rechenzeichen (dasselbe "−"-Symbol, zwei Rollen) ===
+function buildSignVsOpSVG(){
+  const W=360,H=130;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:380px;height:auto;display:block;margin:0 auto;">';
+  s+='<rect x="8" y="8" width="164" height="112" rx="10" fill="rgba(95,208,199,0.12)" stroke="#5fd0c7" stroke-width="1.6"/>';
+  s+='<text x="90" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="#5fd0c7">VORZEICHEN</text>';
+  s+='<text x="90" y="68" text-anchor="middle" font-size="30" font-weight="700" fill="#e6edf3">−5</text>';
+  s+='<text x="90" y="98" text-anchor="middle" font-size="10.5" fill="#9aa4b2">gehört FEST zur Zahl</text>';
+  s+='<text x="90" y="111" text-anchor="middle" font-size="10.5" fill="#9aa4b2">— eine einzelne Zahl</text>';
+  s+='<rect x="188" y="8" width="164" height="112" rx="10" fill="rgba(242,166,60,0.12)" stroke="#f2a63c" stroke-width="1.6"/>';
+  s+='<text x="270" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="#f2a63c">RECHENZEICHEN</text>';
+  s+='<text x="270" y="68" text-anchor="middle" font-size="26" font-weight="700" fill="#e6edf3">8 − 5 = 3</text>';
+  s+='<text x="270" y="98" text-anchor="middle" font-size="10.5" fill="#9aa4b2">verbindet ZWEI Zahlen</text>';
+  s+='<text x="270" y="111" text-anchor="middle" font-size="10.5" fill="#9aa4b2">— eine Operation</text>';
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgVZ4').innerHTML=buildSignVsOpSVG();
+
+// === SVG: Minusklammer Vorher/Nachher-Kacheln ===
+function buildMinusBracketSVG(){
+  const tw=25, th=25, gap=4;
+  let s='';
+  function tileRow(tokens,x0,y0,hlIdx){
+    tokens.forEach((t,i)=>{
+      const x=x0+i*(tw+gap);
+      const hl=hlIdx&&hlIdx.indexOf(i)>=0;
+      const isOp=(t==='+'||t==='−'||t==='('||t===')');
+      const fill= hl?'rgba(192,57,43,0.30)':'#151b24';
+      const stroke= hl?'#c0392b':'#2a3038';
+      s+='<rect x="'+x+'" y="'+y0+'" width="'+tw+'" height="'+th+'" rx="5" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.3"/>';
+      s+='<text x="'+(x+tw/2)+'" y="'+(y0+th/2+5)+'" text-anchor="middle" font-size="13" font-weight="700" fill="'+(hl?'#ff8a75':(isOp?'#9aa4b2':'#e6edf3'))+'">'+t+'</text>';
+    });
+    return tokens.length*(tw+gap)-gap;
+  }
+  const rows=[
+    {label:'a − (b + c)  →  a − b − c', before:['a','−','(','b','+','c',')'], after:['a','−','b','−','c'], hl:[3]},
+    {label:'a − (b − c)  →  a − b + c', before:['a','−','(','b','−','c',')'], after:['a','−','b','+','c'], hl:[3]}
+  ];
+  const arrowW=36;
+  let maxRowW=0;
+  rows.forEach(r=>{
+    const bw=r.before.length*(tw+gap)-gap, aw=r.after.length*(tw+gap)-gap;
+    maxRowW=Math.max(maxRowW, bw+arrowW+aw);
+  });
+  const x0=8, rowH=th+38;
+  let y=6;
+  rows.forEach(r=>{
+    s+='<text x="'+x0+'" y="'+(y+10)+'" font-size="11" fill="#9aa4b2">'+r.label+'</text>';
+    const by=y+16;
+    const bw=tileRow(r.before,x0,by,null);
+    const ax=x0+bw+8;
+    s+='<line x1="'+ax+'" y1="'+(by+th/2)+'" x2="'+(ax+arrowW-14)+'" y2="'+(by+th/2)+'" stroke="#f2a63c" stroke-width="2"/>';
+    s+='<polygon points="'+(ax+arrowW-14)+','+(by+th/2)+' '+(ax+arrowW-20)+','+(by+th/2-4)+' '+(ax+arrowW-20)+','+(by+th/2+4)+'" fill="#f2a63c"/>';
+    tileRow(r.after,ax+arrowW,by,r.hl);
+    y+=rowH;
+  });
+  const W=maxRowW+16, H=y+6;
+  return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:460px;height:auto;display:block;margin:0 auto;">'+s+'</svg>';
+}
+document.getElementById('svgS5').innerHTML=buildMinusBracketSVG();
+
+// === SVG: Kontostand-Fluss (Praxisbeispiel, echte Zahlen aus der Defbox) ===
+function buildMoneyFlowSVG(){
+  const items=[
+    {v:'−80 €', l:'Start (Dispo)', neg:true},
+    {op:'+650 €', sub:'Gehalt'},
+    {v:'570 €', l:'Zwischenstand', neg:false},
+    {op:'−540 €', sub:'Miete'},
+    {v:'30 €', l:'Ergebnis', neg:false}
+  ];
+  const boxW=92, boxH=54, arrowW=64, gap=6, y0=30;
+  let x=10, s='';
+  items.forEach(it=>{
+    if(it.v!==undefined){
+      const fill= it.neg? 'rgba(192,57,43,0.20)':'rgba(76,175,80,0.20)';
+      const stroke= it.neg? '#c0392b':'#4caf50';
+      s+='<rect x="'+x+'" y="'+y0+'" width="'+boxW+'" height="'+boxH+'" rx="8" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.6"/>';
+      s+='<text x="'+(x+boxW/2)+'" y="'+(y0+24)+'" text-anchor="middle" font-size="16" font-weight="700" fill="'+stroke+'">'+it.v+'</text>';
+      s+='<text x="'+(x+boxW/2)+'" y="'+(y0+42)+'" text-anchor="middle" font-size="10" fill="#9aa4b2">'+it.l+'</text>';
+      x+=boxW+gap;
+    } else {
+      s+='<line x1="'+x+'" y1="'+(y0+boxH/2)+'" x2="'+(x+arrowW-8)+'" y2="'+(y0+boxH/2)+'" stroke="#f2a63c" stroke-width="2"/>';
+      s+='<polygon points="'+(x+arrowW-8)+','+(y0+boxH/2)+' '+(x+arrowW-16)+','+(y0+boxH/2-5)+' '+(x+arrowW-16)+','+(y0+boxH/2+5)+'" fill="#f2a63c"/>';
+      s+='<text x="'+(x+arrowW/2)+'" y="'+(y0-8)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#f2a63c">'+it.op+'</text>';
+      s+='<text x="'+(x+arrowW/2)+'" y="'+(y0+boxH+16)+'" text-anchor="middle" font-size="10" fill="#9aa4b2">'+it.sub+'</text>';
+      x+=arrowW+gap;
+    }
+  });
+  const W=x+10, H=y0+boxH+34;
+  return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:520px;height:auto;display:block;margin:0 auto;">'+s+'</svg>';
+}
+document.getElementById('svgS9').innerHTML=buildMoneyFlowSVG();
+
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Die Addition", "Gleichartige Terme addieren", "Die Subtraktion", "Plus- & Minusklammern auflösen", "📐 Schritt für Schritt: Klammerausdruck zusammenfassen", "📐 Schritt für Schritt: Verschachtelte Klammern", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Kontostand & Temperaturdifferenz", "Symbol-Legende", "🧪 Zahlenstrahl-Rechner", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=17;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck7_s1_Charon.mp3",txt:"Rechnen mit ganzen Zahlen, Teil eins. Dein Kontostand zeigt minus achtzig Euro, dann bucht die Bank hundertzwanzig Euro Gehalt. Auf welcher Zahl landest du? Und warum wird aus minus minus fünf auf einmal ein Plus? Die Antwort steckt im Zahlenstrahl."},
+ 2:{wav:"narration_deck7_s2_Charon.mp3",txt:"Bei der Addition werden zwei Summanden mit dem Pluszeichen verbunden. Schau auf den Zahlenstrahl: egal in welcher Reihenfolge du die beiden Pfeile aneinanderreihst, das Ergebnis bleibt gleich - das Kommutativ- und das Assoziativgesetz gelten hier beide."},
+ 3:{wav:"narration_deck7_s3_Charon.mp3",txt:"Terme mit derselben Variable heißen gleichartige Terme. Du addierst sie, indem du nur die Zahlen davor addierst und die Variable unverändert lässt - fünf a plus zehn a ergibt fünfzehn a."},
+ 4:{wav:"narration_deck7_s4_Charon.mp3",txt:"Bei der Subtraktion sieht das ganz anders aus: schau auf den Zahlenstrahl, beide Pfeile zeigen jetzt nach links. Und ganz wichtig: bei der Subtraktion gelten weder Kommutativ- noch Assoziativgesetz - fünf minus drei ist etwas ganz anderes als drei minus fünf."},
+ 5:{wav:"narration_deck7_s5_Charon.mp3",txt:"Eine Plusklammer darfst du einfach weglassen. Aber Achtung bei der Minusklammer: davor steht ein Minus, und beim Auflösen drehen sich ALLE Vorzeichen innerhalb der Klammer um. Genau das ist die häufigste Fehlerquelle in diesem Kapitel."},
+ 6:{wav:"narration_deck7_s6_Charon.mp3",txt:"Jetzt üben wir das gemeinsam an einem Beispiel. Überleg schon mal: steht vor der Klammer ein Plus oder ein Minus? Klick dich durch die Schritte."},
+ 7:{wav:"narration_deck7_s7_Charon.mp3",txt:"Und jetzt wird's richtig knifflig: mehrere verschachtelte Klammern. Die Regel ist einfach - von innen nach außen auflösen. Überleg bei jedem Schritt: welche Klammer ist gerade die innerste?"},
+ 8:{wav:"narration_deck7_s8_Charon.mp3",txt:"Merk's dir mit dem Spiegel-Bild: die Minusklammer ist wie ein Spiegel, der jedes Vorzeichen umdreht, das durch sie hindurchgeht. Die Plusklammer ist dagegen aus klarem Glas - da bleibt alles, wie es ist."},
+ 9:{wav:"narration_deck7_s9_Charon.mp3",txt:"Genau das brauchst du beim Kontostand: minus achtzig Euro, plus sechshundertfünfzig Gehalt, minus fünfhundertvierzig Miete - am Ende stehst du bei plus dreißig Euro."},
+ 10:{wav:"narration_deck7_s10_Charon.mp3",txt:"Hier noch mal alle Symbole dieser Folie im Überblick, bevor du sie im Labor selbst ausprobierst."},
+ 11:{wav:"narration_deck7_s11_Charon.mp3",txt:"Jetzt bist du dran: wähle zwei Sprünge auf dem Zahlenstrahl und versuch, exakt auf minus drei zu landen."},
+ 12:{wav:"narration_deck7_s12_Charon.mp3",txt:"Fassen wir zusammen: Addition ist kommutativ und assoziativ, Subtraktion ist keins von beidem, und beim Klammern-Auflösen entscheidet einzig das Vorzeichen direkt davor."},
+ 13:{wav:"narration_deck7_s13_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben zu Termen und Klammern."},
+ 14:{wav:"narration_deck7_s14_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst - inklusive einer klassischen Fehlersuche zur Minusklammer."},
+ 15:{wav:"narration_deck7_s15_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"Was ergibt −(5x − 3) beim korrekten Auflösen der Minusklammer?",
+  a:["−5x − 3","−5x + 3","5x − 3","5x + 3"],r:1,
+  why:"Bei einer Minusklammer drehen sich ALLE Vorzeichen innerhalb um: −(5x−3) = −5x+3."},
+ {q:"Gilt bei der Subtraktion das Kommutativgesetz (a−b = b−a)?",
+  a:["Ja, immer","Nein — Gegenbeispiel: 5−3=2, aber 3−5=−2","Nur bei positiven Zahlen","Nur bei gleichen Zahlen"],r:1,
+  why:"5−3=2 und 3−5=−2 sind verschieden — die Subtraktion ist nicht kommutativ."},
+ {q:"Wie fasst man 7a + 3b + 10a zusammen?",
+  a:["20ab","17a + 3b","7a + 13b","20a + 3b"],r:1,
+  why:"Nur gleichartige Terme (mit a) dürfen verrechnet werden: 7a+10a=17a, 3b bleibt stehen."},
+ {q:"In welcher Reihenfolge löst man 10 − [3x − (4 + 5x)] auf?",
+  a:["Erst die eckige, dann die runde Klammer","Erst die runde (innerste), dann die eckige Klammer","Beide gleichzeitig","Reihenfolge ist egal"],r:1,
+  why:"Verschachtelte Klammern werden von innen nach außen aufgelöst — die runde Klammer ist hier die innerste."},
+ {q:"Was passiert beim Auflösen einer Plusklammer wie a + (b − c)?",
+  a:["Alle Vorzeichen drehen sich um","Nichts — die Klammer wird einfach weggelassen: a + b − c","Die Klammer bleibt stehen","Das Ergebnis wird negativ"],r:1,
+  why:"Eine Plusklammer darf ohne Änderung der Vorzeichen weggelassen werden."},
+ {q:"Ein Kontostand steht bei −80 €. Nach +650 € und −540 € Buchung steht er bei…",
+  a:["−1270 €","30 €","1110 €","−30 €"],r:1,
+  why:"−80 + 650 − 540 = 30 €."}
+];
+const DECK_ID="rechnen/deck7";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, conf:conf, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+
+    let sureChoice='unsure';
+    const confrow=document.createElement('div'); confrow.className='confrow';
+    const sureBtn=document.createElement('button'); sureBtn.className='confchip sure'; sureBtn.textContent='🟢 sicher'; sureBtn.type='button';
+    const unsureBtn=document.createElement('button'); unsureBtn.className='confchip unsure'; unsureBtn.textContent='🟡 unsicher'; unsureBtn.type='button';
+    confrow.appendChild(sureBtn); confrow.appendChild(unsureBtn);
+    box.appendChild(confrow);
+
+    const optsWrap=document.createElement('div'); optsWrap.className='quizoptswrap';
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    const warn=document.createElement('div'); warn.className='quizwarn'; warn.textContent='⚠️ Genau die merken sich die 5 Fragen des Tages.';
+
+    function chooseSure(which){
+      sureChoice=which;
+      sureBtn.classList.toggle('on', which==='sure');
+      unsureBtn.classList.toggle('on', which==='unsure');
+      optsWrap.classList.add('enabled');
+    }
+    sureBtn.onclick=()=>chooseSure('sure');
+    unsureBtn.onclick=()=>chooseSure('unsure');
+
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        const ok=(oi===item.r), conf=(sureChoice==='sure');
+        optsWrap.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(!ok) b.classList.add('wrong');
+        why.classList.add('show');
+        if(conf && !ok) warn.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), ok, conf);
+        answered++; if(ok) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      optsWrap.appendChild(b);
+    });
+    box.appendChild(optsWrap);
+    box.appendChild(why);
+    box.appendChild(warn);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estKonto7', {
+    frage: 'Kontostand −80 € + 120 € Gehalt — wo landest du?',
+    min: -100, max: 100, korrekt: 40, toleranz: 3, einheit: '€',
+    begruendung: '−80 + 120 = 40 — die Vorzeichenregel von dieser Folie in echt.'
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Quadratische Gleichungen · Kapitel-Mischquiz</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  .wrap{max-width:820px;margin:0 auto;padding:24px 18px 60px;}
+  h1{font-size:min(6vw,30px);margin:0 0 6px;}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 20px;}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0 20px;}
+  button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 16px;font-size:14px;cursor:pointer;}
+  button:hover{background:#283041;}
+  button.primary{background:var(--accent);color:#12100a;font-weight:700;border:0;}
+  .quizq{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq .deckTag{display:inline-block;background:#1b222c;color:var(--accent);font-size:11.5px;font-weight:600;border-radius:999px;padding:3px 10px;margin-bottom:8px;}
+  .quizq p.qtext{font-size:min(2.3vw,19px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2vw,16px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(1.8vw,14.5px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #result{display:none;}
+  #result.show{display:block;}
+  .scoreBig{font-size:min(6vw,36px);color:var(--accent);text-align:center;margin:10px 0;}
+  .deckRow{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 16px;margin:6px 0;font-size:14.5px;}
+  .deckRow a{color:var(--accent);text-decoration:none;font-size:13px;}
+  .deckRow a:hover{text-decoration:underline;}
+  .weak{border-left:4px solid #e05a5a;}
+  .strong{border-left:4px solid #3dbb7a;}
+  #startScreen .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:16px 20px;font-size:15px;color:#f6e7cf;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔀 Kapitel-Mischquiz — Quadratische Gleichungen</h1>
+  <p class="sub">20 zufällig gemischte Fragen aus allen drei Teilen — Interleaving statt Blockübung.</p>
+
+  <div id="startScreen">
+    <div class="defbox">Dieses Quiz zieht bei jedem Start 20 Fragen zufällig aus dem gesamten Kapitel — quer durch Lösungswege, Lösbarkeit/Anwendung und Formvariable/Geschichte. Am Ende siehst du, bei welchem Teil du nochmal reinschauen solltest.</div>
+    <div class="bar">
+      <button class="primary" id="startBtn">▶ Quiz starten (20 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+
+  <div id="quizArea"></div>
+  <div id="result">
+    <div class="scoreBig" id="scoreBig"></div>
+    <h2 style="font-size:18px;">Auswertung pro Teil</h2>
+    <div id="deckBreakdown"></div>
+    <div class="bar">
+      <button class="primary" id="againBtn">🔁 Nochmal (neue 20 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;align-self:center;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+</div>
+<script>
+// === Fragenpool: kopiert aus den QUIZ-Arrays der drei Teile + eigene Transferfragen ===
+const POOL = [
+// --- deck25.html: Lösungswege ---
+{deck:"Teil 1 — Lösungswege", link:"deck25.html", q:"Wie viele Lösungen hat x²=9?",
+ a:["Nur x=3","Zwei: x=3 und x=−3","Keine","Unendlich viele"],r:1,
+ why:"Sowohl 3² als auch (−3)² ergeben 9 — beide Zahlen sind Lösungen, sie liegen spiegelbildlich um die 0."},
+{deck:"Teil 1 — Lösungswege", link:"deck25.html", q:"Warum darf man bei x²−4x=0 NICHT einfach beide Seiten durch x teilen?",
+ a:["Weil x negativ sein könnte","Weil dabei die Lösung x=0 verloren geht","Weil x eine Formvariable ist","Man darf das problemlos"],r:1,
+ why:"x=0 löst die Gleichung tatsächlich (0−0=0) — teilt man durch x, geht diese Lösung stillschweigend verloren."},
+{deck:"Teil 1 — Lösungswege", link:"deck25.html", q:"Darf man ±√ auf eine gemischtquadratische Gleichung wie x²+3x−4=0 direkt anwenden?",
+ a:["Ja, immer","Nein — ±√ funktioniert nur, wenn KEIN lineares Glied vorhanden ist (b=0)","Ja, aber nur wenn c=0","Nein, nie"],r:1,
+ why:"±√ isoliert nur x² — ist noch ein x-Glied vorhanden, bleibt nach dem Wurzelziehen ein x übrig, das Verfahren funktioniert nicht."},
+{deck:"Teil 1 — Lösungswege", link:"deck25.html", q:"Löse 4x²−16=0.",
+ a:["L={−2;2}","L={2}","L={−4;4}","L={ }"],r:0,
+ why:"4x²=16 ⇔ x²=4 → x=±2 → L={−2;2}."},
+{deck:"Teil 1 — Lösungswege", link:"deck25.html", q:"Bei 3x²−12x=0 wird ausgeklammert: 3x·(x−4)=0. Was ist die Lösungsmenge?",
+ a:["L={4}","L={0;4}","L={0;−4}","L={3;4}"],r:1,
+ why:"Nullproduktregel: 3x=0 → x=0, ODER x−4=0 → x=4. Beide gehören zur Lösungsmenge: L={0;4}."},
+{deck:"Teil 1 — Lösungswege", link:"deck25.html", q:"Bei x²+2x−8=0 wird die Lösungsformel angewendet. Wie lautet −b im Zähler?",
+ a:["−2","2","−8","8"],r:0,
+ why:"b=2, also ist −b=−2. Ein klassischer Fehler ist, das Minuszeichen zu vergessen."},
+
+// --- deck26.html: Lösbarkeit & Anwendung ---
+{deck:"Teil 2 — Lösbarkeit & Anwendung", link:"deck26.html", q:"Eine quadratische Gleichung hat D=−7. Wie viele Lösungen hat sie?",
+ a:["Zwei","Eine","Keine","Unendlich viele"],r:2,
+ why:"D<0 bedeutet, dass die Wurzel aus einer negativen Zahl gezogen werden müsste — nicht möglich, also keine Lösung."},
+{deck:"Teil 2 — Lösbarkeit & Anwendung", link:"deck26.html", q:"Bei x²−10x+25=0 ist D=0. Was bedeutet das?",
+ a:["Es gibt zwei verschiedene Lösungen","Es gibt genau eine Lösung","Es gibt keine Lösung","Die Gleichung ist nicht lösbar"],r:1,
+ why:"D=0 bedeutet: die Lösungsformel liefert nur EINEN Wert."},
+{deck:"Teil 2 — Lösbarkeit & Anwendung", link:"deck26.html", q:"Ein Bremsweg-Problem liefert die Lösungen v=8 und v=−8. Welche gehört in den Antwortsatz?",
+ a:["Nur v=8, weil eine Geschwindigkeit nicht negativ sein kann","Beide, mathematisch sind beide korrekt","Nur v=−8","Keine von beiden"],r:0,
+ why:"Antwortsatz-Disziplin: nur die sachlich sinnvolle Lösung gehört in den Antwortsatz."},
+{deck:"Teil 2 — Lösbarkeit & Anwendung", link:"deck26.html", q:"Was ist der Unterschied zwischen L={ } und L={0}?",
+ a:["Kein Unterschied","L={ } ist die leere Menge (keine Lösung), L={0} enthält die Zahl 0 als Lösung","L={0} bedeutet immer D<0","L={ } bedeutet immer D=0"],r:1,
+ why:"{ } hat kein Element, {0} hat GENAU EIN Element, nämlich die Zahl 0."},
+{deck:"Teil 2 — Lösbarkeit & Anwendung", link:"deck26.html", q:"Verdoppelt man bei s(v)=v²/100 die Geschwindigkeit v, was passiert mit dem Bremsweg s?",
+ a:["Er verdoppelt sich","Er bleibt gleich","Er vervierfacht sich","Er halbiert sich"],r:2,
+ why:"(2v)²/100=4v²/100=4·s(v) — weil v quadriert wird, führt eine Verdopplung zu einer VIERfachung."},
+{deck:"Teil 2 — Lösbarkeit & Anwendung", link:"deck26.html", q:"Bestimme die Diskriminante von x²+2x+1=0.",
+ a:["D=0","D=4","D=−4","D=8"],r:0,
+ why:"D=2²−4·1·1=4−4=0."},
+
+// --- deck27.html: Formvariable & Geschichte ---
+{deck:"Teil 3 — Formvariable & Geschichte", link:"deck27.html", q:"Wie viele Fälle muss man bei einer quadratischen Gleichung mit Formvariable unterscheiden?",
+ a:["Immer genau 2","Dieselben 3 wie ohne Formvariable — die Diskriminante hängt nur zusätzlich von der Formvariable ab","Immer genau 4","Keine, es gibt immer nur eine Lösung"],r:1,
+ why:"Die Diskriminanten-Logik ändert sich nicht — nur der Wert von D hängt jetzt von der Formvariable ab."},
+{deck:"Teil 3 — Formvariable & Geschichte", link:"deck27.html", q:"Wofür steht Δₙ=½(n²+n)?",
+ a:["Die n-te zentrierte Quadratzahl","Die n-te Dreieckszahl","Eine Formvariable","Die Diskriminante"],r:1,
+ why:"Δₙ ist die Standardbezeichnung für die n-te Dreieckszahl."},
+{deck:"Teil 3 — Formvariable & Geschichte", link:"deck27.html", q:"Geometrisch betrachtet: wofür steht der Term x² in einem Flächenpuzzle?",
+ a:["Für einen Kreis","Für die Fläche eines Quadrats mit Seitenlänge x","Für einen Streifen der Breite x","Für ein Dreieck"],r:1,
+ why:"x² ist buchstäblich die Fläche eines Quadrats mit Seitenlänge x."},
+{deck:"Teil 3 — Formvariable & Geschichte", link:"deck27.html", q:"Was fehlt einem Flächenpuzzle x²+6x, um ein vollständiges Quadrat (x+3)² zu werden?",
+ a:["Der Wert 6","Der Wert 9 (=3²)","Der Wert 3","Nichts, es ist schon vollständig"],r:1,
+ why:"x²+6x+9=(x+3)² — das fehlende Stück ist (b/2)²=3²=9."},
+{deck:"Teil 3 — Formvariable & Geschichte", link:"deck27.html", q:"x²−2x−t=0 hat für t=−1 genau eine Lösung. Was bedeutet das für die Diskriminante?",
+ a:["D>0","D=0","D<0","Das lässt sich nicht bestimmen"],r:1,
+ why:"Genau eine Lösung bedeutet immer D=0."},
+
+// --- Eigene Transferfragen (kapitelübergreifend, eigene Werte) ---
+{deck:"Teil 1 — Lösungswege", link:"deck25.html", q:"Löse ¼x²−4=0.",
+ a:["L={−4;4}","L={4}","L={−2;2}","L={16}"],r:0,
+ why:"¼x²=4 ⇔ x²=16 → x=±4 → L={−4;4}."},
+{deck:"Teil 2 — Lösbarkeit & Anwendung", link:"deck26.html", q:"Ein Quadrat hat 64m² Fläche. Welche Seitenlänge gehört in den Antwortsatz?",
+ a:["8m","−8m","±8m","64m"],r:0,
+ why:"x²=64 → x=±8, aber eine Seitenlänge kann nicht negativ sein — nur x=8m gehört in den Antwortsatz."},
+{deck:"Teil 3 — Formvariable & Geschichte", link:"deck27.html", q:"Welche Dreieckszahl ergibt genau 21 Steine?",
+ a:["n=6","n=5","n=7","n=21"],r:0,
+ why:"½(n²+n)=21 → n²+n−42=0 → n=6 (n=−7 wird verworfen)."}
+];
+
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+let current=[];
+let deckStats={};
+
+function startQuiz(){
+  current = shuffle(POOL).slice(0,20);
+  deckStats={};
+  document.getElementById('startScreen').style.display='none';
+  document.getElementById('result').classList.remove('show');
+  const area=document.getElementById('quizArea');
+  area.innerHTML='';
+  let answered=0, score=0;
+  current.forEach((item,qi)=>{
+    if(!deckStats[item.deck]) deckStats[item.deck]={right:0,total:0,link:item.link};
+    deckStats[item.deck].total++;
+    const box=document.createElement('div'); box.className='quizq';
+    const tag=document.createElement('span'); tag.className='deckTag'; tag.textContent=item.deck; box.appendChild(tag);
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        answered++;
+        if(oi===item.r){ score++; deckStats[item.deck].right++; }
+        if(answered===current.length) showResult(score);
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    area.appendChild(box);
+  });
+}
+
+function showResult(score){
+  const res=document.getElementById('result');
+  res.classList.add('show');
+  document.getElementById('scoreBig').textContent='Ergebnis: '+score+' / '+current.length+' — '+
+    (score>=current.length*0.8?'stark! 💪':(score>=current.length*0.5?'solide, ein paar Themen nochmal ansehen':'lohnt sich, mehrere Teile zu wiederholen'));
+  const bd=document.getElementById('deckBreakdown');
+  bd.innerHTML='';
+  Object.keys(deckStats).sort().forEach(deck=>{
+    const s=deckStats[deck];
+    const row=document.createElement('div');
+    const pct=s.right/s.total;
+    row.className='deckRow '+(pct<0.5?'weak':(pct===1?'strong':''));
+    row.innerHTML='<span>'+deck+': '+s.right+' / '+s.total+' richtig'+(pct<0.6?' — nochmal ansehen empfohlen':'')+'</span><a href="'+s.link+'">Teil öffnen →</a>';
+    bd.appendChild(row);
+  });
+  res.scrollIntoView({behavior:'smooth'});
+}
+
+document.getElementById('startBtn').onclick=startQuiz;
+document.getElementById('againBtn').onclick=startQuiz;
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

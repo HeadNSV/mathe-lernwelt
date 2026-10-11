@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Faktor-Jäger — Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{max-width:760px;margin:0 auto;padding:18px 20px 40px;}
+  h3{margin:0 0 6px;}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  .modebar{display:flex;gap:8px;margin-bottom:14px;}
+  .modebar button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;}
+  .modebar button.on{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  .part{display:none;}
+  .part.show{display:block;}
+  #termBox{font-size:22px;color:var(--accent);text-align:center;font-weight:700;margin:14px 0;}
+  #factorRow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:12px;}
+  #factorRow button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 16px;font-size:15px;cursor:pointer;}
+  #factorRow button.wrong{border-color:#c0392b;opacity:0.5;}
+  #resultLine{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:16px;text-align:center;min-height:24px;}
+  #resultLine.ok{border-color:#4caf50;background:#173d28;}
+  #progress{font-size:14px;color:var(--muted);text-align:center;margin-top:10px;}
+  #missionDone{display:none;background:#173d28;border:1px solid #4caf50;border-radius:8px;padding:14px 18px;font-size:15px;color:#dff3df;text-align:center;margin-top:10px;}
+  #missionDone.show{display:block;}
+  button.resetbtn{display:block;margin:14px auto 0;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 16px;font-size:13.5px;cursor:pointer;}
+  #puzzleWrap .quest{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:14px 18px;font-size:15px;margin-bottom:10px;}
+  #puzzleOpts{display:flex;flex-direction:column;gap:8px;}
+  #puzzleOpts button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer;text-align:left;}
+  #puzzleFeedback{margin-top:10px;font-size:14px;min-height:20px;}
+  #puzzleFeedback.ok{color:#4caf50;}
+  #puzzleFeedback.bad{color:#e05a5a;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="modebar">
+    <button id="modeMission" class="on">🎯 Faktor-Jäger</button>
+    <button id="modePuzzle">🕵️ Rätselmodus</button>
+  </div>
+
+  <div class="part show" id="partMission">
+    <h3>🧪 Zieh den größten gemeinsamen Faktor heraus</h3>
+    <p class="hint">Klick auf den Faktor, der aus BEIDEN Summanden vollständig herausgezogen werden kann.</p>
+    <div id="termBox"></div>
+    <div id="factorRow"></div>
+    <div id="resultLine">Wähle einen Faktor.</div>
+    <div id="progress"></div>
+    <div id="missionDone"></div>
+    <button class="resetbtn" id="resetBtn">↺ Neu starten</button>
+  </div>
+
+  <div class="part" id="partPuzzle">
+    <h3>🕵️ Welcher Faktor ist der GRÖSSTE gemeinsame?</h3>
+    <p class="hint">Ein Mitschüler hat 55ab − 25b nur teilweise ausgeklammert. Finde den vollständigen ggT.</p>
+    <div id="puzzleWrap"></div>
+  </div>
+</div>
+<script>
+// === Faktor-Jaeger Missionsmodus ===
+const TERMS=[
+  {disp:"16 + 20xy", correct:4, opts:[2,4,8,20], result:"4·(4+5xy)"},
+  {disp:"55ab − 25b", correct:5, opts:[5,11,25,55], result:"5·(11ab−5b)"},
+  {disp:"121p + 33pq", correct:11, opts:[3,11,33,121], result:"11·(11p+3pq)"},
+  {disp:"27x + 18y", correct:9, opts:[3,6,9,18], result:"9·(3x+2y)"},
+  {disp:"3x − xy", correct:'x', opts:['x',3,7,9], result:"x·(3−y)"},
+  {disp:"14p − 21pq", correct:7, opts:[2,3,7,14], result:"7·(2p−3pq)"}
+];
+let ti=0, correctFirstTry=0, order=[...TERMS.keys()];
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+shuffle(order);
+let firstTryClean=true;
+function loadTerm(){
+  const row=document.getElementById('factorRow');
+  if(ti>=TERMS.length){
+    document.getElementById('missionDone').classList.add('show');
+    document.getElementById('missionDone').textContent='🎉 Alle '+TERMS.length+' Terme ausgeklammert! '+correctFirstTry+' davon im ersten Versuch richtig.';
+    window.lwAward && window.lwAward('mission');
+    document.getElementById('termBox').textContent='';
+    row.style.display='none';
+    return;
+  }
+  const t=TERMS[order[ti]];
+  firstTryClean=true;
+  document.getElementById('termBox').textContent=t.disp;
+  document.getElementById('resultLine').className='';
+  document.getElementById('resultLine').textContent='Welcher Faktor lässt sich vollständig herausziehen?';
+  document.getElementById('progress').textContent='Term '+(ti+1)+' / '+TERMS.length+' · bisher '+correctFirstTry+' im 1. Versuch richtig';
+  row.style.display='flex';
+  row.innerHTML='';
+  const shuffled=shuffle(t.opts.slice());
+  shuffled.forEach(val=>{
+    const b=document.createElement('button');
+    b.textContent=String(val);
+    b.onclick=()=>pickFactor(val,b);
+    row.appendChild(b);
+  });
+}
+function pickFactor(val,btn){
+  if(ti>=TERMS.length) return;
+  const t=TERMS[order[ti]];
+  const rl=document.getElementById('resultLine');
+  if(String(val)===String(t.correct)){
+    [...document.getElementById('factorRow').children].forEach(b=>b.disabled=true);
+    rl.className='ok';
+    rl.textContent='✅ Richtig! '+t.disp+' = '+t.result;
+    if(firstTryClean) correctFirstTry++;
+    ti++;
+    setTimeout(loadTerm,1100);
+  } else {
+    firstTryClean=false;
+    btn.classList.add('wrong');
+    rl.className='';
+    rl.textContent='❌ Das lässt sich nicht vollständig aus BEIDEN Summanden herausziehen — such den größeren gemeinsamen Faktor.';
+  }
+}
+document.getElementById('resetBtn').onclick=()=>{
+  ti=0; correctFirstTry=0; order=shuffle([...TERMS.keys()]);
+  document.getElementById('missionDone').classList.remove('show');
+  loadTerm();
+};
+loadTerm();
+
+// === Raetselmodus ===
+(function(){
+  const wrap=document.getElementById('puzzleWrap');
+  const q=document.createElement('div'); q.className='quest';
+  q.textContent='Ein Mitschüler klammert 55ab − 25b so aus: 5·(11ab − 5b). Ist das vollständig ausgeklammert?';
+  wrap.appendChild(q);
+  const opts=document.createElement('div'); opts.id='puzzleOpts';
+  const fb=document.createElement('div'); fb.id='puzzleFeedback';
+  const OPTIONS=[
+    {t:"Ja, das ist vollständig ausgeklammert", correct:true, why:"Richtig! ggT(55,25)=5, und in 11ab bzw. 5b steckt kein weiterer gemeinsamer Zahlfaktor mehr."},
+    {t:"Nein, man kann noch mehr ausklammern", correct:false, why:"Doch, 5 IST bereits der größte gemeinsame Teiler von 55 und 25 — mehr geht nicht."},
+    {t:"Nein, b hätte auch ausgeklammert werden müssen", correct:false, why:"b steckt nur im zweiten Summanden (25b), nicht in 11ab als eigenständiger Faktor außerhalb von a — bei 5·(11ab−5b) ist b bereits korrekt nur dort behandelt, wo es hingehört."}
+  ];
+  let solved=false;
+  OPTIONS.forEach(o=>{
+    const b=document.createElement('button');
+    b.textContent=o.t;
+    b.onclick=()=>{
+      if(solved) return;
+      if(o.correct){ solved=true; fb.className='ok'; fb.textContent='✅ '+o.why; }
+      else { fb.className='bad'; fb.textContent='❌ '+o.why; }
+    };
+    opts.appendChild(b);
+  });
+  wrap.appendChild(opts);
+  wrap.appendChild(fb);
+})();
+
+// mode switch
+const modeMission=document.getElementById('modeMission'), modePuzzle=document.getElementById('modePuzzle');
+const partMission=document.getElementById('partMission'), partPuzzle=document.getElementById('partPuzzle');
+modeMission.onclick=()=>{ modeMission.classList.add('on'); modePuzzle.classList.remove('on'); partMission.classList.add('show'); partPuzzle.classList.remove('show'); };
+modePuzzle.onclick=()=>{ modePuzzle.classList.add('on'); modeMission.classList.remove('on'); partPuzzle.classList.add('show'); partMission.classList.remove('show'); };
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

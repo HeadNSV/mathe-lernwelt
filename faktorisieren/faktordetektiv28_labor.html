@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Faktor-Detektiv — Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{max-width:760px;margin:0 auto;padding:18px 20px 44px;}
+  h3{margin:0 0 6px;}
+  h4{margin:26px 0 6px;color:var(--accent);}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  .card{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:14px;}
+  #missionProgress{font-size:13px;color:var(--muted);margin-bottom:8px;}
+  #termLabel{font-size:26px;color:var(--accent);text-align:center;font-weight:700;margin:10px 0 16px;}
+  .methodRow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:14px;}
+  .methodBtn{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 14px;font-size:14px;cursor:pointer;}
+  .methodBtn:hover{background:#283041;}
+  .methodBtn.correct{background:#1c3d24;border-color:#4caf50;}
+  .methodBtn.wrong{background:#3d1c1c;border-color:#c0392b;}
+  #missionFeedback{text-align:center;font-size:14px;min-height:20px;margin-bottom:8px;color:#5fd0c7;}
+  #missionResult{text-align:center;font-size:19px;font-weight:700;color:#4caf50;min-height:26px;margin:8px 0;}
+  #nextMissionBtn{display:none;margin:10px auto 0;background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:9px 18px;font-size:14px;cursor:pointer;}
+  .puzzleItem{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:12px 0;}
+  .puzzleText{font-size:15px;margin:0 0 10px;}
+  .puzzleBtns{display:flex;gap:10px;}
+  .puzzleBtn{flex:1;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px;font-size:14px;cursor:pointer;}
+  .puzzleBtn:hover{background:#283041;}
+  .puzzleBtn.correct{background:#1c3d24;border-color:#4caf50;}
+  .puzzleBtn.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .puzzleWhy{margin-top:9px;font-size:13px;color:var(--muted);display:none;}
+  .puzzleWhy.show{display:block;}
+  #doneBox{text-align:center;font-size:16px;color:var(--accent);font-weight:700;margin-top:18px;display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h3>🕵️ Faktor-Detektiv</h3>
+  <p class="hint">Ein Term wird gezeigt — wähle das passende Verfahren, dann klick auf „Schritt ausführen", um die faktorisierte Form zu sehen.</p>
+
+  <div class="card">
+    <div id="missionProgress">Fall 1 / 5</div>
+    <div id="termLabel"></div>
+    <div class="methodRow" id="methodRow"></div>
+    <div id="missionFeedback"></div>
+    <div id="missionResult"></div>
+    <button id="nextMissionBtn">Nächster Fall ▸</button>
+  </div>
+
+  <h4>🧩 Rätselmodus — stimmt das?</h4>
+  <p class="hint">Beurteile jede Behauptung: stimmt sie, oder ist sie eine Falle?</p>
+  <div id="puzzleWrap"></div>
+
+  <div id="doneBox">✅ Alle Fälle gelöst und alle Rätsel beurteilt — sauber ermittelt, Detektiv!</div>
+</div>
+<script>
+const MISSIONS=[
+  {term:"x² + 8x + 16", method:"binom1", result:"(x+4)²", hint:"Zwei Quadrate (x², 4²=16) und ein passendes doppeltes Produkt mit PLUS (2·x·4=8x) → 1. Binom."},
+  {term:"x² − 10x + 25", method:"binom2", result:"(x−5)²", hint:"Zwei Quadrate (x², 5²=25) und ein passendes doppeltes Produkt mit MINUS (2·x·5=10x) → 2. Binom."},
+  {term:"x² − 49", method:"binom3", result:"(x+7)(x−7)", hint:"Differenz zweier Quadrate (x², 7²=49), kein mittlerer Term → 3. Binom."},
+  {term:"5x² + 15x", method:"ausklammern", result:"5x(x+3)", hint:"Jeder Summand enthält 5x — kein konstantes Glied da, also Ausklammern."},
+  {term:"x² + 9", method:"gehtnicht", result:"nicht faktorisierbar (mit Schulmitteln)", hint:"Summe zweier Quadrate (x²+9) — dafür gibt es KEINE binomische Formel, und es gibt auch nichts auszuklammern."}
+];
+const METHODS=[
+  {id:"ausklammern", label:"Ausklammern"},
+  {id:"binom1", label:"1. Binom"},
+  {id:"binom2", label:"2. Binom"},
+  {id:"binom3", label:"3. Binom"},
+  {id:"gehtnicht", label:"Geht nicht"}
+];
+let mi=0, missionsSolved=[false,false,false,false,false];
+
+function renderMission(){
+  const m=MISSIONS[mi];
+  document.getElementById('missionProgress').textContent='Fall '+(mi+1)+' / '+MISSIONS.length;
+  document.getElementById('termLabel').textContent=m.term;
+  document.getElementById('missionFeedback').textContent='';
+  document.getElementById('missionResult').textContent='';
+  document.getElementById('nextMissionBtn').style.display='none';
+  const row=document.getElementById('methodRow');
+  row.innerHTML='';
+  METHODS.forEach(mt=>{
+    const b=document.createElement('button');
+    b.className='methodBtn'; b.textContent=mt.label; b.dataset.id=mt.id;
+    b.onclick=()=>chooseMethod(mt.id, b);
+    row.appendChild(b);
+  });
+}
+function chooseMethod(id, btn){
+  const m=MISSIONS[mi];
+  if(missionsSolved[mi]) return;
+  if(id===m.method){
+    btn.classList.add('correct');
+    document.querySelectorAll('#methodRow .methodBtn').forEach(x=>x.disabled=true);
+    document.getElementById('missionFeedback').textContent=m.hint;
+    document.getElementById('missionResult').textContent='Schritt ausgeführt: '+m.term+' = '+m.result;
+    missionsSolved[mi]=true;
+    window.lwAward && window.lwAward('mission', 'fall'+(mi+1));
+    document.getElementById('nextMissionBtn').style.display = (mi<MISSIONS.length-1) ? 'block' : 'none';
+    checkAllDone();
+  } else {
+    btn.classList.add('wrong');
+    document.getElementById('missionFeedback').textContent='Nicht ganz — schau dir Vorzeichen und Anzahl der Quadrate nochmal an.';
+    setTimeout(()=>btn.classList.remove('wrong'), 700);
+  }
+}
+document.getElementById('nextMissionBtn').onclick=()=>{
+  if(mi<MISSIONS.length-1){ mi++; renderMission(); }
+};
+renderMission();
+
+const PUZZLES=[
+  {text:"x²+16 wird zu (x+4)(x−4) faktorisiert.", ok:false,
+   why:"Falsch — x²+16 ist eine SUMME zweier Quadrate, keine Differenz. (x+4)(x−4) ausmultipliziert ergibt x²−16, nicht x²+16. Eine Summe zweier Quadrate lässt sich mit KEINER binomischen Formel faktorisieren."},
+  {text:"x²−16 wird zu (x+4)(x−4) faktorisiert.", ok:true,
+   why:"Richtig — Differenz zweier Quadrate (x², 4²=16), kein mittlerer Term → 3. Binom passt exakt."},
+  {text:"2x²−8x wird zu 2x(x−4) faktorisiert.", ok:true,
+   why:"Richtig — 2x ausgeklammert: 2x·x=2x² und 2x·(−4)=−8x passt."},
+  {text:"x²−6x+9 wird zu (x−3)² faktorisiert.", ok:true,
+   why:"Richtig — zwei Quadrate (x², 3²=9), doppeltes Produkt mit Minus (2·x·3=6x) → 2. Binom."},
+  {text:"x²+6x+9 wird zu (x+3)(x−3) faktorisiert.", ok:false,
+   why:"Falsch — das mischt 1. und 3. Binom durcheinander. x²+6x+9 hat einen mittleren Term (+6x), ist also KEINE Differenz zweier Quadrate. Richtig wäre (x+3)² (1. Binom)."}
+];
+let puzzleAnswered=[false,false,false,false,false];
+function renderPuzzles(){
+  const wrap=document.getElementById('puzzleWrap');
+  PUZZLES.forEach((p,pi)=>{
+    const box=document.createElement('div'); box.className='puzzleItem';
+    const t=document.createElement('p'); t.className='puzzleText'; t.textContent=(pi+1)+'. '+p.text;
+    box.appendChild(t);
+    const btns=document.createElement('div'); btns.className='puzzleBtns';
+    const bTrue=document.createElement('button'); bTrue.className='puzzleBtn'; bTrue.textContent='Stimmt';
+    const bFalse=document.createElement('button'); bFalse.className='puzzleBtn'; bFalse.textContent='Stimmt nicht';
+    const why=document.createElement('div'); why.className='puzzleWhy'; why.textContent=p.why;
+    function answer(guess, btn){
+      if(puzzleAnswered[pi]) return;
+      puzzleAnswered[pi]=true;
+      [bTrue,bFalse].forEach(x=>x.disabled=true);
+      if(guess===p.ok) btn.classList.add('correct');
+      else { btn.classList.add('wrong'); (guess?bFalse:bTrue).classList.add('correct'); }
+      why.classList.add('show');
+      window.lwAward && window.lwAward('mission', 'raetsel'+(pi+1));
+      checkAllDone();
+    }
+    bTrue.onclick=()=>answer(true,bTrue);
+    bFalse.onclick=()=>answer(false,bFalse);
+    btns.appendChild(bTrue); btns.appendChild(bFalse);
+    box.appendChild(btns); box.appendChild(why);
+    wrap.appendChild(box);
+  });
+}
+renderPuzzles();
+
+function checkAllDone(){
+  if(missionsSolved.every(Boolean) && puzzleAnswered.every(Boolean)){
+    document.getElementById('doneBox').style.display='block';
+    window.lwAward && window.lwAward('mission', 'faktordetektiv_komplett');
+  }
+}
+
+// Test-Hook fuer Playwright-Verifikation
+window.LAB = {
+  state: () => ({
+    missionIndex: mi,
+    missionsSolved: missionsSolved.slice(),
+    puzzleAnswered: puzzleAnswered.slice(),
+    allDone: missionsSolved.every(Boolean) && puzzleAnswered.every(Boolean)
+  }),
+  chooseMethod: (id) => {
+    const btn=[...document.querySelectorAll('#methodRow .methodBtn')].find(b=>b.dataset.id===id);
+    if(btn) chooseMethod(id, btn);
+  },
+  nextMission: () => document.getElementById('nextMissionBtn').click(),
+  answerPuzzle: (pi, guess) => {
+    const box=document.querySelectorAll('.puzzleItem')[pi];
+    if(!box) return;
+    const btn=[...box.querySelectorAll('.puzzleBtn')][guess?0:1];
+    if(btn) btn.click();
+  }
+};
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

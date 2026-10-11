@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Winkelfunktionen-Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:16px 22px 40px;max-width:820px;margin:0 auto;}
+  h2{margin:0 0 4px;font-size:22px;}
+  .lead{color:var(--muted);font-size:15px;margin:0 0 14px;}
+  .panel{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:14px;}
+  .row{display:flex;align-items:center;gap:12px;margin:10px 0;flex-wrap:wrap;}
+  .row label{min-width:90px;font-size:15px;}
+  input[type=range]{flex:1;min-width:200px;}
+  .val{font-weight:700;color:var(--accent);min-width:50px;text-align:right;}
+  #svgHost{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;}
+  .valuesgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px;font-size:15px;}
+  .valuesgrid div{background:#1f2630;border-radius:8px;padding:8px 12px;}
+  .mission{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:10px 16px;margin-top:10px;font-size:15px;}
+  .mission.solved{background:#1c3d24;border-left-color:#4caf50;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h2>🧪 Winkelfunktionen-Labor</h2>
+  <p class="lead">Stelle den Winkel α per Regler ein und beobachte, wie sich sin, cos, tan und cot verändern.</p>
+  <div class="panel">
+    <div class="row">
+      <label for="alphaSlide">Winkel α</label>
+      <input type="range" id="alphaSlide" min="5" max="85" step="1" value="50">
+      <span class="val" id="alphaVal">50°</span>
+    </div>
+    <div id="svgHost"></div>
+    <div class="valuesgrid">
+      <div>sin α = <span id="sinVal"></span></div>
+      <div>cos α = <span id="cosVal"></span></div>
+      <div>tan α = <span id="tanVal"></span></div>
+      <div>cot α = <span id="cotVal"></span></div>
+    </div>
+    <div class="mission" id="missionA">🎯 Mission 1: Stelle α so ein, dass sin α ≈ 0,5 ist.</div>
+    <div class="mission" id="missionB">🎯 Mission 2: Stelle α so ein, dass tan α ≈ 1 ist.</div>
+  </div>
+</div>
+
+<script>
+function toX(x,ox,sx){ return ox+x*sx; }
+function toY(y,oy,sy){ return oy-y*sy; }
+const de3=(x)=>x.toFixed(3).replace('.',',');
+
+let alpha=50;
+let m1solved=false, m2solved=false;
+
+function render(){
+  const rad=alpha*Math.PI/180;
+  const s=Math.sin(rad), c=Math.cos(rad), t=Math.tan(rad), ct=1/t;
+  document.getElementById('sinVal').textContent=de3(s);
+  document.getElementById('cosVal').textContent=de3(c);
+  document.getElementById('tanVal').textContent=de3(t);
+  document.getElementById('cotVal').textContent=de3(ct);
+
+  const w=300,h=260, cx=110, cy=220, r=140;
+  const px=cx+r*c, py=cy-r*s;
+  let sv='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;max-width:300px;height:auto;display:block;margin:0 auto;">';
+  sv+='<line x1="'+(cx-20)+'" y1="'+cy+'" x2="'+(cx+r+20)+'" y2="'+cy+'" stroke="#9aa4b2" stroke-width="1"/>';
+  sv+='<line x1="'+cx+'" y1="'+(cy-r-20)+'" x2="'+cx+'" y2="'+(cy+10)+'" stroke="#9aa4b2" stroke-width="1"/>';
+  sv+='<line x1="'+cx+'" y1="'+cy+'" x2="'+px+'" y2="'+py+'" stroke="#5fd0c7" stroke-width="2.6"/>';
+  sv+='<line x1="'+px+'" y1="'+py+'" x2="'+px+'" y2="'+cy+'" stroke="#f2a63c" stroke-width="2.6"/>';
+  sv+='<line x1="'+cx+'" y1="'+cy+'" x2="'+px+'" y2="'+cy+'" stroke="#e06fa0" stroke-width="2.6"/>';
+  sv+='<text x="'+(px+8)+'" y="'+((py+cy)/2)+'" fill="#f2a63c" font-size="13">Gegenkathete</text>';
+  sv+='<text x="'+((cx+px)/2)+'" y="'+(cy+18)+'" fill="#e06fa0" font-size="13" text-anchor="middle">Ankathete</text>';
+  sv+='<text x="'+((cx+px)/2-10)+'" y="'+((py+cy)/2-8)+'" fill="#e6edf3" font-size="13">Hypotenuse</text>';
+  sv+='<text x="'+(cx+22)+'" y="'+(cy-10)+'" fill="#e6edf3" font-size="12">α</text>';
+  sv+='</svg>';
+  document.getElementById('svgHost').innerHTML=sv;
+
+  const boxA=document.getElementById('missionA');
+  if(Math.abs(s-0.5)<0.02){
+    if(!m1solved) m1solved=true;
+  }
+  if(m1solved){
+    boxA.classList.add('solved');
+    boxA.innerHTML='✅ Mission 1 gelöst: bei α=30° gilt sin α = 0,5.';
+  } else {
+    boxA.classList.remove('solved');
+    boxA.innerHTML='🎯 Mission 1: Stelle α so ein, dass sin α ≈ 0,5 ist. (aktuell '+de3(s)+')';
+  }
+  const boxB=document.getElementById('missionB');
+  if(Math.abs(t-1)<0.03){
+    if(!m2solved) m2solved=true;
+  }
+  if(m2solved){
+    boxB.classList.add('solved');
+    boxB.innerHTML='✅ Mission 2 gelöst: bei α=45° gilt tan α = 1 — Gegenkathete und Ankathete sind gleich lang.';
+  } else {
+    boxB.classList.remove('solved');
+    boxB.innerHTML='🎯 Mission 2: Stelle α so ein, dass tan α ≈ 1 ist. (aktuell '+de3(t)+')';
+  }
+}
+document.getElementById('alphaSlide').addEventListener('input', e=>{
+  alpha=parseInt(e.target.value);
+  document.getElementById('alphaVal').textContent=alpha+'°';
+  render();
+});
+render();
+
+window.LAB={
+  state(){
+    return {
+      alpha: alpha,
+      sin: Math.sin(alpha*Math.PI/180),
+      cos: Math.cos(alpha*Math.PI/180),
+      tan: Math.tan(alpha*Math.PI/180),
+      missionSolved: [m1solved, m2solved]
+    };
+  },
+  setAlpha(a){
+    alpha=a;
+    document.getElementById('alphaSlide').value=a;
+    document.getElementById('alphaVal').textContent=a+'°';
+    render();
+  }
+};
+</script>
+</body>
+</html>

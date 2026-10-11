@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Reelle Zahlen &amp; Wurzeln · Teil 2 — Rechnen mit Wurzeln</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>REELLE ZAHLEN &amp; WURZELN <span class="accent">· Teil 2</span></h1>
+    <h2>Rechnen mit Wurzeln</h2>
+    <div class="hook" style="max-width:70ch;">Ein DIN-A4-Blatt hat ein Seitenverhältnis von genau √2. Falte es einmal — und du bekommst wieder genau dasselbe Seitenverhältnis (DIN A5). Das ist kein Zufall, sondern eine direkte Folge der Rechengesetze für Wurzeln, die du jetzt lernst.</div>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 5.2</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Anti-Regel zuerst -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">⚠️ Anti-Regel</span> √(a+b) ≠ √a + √b</h2>
+      <div class="svgbox"><div id="svgS2"></div><div class="svgcaption">√(9+16) = √25 = 5 — aber √9 + √16 = 3 + 4 = 7. Nicht dasselbe!</div></div>
+      <div class="defbox">Der wichtigste Fehler beim Rechnen mit Wurzeln: Man darf eine Summe NICHT einfach „unter der Wurzel auseinanderziehen". Wurzeln sind KEINE lineare Operation wie die Multiplikation.</div>
+      <ul class="bul">
+        <li>Merk dir dieses Gegenbeispiel — es widerlegt die Falle sofort, wann immer sie auftaucht.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 3 Addition/Subtraktion -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Addition &amp; Subtraktion von Wurzeln</h2>
+      <div class="defbox">Nur Wurzeln mit GLEICHEM Radikanden dürfen addiert bzw. subtrahiert werden — genau wie bei Termen mit derselben Variablen: x·√a ± y·√a = (x±y)·√a.</div>
+      <ul class="bul">
+        <li>5√2 + 6√2 = 11√2 · 6√2 − 10√2 = −4√2</li>
+        <li>6√5 + 10√x = 16√x ist FALSCH — die Radikanden 5 und x sind verschieden, hier bleibt nur 6√5+10√x stehen.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 4 Multiplikation -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Multiplikation von Quadratwurzeln</h2>
+      <div class="defbox">Das Produkt zweier Quadratwurzeln ist eine Quadratwurzel, deren Radikand das Produkt der beiden Radikanden ist: √a · √b = √(a·b) mit a,b ∈ ℝ₀⁺.</div>
+      <ul class="bul">
+        <li>√2 · √50 = √100 = 10 · √3 · √12 = √36 = 6 · 2√7 · 3√2 = 6√14</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 5 Ziehen unter die Wurzel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Einen Faktor unter die Wurzel ziehen</h2>
+      <div class="defbox">Ein Faktor vor der Wurzel wird unter die Wurzel geschrieben, indem er quadriert wird: a√b = √(a²·b) mit a,b ∈ ℝ₀⁺.</div>
+      <ul class="bul">
+        <li>2√3 = √(2²·3) = √(4·3) = √12 · 4√2 = √(16·2) = √32 · 3√5 = √(9·5) = √45</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 6 Teilweises Radizieren -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Teilweises Radizieren</h2>
+      <div class="svgbox"><div id="svgS6"></div><div class="svgcaption">√50 = √25 · √2 = 5√2 — die Quadratzahl 25 „verlässt" die Wurzel als 5</div></div>
+      <div class="defbox">Die Umkehrung: eine Quadratwurzel wird in ein Produkt aus Faktoren zerlegt, wobei aus einem Faktor (einer Quadratzahl) die Wurzel gezogen werden kann.</div>
+      <ul class="bul">
+        <li>√8 = √(4·2) = √4·√2 = 2√2 · √12 = √(4·3) = 2√3 · √75 = √(3·25) = 5√3</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7 Schritt-fuer-Schritt teilweises Radizieren -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> √288 teilweise radizieren</h2>
+      <div class="defbox">Aufgabe: Radiziere √288 teilweise.</div>
+      <div class="step" id="s7_1"><b class="lbl">Größte Quadratzahl finden:</b> 288 = 2·144 — und 144 ist eine Quadratzahl (12²=144).</div>
+      <div class="step" id="s7_2"><b class="lbl">Zerlegen:</b> √288 = √(2·144) = √2 · √144.</div>
+      <div class="step" id="s7_3"><b class="lbl">Wurzel ziehen:</b> √144 = 12, also √2 · √144 = √2 · 12.</div>
+      <div class="step" id="s7_4"><b class="lbl">Antwortsatz:</b> √288 = 12√2.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="7" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 8 Division -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Division von Quadratwurzeln</h2>
+      <div class="defbox">Der Quotient zweier Quadratwurzeln ist eine Quadratwurzel, deren Radikand der Quotient der beiden Radikanden ist: √a / √b = √(a/b) mit a ∈ ℝ₀⁺, b ∈ ℝ⁺.</div>
+      <ul class="bul">
+        <li>√50 / √2 = √25 = 5 · √3 / √12 = √(1/4) = 1/2 · 3√6 / √2 = 3√3</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 9 Rationalmachen Teil 1 -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Rationalmachen des Nenners (Teil 1)</h2>
+      <div class="defbox">Steht im Nenner eines Bruchs eine einzelne Wurzel, wird der Bruch mit genau dieser Wurzel erweitert — die Wurzel im Nenner verschwindet, da √b·√b = b: a/√b = (a·√b)/b mit a ∈ ℝ, b ∈ ℝ⁺.</div>
+      <ul class="bul">
+        <li>1/√2 = (1·√2)/(√2·√2) = √2/2 · 10/√5 = (10·√5)/5 = 2√5</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10 Rationalmachen Teil 2 -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Rationalmachen des Nenners (Teil 2)</h2>
+      <div class="defbox">Steht im Nenner eine SUMME mit einer Wurzel (z. B. x+√2), wird mit der Differenz erweitert (x−√2) — dadurch greift die dritte Binomische Formel (a+b)(a−b)=a²−b² und die Wurzel verschwindet: a/(b+√x) = (a·(b−√x)) / (b²−x).</div>
+      <ul class="bul">
+        <li>🌉 Brücke zu Kapitel 4.5: genau die dritte Binomische Formel aus dem letzten Kapitel macht diesen Trick möglich!</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 11 Schritt-fuer-Schritt Rationalmachen Teil 2 -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> 5/(x+√2) rational machen</h2>
+      <div class="defbox">Aufgabe: Mache den Nenner des Bruchs 5/(x+√2) rational (x ≠ −√2).</div>
+      <div class="step" id="s11_1"><b class="lbl">Mit der Differenz erweitern:</b> Erweitere mit (x−√2): 5/(x+√2) = (5·(x−√2)) / ((x+√2)·(x−√2)).</div>
+      <div class="step" id="s11_2"><b class="lbl">3. Binom anwenden:</b> (x+√2)·(x−√2) = x² − (√2)² = x² − 2.</div>
+      <div class="step" id="s11_3"><b class="lbl">Antwortsatz:</b> 5/(x+√2) = (5·(x−√2)) / (x²−2) — der Nenner enthält keine Wurzel mehr.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="11" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 12 Potenzieren von Wurzeln -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Potenzieren von Wurzeln</h2>
+      <div class="defbox">Eine Wurzel wird mit einem Exponenten n potenziert, indem der Radikand mit n potenziert wird: (√a)ⁿ = √(aⁿ) mit a ∈ ℝ₀⁺.</div>
+      <ul class="bul">
+        <li>(√2)³ = √(2³) = √8 · (√3a)⁵ = √((3a)⁵) = √(3⁵a⁵) = √(243a⁵)</li>
+        <li>Umgekehrt gilt auch: steckt eine Potenz UNTER der Wurzel, kann direkt aus der Basis die Wurzel gezogen werden: √(4⁵) = (√4)⁵ = 2⁵ = 32.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 13 Eselsbruecke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Wurzeln sind wie Türsteher bei Multiplikation und Division: die dürfen zusammen (√a·√b=√(ab), √a/√b=√(a/b)) — aber bei PLUS und MINUS bleibt jede Wurzel für sich allein, außer sie haben denselben Radikanden." Der Klassiker-Fehler √(a+b)=√a+√b bricht genau diese Türsteher-Regel.</div>
+    </div>
+  </section>
+
+  <!-- 14 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> DIN-Papierformate</h2>
+      <div class="svgbox"><div id="svgS14"></div><div class="svgcaption">DIN A4 halbiert ergibt DIN A5 — mit demselben Seitenverhältnis √2</div></div>
+      <div class="defbox">Bei jedem Papierblatt nach DIN-Norm gilt: die längere Seite l_y ist genau √2-mal so lang wie die kürzere Seite l_x (l_y = √2 · l_x). Halbiert man das Blatt an der langen Seite, bekommt das neue Blatt WIEDER dasselbe Seitenverhältnis √2 — deshalb passt A5 wieder perfekt zu A4.</div>
+      <ul class="bul">
+        <li>Druckereien und die Papierindustrie verlassen sich weltweit auf genau diese Eigenschaft der Quadratwurzel aus 2.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 15 Intuitions-Regler -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Schätz mal: √50</h2>
+      <div class="defbox">Du weißt: √50 lässt sich teilweise radizieren. Aber wie groß ist √50 als Dezimalzahl ungefähr?</div>
+      <div id="estWurzel50"></div>
+    </div>
+  </section>
+
+  <!-- 16 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Regel</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>√a · √b = √(ab)</td><td>„Wurzel mal Wurzel"</td><td>Radikanden werden multipliziert</td></tr>
+        <tr><td>√a / √b = √(a/b)</td><td>„Wurzel durch Wurzel"</td><td>Radikanden werden dividiert</td></tr>
+        <tr><td>a√b = √(a²b)</td><td>„Faktor unter die Wurzel"</td><td>Faktor wird quadriert und hineingezogen</td></tr>
+        <tr><td>√(a+b) ≠ √a+√b</td><td>„Anti-Regel"</td><td>Summen dürfen NICHT auseinandergezogen werden</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 17 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Wurzelgesetz-Anwender</span><span class="sub">Umformungsweg zusammenklicken</span></div>
+    <iframe allow="autoplay" data-src="wurzelgesetze16_labor.html"></iframe>
+  </section>
+
+  <!-- 18 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Regel</th><th>Kernaussage</th></tr>
+      <tr><td>Addition/Subtraktion</td><td>Nur bei GLEICHEM Radikanden: x√a±y√a=(x±y)√a</td></tr>
+      <tr><td>Multiplikation</td><td>√a·√b=√(ab)</td></tr>
+      <tr><td>Division</td><td>√a/√b=√(a/b)</td></tr>
+      <tr><td>Teilweises Radizieren</td><td>√50=√25·√2=5√2</td></tr>
+      <tr><td>Rationalmachen</td><td>Erweitern mit √b bzw. mit der Differenz (3. Binom)</td></tr>
+      <tr><td>Klassiker-Fehler</td><td>√(a+b) ≠ √a+√b</td></tr>
+    </table>
+  </section>
+
+  <!-- 19 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Radiziere √75 teilweise.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>√75 = √(25·3) = 5√3</details>
+        </li>
+        <li style="margin-top:10px;">Berechne √3 · √27.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>√3·√27 = √81 = 9</details>
+        </li>
+        <li style="margin-top:10px;">Mache den Nenner rational: 6/√3.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>6/√3 = (6·√3)/3 = 2√3</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 20 Pruefungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Wurzeln multiplizieren, dividieren, teilweise radizieren</b> können.</li>
+        <li><b>Nenner rational machen</b> — auch bei einer Summe im Nenner (3. Binom).</li>
+        <li><b>Den Klassiker-Fehler √(a+b)=√a+√b erkennen und korrigieren</b> können.</li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">Kapitel-Brücke — Transferaufgabe mit Binomen: <i>„Berechne (√3+√2)·(√3−√2) mithilfe der dritten Binomischen Formel."</i> → (√3)²−(√2)² = 3−2 = 1. Die Binomischen Formeln funktionieren mit Wurzeln genauso wie mit Zahlen und Variablen!</div>
+    </div>
+  </section>
+
+  <!-- 21 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+// === SVG: Anti-Regel Kontrastbalken ===
+function buildAntiRuleSVG(){
+  const W=300,H=170;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:300px;height:auto;display:block;margin:0 auto;">';
+  // left: sqrt(9+16)=5
+  s+='<rect x="40" y="'+(150-5*12)+'" width="50" height="'+(5*12)+'" fill="rgba(76,175,80,0.30)" stroke="#4caf50" stroke-width="1.5"/>';
+  s+='<text x="65" y="165" text-anchor="middle" font-size="11" fill="#8adf9c">√(9+16)=5</text>';
+  // right: sqrt9+sqrt16=7
+  s+='<rect x="180" y="'+(150-7*12)+'" width="50" height="'+(7*12)+'" fill="rgba(224,90,90,0.30)" stroke="#e05a5a" stroke-width="1.5"/>';
+  s+='<text x="205" y="165" text-anchor="middle" font-size="11" fill="#ff9d9d">√9+√16=7</text>';
+  s+='<text x="150" y="40" text-anchor="middle" font-size="20" fill="#9aa4b2">≠</text>';
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgS2').innerHTML=buildAntiRuleSVG();
+
+// === SVG: Faktor-Kacheln teilweises Radizieren (sqrt50 = sqrt25*sqrt2 = 5 sqrt2) ===
+function buildFactorTilesSVG(){
+  const W=320,H=120;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:320px;height:auto;display:block;margin:0 auto;">';
+  s+='<rect x="20" y="30" width="70" height="50" fill="rgba(76,175,80,0.30)" stroke="#4caf50" stroke-width="1.5"/>';
+  s+='<text x="55" y="60" text-anchor="middle" font-size="15" font-weight="700" fill="#8adf9c">25</text>';
+  s+='<text x="55" y="95" text-anchor="middle" font-size="11" fill="#9aa4b2">Quadratzahl</text>';
+  s+='<text x="100" y="60" text-anchor="middle" font-size="18" fill="#9aa4b2">·</text>';
+  s+='<rect x="115" y="30" width="55" height="50" fill="rgba(242,166,60,0.28)" stroke="#f2a63c" stroke-width="1.5"/>';
+  s+='<text x="142" y="60" text-anchor="middle" font-size="15" font-weight="700" fill="#f2a63c">2</text>';
+  s+='<text x="142" y="95" text-anchor="middle" font-size="11" fill="#9aa4b2">Rest</text>';
+  s+='<text x="195" y="60" text-anchor="middle" font-size="20" fill="#9aa4b2">→</text>';
+  s+='<text x="260" y="60" text-anchor="middle" font-size="18" font-weight="700" fill="#5fd0c7">5√2</text>';
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgS6').innerHTML=buildFactorTilesSVG();
+
+// === SVG: DIN-Papier Seitenverhaeltnis ===
+function buildDinPaperSVG(){
+  const W=300,H=150;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:300px;height:auto;display:block;margin:0 auto;">';
+  // A4: width 60, height 60*sqrt2 ~ 85
+  const a4w=60, a4h=85;
+  s+='<rect x="30" y="20" width="'+a4w+'" height="'+a4h+'" fill="rgba(95,208,199,0.22)" stroke="#5fd0c7" stroke-width="1.5"/>';
+  s+='<text x="'+(30+a4w/2)+'" y="'+(20+a4h/2)+'" text-anchor="middle" font-size="13" font-weight="700" fill="#5fd0c7">A4</text>';
+  s+='<text x="'+(30+a4w/2)+'" y="120" text-anchor="middle" font-size="11" fill="#9aa4b2">l_x</text>';
+  s+='<text x="12" y="'+(20+a4h/2)+'" text-anchor="middle" font-size="11" fill="#9aa4b2">l_y=√2·l_x</text>';
+  // A5: half of A4, split horizontally
+  const a5x=150, a5w=a4h/2, a5h=a4w;
+  s+='<rect x="'+a5x+'" y="35" width="'+a5h+'" height="'+a5w+'" fill="rgba(242,166,60,0.22)" stroke="#f2a63c" stroke-width="1.5"/>';
+  s+='<line x1="'+a5x+'" y1="'+(35+a5w/2)+'" x2="'+(a5x+a5h)+'" y2="'+(35+a5w/2)+'" stroke="#f2a63c" stroke-width="1" stroke-dasharray="3,2"/>';
+  s+='<text x="'+(a5x+a5h/2)+'" y="'+(35+a5w/4+4)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#f2a63c">A5</text>';
+  s+='<text x="'+(a5x+a5h/2)+'" y="'+(35+a5w*0.75+4)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#f2a63c">A5</text>';
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgS14').innerHTML=buildDinPaperSVG();
+
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "⚠️ Anti-Regel: √(a+b) ≠ √a+√b", "Addition & Subtraktion von Wurzeln", "Multiplikation von Quadratwurzeln", "Einen Faktor unter die Wurzel ziehen", "Teilweises Radizieren", "📐 Schritt für Schritt: √288 teilweise radizieren", "Division von Quadratwurzeln", "Rationalmachen des Nenners (Teil 1)", "Rationalmachen des Nenners (Teil 2)", "📐 Schritt für Schritt: 5/(x+√2) rational machen", "Potenzieren von Wurzeln", "💡 Eselsbrücke", "🔧 Praxisbeispiel: DIN-Papierformate", "Schätz mal: √50", "Symbol-Legende", "🧪 Wurzelgesetz-Anwender", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=19;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck16_s1_Charon.mp3",txt:"Reelle Zahlen und Wurzeln, Teil zwei. Ein DIN A4 Blatt hat ein Seitenverhältnis von genau Wurzel zwei. Faltest du es einmal, bekommst du wieder genau dasselbe Seitenverhältnis - DIN A5. Das ist kein Zufall, sondern eine direkte Folge der Rechengesetze für Wurzeln, die du jetzt lernst."},
+ 2:{wav:"narration_deck16_s2_Charon.mp3",txt:"Bevor wir irgendwelche Regeln lernen, zuerst die wichtigste Warnung: Wurzel aus neun plus sechzehn ist Wurzel aus fünfundzwanzig, also fünf. Aber Wurzel neun plus Wurzel sechzehn ist drei plus vier, also sieben. Das ist NICHT dasselbe - eine Summe darf man niemals einfach unter der Wurzel auseinanderziehen."},
+ 3:{wav:"narration_deck16_s3_Charon.mp3",txt:"Nur Wurzeln mit demselben Radikanden dürfen addiert oder subtrahiert werden - genau wie bei Termen mit derselben Variablen."},
+ 4:{wav:"narration_deck16_s4_Charon.mp3",txt:"Zwei Quadratwurzeln werden multipliziert, indem man ihre Radikanden multipliziert."},
+ 5:{wav:"narration_deck16_s5_Charon.mp3",txt:"Ein Faktor vor der Wurzel wandert unter die Wurzel, indem er quadriert wird."},
+ 6:{wav:"narration_deck16_s6_Charon.mp3",txt:"Und jetzt umgekehrt: eine Wurzel wird teilweise radiziert, indem man den Radikanden in eine Quadratzahl und einen Rest zerlegt - die Quadratzahl darf dann als ganze Zahl vor die Wurzel treten."},
+ 7:{wav:"narration_deck16_s7_Charon.mp3",txt:"Jetzt üben wir das teilweise Radizieren an einer etwas größeren Zahl Schritt für Schritt."},
+ 8:{wav:"narration_deck16_s8_Charon.mp3",txt:"Zwei Quadratwurzeln werden dividiert, indem man ihre Radikanden dividiert."},
+ 9:{wav:"narration_deck16_s9_Charon.mp3",txt:"Steht im Nenner eine einzelne Wurzel, machst du sie rational, indem du mit genau dieser Wurzel erweiterst."},
+ 10:{wav:"narration_deck16_s10_Charon.mp3",txt:"Steht im Nenner dagegen eine Summe mit einer Wurzel, brauchst du einen cleveren Trick: du erweiterst mit der Differenz - und genau dabei kommt die dritte binomische Formel aus dem letzten Kapitel wieder zum Einsatz."},
+ 11:{wav:"narration_deck16_s11_Charon.mp3",txt:"Schauen wir uns diesen Trick jetzt Schritt für Schritt an einem konkreten Bruch an."},
+ 12:{wav:"narration_deck16_s12_Charon.mp3",txt:"Eine Wurzel wird potenziert, indem ihr Radikand potenziert wird - und umgekehrt kann aus einer Potenz unter der Wurzel direkt aus der Basis die Wurzel gezogen werden."},
+ 13:{wav:"narration_deck16_s13_Charon.mp3",txt:"Merk dir das Türsteher-Bild: bei Mal und Geteilt dürfen Wurzeln zusammen - bei Plus und Minus bleibt jede für sich, außer sie haben denselben Radikanden."},
+ 14:{wav:"narration_deck16_s14_Charon.mp3",txt:"Bei jedem DIN-Papierblatt ist die lange Seite genau Wurzel zwei mal so lang wie die kurze Seite - deshalb behält jedes gefaltete Blatt exakt dasselbe Seitenverhältnis."},
+ 15:{wav:"narration_deck16_s15_Charon.mp3",txt:"Du weißt schon, dass sich Wurzel fünfzig teilweise radizieren lässt. Aber schätz doch mal: wie groß ist Wurzel fünfzig ungefähr als Dezimalzahl?"},
+ 16:{wav:"narration_deck16_s16_Charon.mp3",txt:"Hier noch mal alle Rechengesetze für Wurzeln im Überblick, bevor du selbst im Labor experimentierst."},
+ 17:{wav:"narration_deck16_s17_Charon.mp3",txt:"Jetzt bist du dran: klick dir den richtigen Umformungsweg für den gezeigten Wurzelterm zusammen."},
+ 18:{wav:"narration_deck16_s18_Charon.mp3",txt:"Fassen wir zusammen: Addition und Subtraktion nur bei gleichem Radikanden, Multiplikation und Division über die Radikanden, teilweises Radizieren, Rationalmachen des Nenners - und der Klassiker-Fehler, den du jetzt nie mehr machst."},
+ 19:{wav:"narration_deck16_s19_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben zu den Rechengesetzen mit Wurzeln."},
+ 20:{wav:"narration_deck16_s20_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst - inklusive einer Transferaufgabe, die Wurzeln mit den binomischen Formeln kombiniert."},
+ 21:{wav:"narration_deck16_s21_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt (mehrere Gruppen) ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"Was ist √(9+16)?",
+  a:["7","5","25","1"],r:1,
+  why:"√(9+16)=√25=5. Der Klassiker-Fehler wäre √9+√16=3+4=7 — falsch!"},
+ {q:"Was ist √3 · √12?",
+  a:["√36 = 6","√15","36","√9"],r:0,
+  why:"√a·√b=√(ab): √3·√12=√36=6."},
+ {q:"Wie lautet √50 teilweise radiziert?",
+  a:["10√5","5√2","25√2","2√25"],r:1,
+  why:"50=25·2, √25=5 → √50=√(25·2)=5√2."},
+ {q:"Was ist 6√2 − 10√2?",
+  a:["−4√2","−4","16√2","4"],r:0,
+  why:"Gleicher Radikand → Koeffizienten subtrahieren: 6−10=−4, also −4√2."},
+ {q:"Wie macht man den Nenner von 3/√x rational?",
+  a:["Mit √x erweitern: 3√x/x","Mit x erweitern: 3x/x","Gar nicht möglich","Durch √x teilen"],r:0,
+  why:"Erweitern mit √x: 3/√x = (3·√x)/(√x·√x) = 3√x/x."},
+ {q:"Welcher Trick steckt hinter dem Rationalmachen von a/(b+√x)?",
+  a:["Mit (b+√x) selbst erweitern","Mit (b−√x) erweitern — nutzt die 3. Binomische Formel","Wurzel einfach weglassen","Zähler und Nenner quadrieren"],r:1,
+  why:"Erweitern mit der Differenz (b−√x) nutzt (b+√x)(b−√x)=b²−x — die dritte Binomische Formel."}
+];
+const DECK_ID="wurzeln/deck16";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), oi===item.r);
+        answered++; if(oi===item.r) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estWurzel50', {
+    frage: 'Wie groß ist √50 ungefähr? (Regler zeigt Zehntel — 71 bedeutet 7,1)',
+    min: 40, max: 100, korrekt: 71, toleranz: 2,
+    begruendung: '√50 = 5√2 ≈ 5·1,4142 ≈ 7,07.'
+  });
+});
+</script>
+</body>
+</html>

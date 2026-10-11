@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Lineare Ungleichungen · Kapitel-Mischquiz</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  .wrap{max-width:820px;margin:0 auto;padding:24px 18px 60px;}
+  h1{font-size:min(6vw,30px);margin:0 0 6px;}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 20px;}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0 20px;}
+  button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 16px;font-size:14px;cursor:pointer;}
+  button:hover{background:#283041;}
+  button.primary{background:var(--accent);color:#12100a;font-weight:700;border:0;}
+  .quizq{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq .deckTag{display:inline-block;background:#1b222c;color:var(--accent);font-size:11.5px;font-weight:600;border-radius:999px;padding:3px 10px;margin-bottom:8px;}
+  .quizq p.qtext{font-size:min(2.3vw,19px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2vw,16px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(1.8vw,14.5px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #result{display:none;}
+  #result.show{display:block;}
+  .scoreBig{font-size:min(6vw,36px);color:var(--accent);text-align:center;margin:10px 0;}
+  .deckRow{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 16px;margin:6px 0;font-size:14.5px;}
+  .deckRow a{color:var(--accent);text-decoration:none;font-size:13px;}
+  .deckRow a:hover{text-decoration:underline;}
+  .weak{border-left:4px solid #e05a5a;}
+  .strong{border-left:4px solid #3dbb7a;}
+  #startScreen .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:16px 20px;font-size:15px;color:#f6e7cf;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔀 Kapitel-Mischquiz — Lineare Ungleichungen</h1>
+  <p class="sub">20 zufällig gemischte Fragen aus beiden Teilen — Interleaving statt Blockübung.</p>
+
+  <div id="startScreen">
+    <div class="defbox">Dieses Quiz zieht bei jedem Start 15 Fragen zufällig aus dem gesamten Kapitel — quer durch den Zeichen-Dreher und Formvariablen/Beträge. Am Ende siehst du, bei welchem Teil du nochmal reinschauen solltest.</div>
+    <div class="bar">
+      <button class="primary" id="startBtn">▶ Quiz starten (15 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+
+  <div id="quizArea"></div>
+  <div id="result">
+    <div class="scoreBig" id="scoreBig"></div>
+    <h2 style="font-size:18px;">Auswertung pro Teil</h2>
+    <div id="deckBreakdown"></div>
+    <div class="bar">
+      <button class="primary" id="againBtn">🔁 Nochmal (neue 15 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;align-self:center;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+</div>
+<script>
+// === Fragenpool: kopiert aus den QUIZ-Arrays der zwei Teile + eigene Transferfragen ===
+const POOL = [
+// --- deck23.html: Der Zeichen-Dreher ---
+{deck:"Teil 1 — Der Zeichen-Dreher", link:"deck23.html", q:"Bei welcher Operation dreht sich das Relationszeichen einer Ungleichung um?",
+ a:["Bei Addition einer beliebigen Zahl","Bei Multiplikation/Division mit einer negativen Zahl","Bei Subtraktion einer beliebigen Zahl","Bei Multiplikation mit einer positiven Zahl"],r:1,
+ why:"Nur Multiplikation oder Division mit einer negativen Zahl dreht das Relationszeichen."},
+{deck:"Teil 1 — Der Zeichen-Dreher", link:"deck23.html", q:"Löse −2x&gt;8 nach x auf. Was passiert mit dem Zeichen?",
+ a:["Bleibt gleich: x>−4","Dreht sich: x<−4","Bleibt gleich: x<−4","Dreht sich: x>−4"],r:1,
+ why:"−2x>8 |:(−2) — Division durch eine negative Zahl dreht das Zeichen: x<−4."},
+{deck:"Teil 1 — Der Zeichen-Dreher", link:"deck23.html", q:"3x&lt;12 wird durch 3 geteilt. Muss das Zeichen gedreht werden?",
+ a:["Ja, immer bei Division","Nein — 3 ist positiv, das Zeichen bleibt gleich","Ja, weil x auf der linken Seite steht","Nein, aber nur bei <"],r:1,
+ why:"Das Zeichen dreht sich NUR bei negativen Zahlen. 3 ist positiv, also bleibt < erhalten."},
+{deck:"Teil 1 — Der Zeichen-Dreher", link:"deck23.html", q:"4x+2&gt;10 wird zu 4x&gt;8 umgeformt (|−2). Ist das korrekt, ohne das Zeichen zu drehen?",
+ a:["Ja, Addition/Subtraktion dreht das Zeichen nie","Nein, das Zeichen muss auch hier gedreht werden","Nein, weil 2 eine positive Zahl ist","Ja, aber nur weil x positiv ist"],r:0,
+ why:"Subtraktion einer Zahl dreht das Zeichen NIEMALS, unabhängig vom Vorzeichen der subtrahierten Zahl."},
+{deck:"Teil 1 — Der Zeichen-Dreher", link:"deck23.html", q:"Was bedeutet die Lösungsmenge L=]−2;∞[?",
+ a:["x=−2 ist die einzige Lösung","Alle x>−2, wobei −2 selbst NICHT dazugehört","Alle x≥−2, wobei −2 dazugehört","Es gibt keine Lösung"],r:1,
+ why:"Die eckige Klammer ]−2 zeigt vom Intervall weg — die Grenze −2 ist NICHT eingeschlossen."},
+{deck:"Teil 1 — Der Zeichen-Dreher", link:"deck23.html", q:"−x≥5 wird mit −1 multipliziert. Wie lautet das korrekte Ergebnis?",
+ a:["x≥−5","x≤−5","x>−5","x=−5"],r:1,
+ why:"−x≥5 |·(−1) — das Zeichen dreht sich von ≥ zu ≤: x≤−5."},
+
+// --- deck24.html: Formvariablen & Beträge ---
+{deck:"Teil 2 — Formvariablen & Beträge", link:"deck24.html", q:"Bei a·x&gt;6 mit Formvariable a — was gilt im Fall a&lt;0?",
+ a:["Das Relationszeichen bleibt unverändert","Das Relationszeichen dreht sich, weil durch eine negative Zahl geteilt wird","Es gibt keine Lösung","x muss negativ sein"],r:1,
+ why:"Division durch eine negative Formvariable dreht das Relationszeichen."},
+{deck:"Teil 2 — Formvariablen & Beträge", link:"deck24.html", q:"Hat |x|&lt;−3 eine Lösung?",
+ a:["Ja, x=−3","Nein — ein Betrag ist nie negativ, kann also nie kleiner als eine negative Zahl sein","Ja, alle x&lt;0","Ja, x=0"],r:1,
+ why:"|x| ist immer ≥0. Eine Bedingung „Betrag kleiner als eine negative Zahl“ kann niemals erfüllt sein."},
+{deck:"Teil 2 — Formvariablen & Beträge", link:"deck24.html", q:"Wie schreibt man |x|&lt;5 als Doppelungleichung?",
+ a:["x&lt;5","−5&lt;x&lt;5","x&lt;−5 ∨ x&gt;5","0&lt;x&lt;5"],r:1,
+ why:"|x|<a bedeutet: der Abstand zur 0 ist kleiner als a, also liegt x zwischen −a und a."},
+{deck:"Teil 2 — Formvariablen & Beträge", link:"deck24.html", q:"Wie hängt |x|&gt;5 mit der Mengenlehre zusammen?",
+ a:["Es ist eine Schnittmenge ∩ zweier Bereiche","Es ist eine Vereinigung ∪ zweier getrennter Strahlen","Es ist eine leere Menge","Es ist eine Teilmenge"],r:1,
+ why:"Zwei getrennte Zahlenbereiche mit „oder“ verbunden sind genau die Vereinigung ∪."},
+{deck:"Teil 2 — Formvariablen & Beträge", link:"deck24.html", q:"k·x−3≤5 mit Formvariable k. Was gilt im Fall k=0?",
+ a:["0≤8 ist wahr → L₀=G (alle Zahlen)","0≤8 ist falsch → L₀={ }","x muss 0 sein","Das ist nicht erlaubt"],r:0,
+ why:"Für k=0 wird die Ungleichung zu −3≤5 — das ist immer wahr, unabhängig von x."},
+{deck:"Teil 2 — Formvariablen & Beträge", link:"deck24.html", q:"Löse |x−3|≤2.",
+ a:["L=[1;5]","L=[−1;5]","L=]1;5[","L={2}"],r:0,
+ why:"|x−3|≤2 ⇔ −2≤x−3≤2 |+3 ⇔ 1≤x≤5 → L=[1;5]."},
+
+// --- Eigene Transferfragen (kapitelübergreifend, eigene Werte) ---
+{deck:"Teil 1 — Der Zeichen-Dreher", link:"deck23.html", q:"Löse 5−2x≥−1.",
+ a:["x≤3","x≥3","x≤−3","x≥−3"],r:0,
+ why:"5−2x≥−1 |−5 ⇔ −2x≥−6 |:(−2) [Zeichen dreht] ⇔ x≤3."},
+{deck:"Teil 2 — Formvariablen & Beträge", link:"deck24.html", q:"Ein Bauteil darf höchstens 0,3mm von der Solllänge 50mm abweichen. Wie lautet die Betragsungleichung?",
+ a:["|L−50|≤0,3","|L+50|≤0,3","L−50≤0,3","|L|≤50,3"],r:0,
+ why:"Die Abweichung vom Sollwert 50 wird als Abstand |L−50| ausgedrückt, begrenzt durch die Toleranz 0,3."},
+{deck:"Teil 1 — Der Zeichen-Dreher", link:"deck23.html", q:"Für welche Umformung MUSS das Relationszeichen NICHT gedreht werden: |:(−4) oder |+7?",
+ a:["|:(−4)","|+7","Beide müssen gedreht werden","Keine von beiden"],r:1,
+ why:"Addition dreht das Zeichen nie — nur Multiplikation/Division mit einer negativen Zahl tut das."}
+];
+
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+let current=[];
+let deckStats={};
+
+function startQuiz(){
+  current = shuffle(POOL).slice(0,20);
+  deckStats={};
+  document.getElementById('startScreen').style.display='none';
+  document.getElementById('result').classList.remove('show');
+  const area=document.getElementById('quizArea');
+  area.innerHTML='';
+  let answered=0, score=0;
+  current.forEach((item,qi)=>{
+    if(!deckStats[item.deck]) deckStats[item.deck]={right:0,total:0,link:item.link};
+    deckStats[item.deck].total++;
+    const box=document.createElement('div'); box.className='quizq';
+    const tag=document.createElement('span'); tag.className='deckTag'; tag.textContent=item.deck; box.appendChild(tag);
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        answered++;
+        if(oi===item.r){ score++; deckStats[item.deck].right++; }
+        if(answered===current.length) showResult(score);
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    area.appendChild(box);
+  });
+}
+
+function showResult(score){
+  const res=document.getElementById('result');
+  res.classList.add('show');
+  document.getElementById('scoreBig').textContent='Ergebnis: '+score+' / '+current.length+' — '+
+    (score>=current.length*0.8?'stark! 💪':(score>=current.length*0.5?'solide, ein paar Themen nochmal ansehen':'lohnt sich, mehrere Teile zu wiederholen'));
+  const bd=document.getElementById('deckBreakdown');
+  bd.innerHTML='';
+  Object.keys(deckStats).sort().forEach(deck=>{
+    const s=deckStats[deck];
+    const row=document.createElement('div');
+    const pct=s.right/s.total;
+    row.className='deckRow '+(pct<0.5?'weak':(pct===1?'strong':''));
+    row.innerHTML='<span>'+deck+': '+s.right+' / '+s.total+' richtig'+(pct<0.6?' — nochmal ansehen empfohlen':'')+'</span><a href="'+s.link+'">Teil öffnen →</a>';
+    bd.appendChild(row);
+  });
+  res.scrollIntoView({behavior:'smooth'});
+}
+
+document.getElementById('startBtn').onclick=startQuiz;
+document.getElementById('againBtn').onclick=startQuiz;
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

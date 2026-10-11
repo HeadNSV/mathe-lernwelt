@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Funktionen · Teil 3 — Geraden aufstellen &amp; Nullstellen</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .warnbox{background:#3d1c1c;border-left:5px solid #c0392b;border-radius:8px;padding:10px 16px;font-size:min(1.9vw,16px);color:#ffd9d0;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>FUNKTIONEN <span class="accent">· Teil 3</span></h1>
+    <h2>Geraden aufstellen &amp; Nullstellen</h2>
+    <div class="hook" style="max-width:70ch;">Zwei Punkte reichen, um eine ganze Gerade eindeutig festzulegen — mehr braucht es nicht, um ihre komplette Funktionsgleichung zu berechnen.</div>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 11.3</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Steigungsformel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Die Steigungsformel aus zwei Punkten</h2>
+      <div class="defbox">Sind zwei Punkte A(xA|yA) und B(xB|yB) einer Geraden bekannt, berechnet sich die Steigung als: <b>m = (yB − yA) / (xB − xA)</b>. Die Reihenfolge der Punkte spielt dabei keine Rolle — vertauscht man A und B in Zähler UND Nenner, kürzt sich das Minuszeichen weg und das Ergebnis bleibt gleich.</div>
+    </div>
+  </section>
+
+  <!-- 3 Schritt Gerade aufstellen -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Geradengleichung aus zwei Punkten</h2>
+      <div class="defbox">Aufgabe: Eine Gerade verläuft durch A(2|1) und B(5|10). Bestimme die Funktionsgleichung.</div>
+      <div class="step" id="s3_1"><b class="lbl">Schritt 1 — Steigung berechnen:</b> m = (10−1)/(5−2) = 9/3 = 3.</div>
+      <div class="step" id="s3_2"><b class="lbl">Schritt 2 — m und einen Punkt in y=mx+t einsetzen:</b> 1 = 3·2+t ⟺ 1=6+t ⟺ t=−5.</div>
+      <div class="step" id="s3_3"><b class="lbl">Schritt 3 — Funktionsgleichung angeben:</b> f(x) = 3x − 5.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="3" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 4 Punkt-Steigungsform -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Die Punkt-Steigungsform</h2>
+      <div class="defbox">Kennt man die Steigung m und EINEN Punkt P(xP|yP) der Geraden, geht es noch direkter: <b>f(x) = m·(x−xP) + yP</b>. Diese Form heißt Punkt-Steigungsform und lässt sich jederzeit in die allgemeine Form umwandeln.</div>
+      <div class="defbox">Beispiel: m=−2, Punkt Q(3|−1) → f(x) = −2·(x−3) − 1 = −2x+6−1 = <b>−2x+5</b>.</div>
+    </div>
+  </section>
+
+  <!-- 5 Nullstelle -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Nullstellen einer linearen Funktion</h2>
+      <div class="defbox">Die Nullstelle xN ist der x-Wert, für den f(xN)=0 gilt. Geometrisch ist das genau der Schnittpunkt des Graphen mit der x-Achse: S(xN|0).</div>
+      <div class="svgbox"><div id="svgNullstelle"></div></div>
+    </div>
+  </section>
+
+  <!-- 6 Schritt Nullstelle + Punktprobe -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Nullstelle berechnen &amp; Punktprobe</h2>
+      <div class="defbox">Aufgabe: Bestimme die Nullstelle von g(x)=4x−12 und prüfe, ob C(2|3) auf der Geraden h(x)=−x+5 liegt.</div>
+      <div class="step" id="s6_1"><b class="lbl">Nullstelle — gleich Null setzen:</b> 4x−12=0 ⟺ 4x=12 ⟺ xN=3. Graphisch: S(3|0).</div>
+      <div class="step" id="s6_2"><b class="lbl">Punktprobe — Koordinaten einsetzen:</b> h(2) = −2+5 = 3. Da 3=3 (die y-Koordinate von C) stimmt, liegt C auf der Geraden.</div>
+      <div class="step" id="s6_3"><b class="lbl">Gegenprobe:</b> D(4|2): h(4)=−4+5=1≠2 — D liegt NICHT auf der Geraden, die Aussage wäre falsch.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="6" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 7 Eselsbruecke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Steigung: hinten minus vorne, oben durch unten" — (yB−yA)/(xB−xA), IMMER dieselbe Reihenfolge in Zähler und Nenner. Und: „Nullstelle = wo die Gerade den Boden (die x-Achse) berührt."</div>
+    </div>
+  </section>
+
+  <!-- 8 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Zwei Messwerte reichen</h2>
+      <div class="defbox">Ein Techniker misst den Wasserstand eines Tanks zu zwei Zeitpunkten: nach 2 Minuten 40 Liter, nach 8 Minuten 100 Liter. Aus diesen zwei Messpunkten allein lässt sich per Steigungsformel die komplette Füllfunktion berechnen — inklusive der Vorhersage, wann der Tank randvoll ist, ganz ohne weitere Messung.</div>
+    </div>
+  </section>
+
+  <!-- 9 Intuitions-Regler -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Schätz mal: welche Nullstelle?</h2>
+      <div class="defbox">p(x) = 6x − 18. Bei welchem x-Wert liegt die Nullstelle?</div>
+      <div id="estNull33"></div>
+    </div>
+  </section>
+
+  <!-- 10 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>m = (yB−yA)/(xB−xA)</td><td>„Steigungsformel"</td><td>Steigung aus zwei Punkten berechnen</td></tr>
+        <tr><td>f(x)=m(x−xP)+yP</td><td>„Punkt-Steigungsform"</td><td>Geradengleichung aus m und einem Punkt</td></tr>
+        <tr><td>S(xN|0)</td><td>„S von x-N, Null"</td><td>Schnittpunkt der Geraden mit der x-Achse</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 11 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Geraden-Bauer</span><span class="sub">Aus zwei Punkten die Gleichung herleiten</span></div>
+    <iframe allow="autoplay" data-src="geradenbauer33_labor.html"></iframe>
+  </section>
+
+  <!-- 12 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Schritt</th><th>Was tun</th></tr>
+      <tr><td>1</td><td>Steigung m über die Steigungsformel aus zwei Punkten berechnen</td></tr>
+      <tr><td>2</td><td>m und einen Punkt in y=mx+t einsetzen, nach t auflösen</td></tr>
+      <tr><td>3</td><td>Nullstelle: f(x)=0 setzen und nach x auflösen</td></tr>
+      <tr><td>4</td><td>Punktprobe: Koordinaten einsetzen, Aussage prüfen</td></tr>
+    </table>
+  </section>
+
+  <!-- 13 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Bestimme die Funktionsgleichung der Geraden durch A(0|3) und B(4|−1).
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>m=(−1−3)/(4−0)=−1, t=3 (direkt ablesbar, da A auf der y-Achse liegt) → f(x)=−x+3</details>
+        </li>
+        <li style="margin-top:10px;">Bestimme die Nullstelle von q(x)=−5x+15.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>−5x+15=0 → x=3</details>
+        </li>
+        <li style="margin-top:10px;">Liegt der Punkt E(−2|7) auf der Geraden r(x)=−2x+3? Begründe.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>r(−2)=−2·(−2)+3=4+3=7 — ja, die y-Koordinate stimmt überein, E liegt auf der Geraden.</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 14 Pruefungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Steigungsformel korrekt anwenden</b> — Reihenfolge in Zähler und Nenner konsistent halten.</li>
+        <li><b>Nullstelle berechnen und geometrisch deuten.</b></li>
+        <li><b>Punktprobe sicher durchführen</b> — Koordinaten einsetzen, wahre oder falsche Aussage prüfen.</li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">Kapitel-Brücke zum nächsten Deck: <i>„Was, wenn du gleich ZWEI Geraden hast — schneiden sie sich, oder laufen sie für immer parallel?"</i> Genau darum geht es im nächsten Deck.</div>
+    </div>
+  </section>
+
+  <!-- 15 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+function buildNullstelleSVG(){
+  const ox=30, oy=150, scale=22;
+  function tx(x){ return ox+x*scale; }
+  function ty(y){ return oy-y*scale; }
+  let s='<svg viewBox="0 0 320 220" style="width:100%;max-width:360px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="0" y1="'+oy+'" x2="320" y2="'+oy+'" stroke="#9aa4b2" stroke-width="1"/>';
+  s+='<line x1="'+ox+'" y1="0" x2="'+ox+'" y2="220" stroke="#9aa4b2" stroke-width="1"/>';
+  const m=4, t=-12;
+  const x1=1.5, x2=4.5;
+  s+='<line x1="'+tx(x1)+'" y1="'+ty(m*x1+t)+'" x2="'+tx(x2)+'" y2="'+ty(m*x2+t)+'" stroke="#5fd0c7" stroke-width="2.5"/>';
+  s+='<circle cx="'+tx(3)+'" cy="'+oy+'" r="5" fill="#f2a63c"/>';
+  s+='<text x="'+tx(3)+'" y="'+(oy+18)+'" text-anchor="middle" font-size="12" fill="#f2a63c">S(3|0)</text>';
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgNullstelle').innerHTML=buildNullstelleSVG();
+
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Die Steigungsformel aus zwei Punkten", "📐 Schritt für Schritt: Geradengleichung aus zwei Punkten", "Die Punkt-Steigungsform", "Nullstellen einer linearen Funktion", "📐 Schritt für Schritt: Nullstelle berechnen & Punktprobe", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Zwei Messwerte reichen", "Schätz mal: welche Nullstelle?", "Symbol-Legende", "🧪 Geraden-Bauer", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=16;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck33_s1_Charon.mp3",txt:"Funktionen, Teil drei: Geraden aufstellen und Nullstellen. Zwei Punkte reichen, um eine ganze Gerade eindeutig festzulegen - mehr braucht es nicht, um ihre komplette Funktionsgleichung zu berechnen."},
+ 2:{wav:"narration_deck33_s2_Charon.mp3",txt:"Sind zwei Punkte einer Geraden bekannt, berechnet sich die Steigung über die Steigungsformel - und die Reihenfolge der Punkte spielt dabei keine Rolle."},
+ 3:{wav:"narration_deck33_s3_Charon.mp3",txt:"Jetzt stellen wir gemeinsam eine Geradengleichung aus zwei Punkten auf, Schritt für Schritt."},
+ 4:{wav:"narration_deck33_s4_Charon.mp3",txt:"Kennst du Steigung und einen Punkt, geht es mit der Punkt-Steigungsform noch direkter."},
+ 5:{wav:"narration_deck33_s5_Charon.mp3",txt:"Die Nullstelle ist der x-Wert, an dem der Funktionswert Null ist - geometrisch der Schnittpunkt mit der x-Achse."},
+ 6:{wav:"narration_deck33_s6_Charon.mp3",txt:"Jetzt berechnen wir gemeinsam eine Nullstelle und führen eine Punktprobe durch, Schritt für Schritt."},
+ 7:{wav:"narration_deck33_s7_Charon.mp3",txt:"Steigung: hinten minus vorne, oben durch unten - immer dieselbe Reihenfolge in Zähler und Nenner."},
+ 8:{wav:"narration_deck33_s8_Charon.mp3",txt:"Auch in der Technik reichen oft zwei Messwerte, um eine komplette lineare Funktion zu bestimmen und damit Vorhersagen zu treffen."},
+ 9:{wav:"narration_deck33_s9_Charon.mp3",txt:"Bevor du ins Labor gehst: schätz doch mal, bei welchem x-Wert diese Gerade ihre Nullstelle hat."},
+ 10:{wav:"narration_deck33_s10_Charon.mp3",txt:"Hier noch mal alle Symbole rund um Geradengleichungen und Nullstellen im Überblick, bevor du selbst im Labor experimentierst."},
+ 11:{wav:"narration_deck33_s11_Charon.mp3",txt:"Jetzt bist du dran: leite aus zwei vorgegebenen Punkten Schritt für Schritt die passende Geradengleichung her."},
+ 12:{wav:"narration_deck33_s12_Charon.mp3",txt:"Fassen wir zusammen, wie du in vier Schritten von zwei Punkten zur fertigen Geradengleichung kommst."},
+ 13:{wav:"narration_deck33_s13_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben rund um Geradengleichungen und Nullstellen."},
+ 14:{wav:"narration_deck33_s14_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst - und eine Vorschau auf das nächste Thema: zwei Geraden im Vergleich."},
+ 15:{wav:"narration_deck33_s15_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"Eine Gerade verläuft durch A(1|2) und B(3|8). Wie groß ist die Steigung m?",
+  a:["m=2","m=3","m=6","m=1/3"],r:1,
+  why:"m=(8−2)/(3−1)=6/2=3."},
+ {q:"Was beschreibt die Punkt-Steigungsform f(x)=m(x−xP)+yP?",
+  a:["Eine Gerade aus zwei y-Achsenabschnitten","Eine Gerade aus Steigung m und einem bekannten Punkt P","Eine Parabel","Nur Ursprungsgeraden"],r:1,
+  why:"Sie beschreibt eine Gerade, wenn Steigung m UND ein Punkt P(xP|yP) auf der Geraden bekannt sind."},
+ {q:"Wie berechnet man die Nullstelle einer linearen Funktion f(x)=mx+t?",
+  a:["x=0 setzen und f(0) berechnen","f(x)=0 setzen und nach x auflösen","t=0 setzen","m=0 setzen"],r:1,
+  why:"Die Nullstelle ist der x-Wert, für den der FUNKTIONSWERT 0 ist — also f(x)=0 setzen und nach x auflösen."},
+ {q:"Liegt der Punkt F(3|1) auf der Geraden g(x)=2x−4?",
+  a:["Ja, g(3)=2 passt zu y=1","Nein, g(3)=2, aber der Punkt hat y=1 — das passt nicht","Ja, weil x=3 eingesetzt werden darf","Das lässt sich ohne Zeichnung nicht sagen"],r:1,
+  why:"g(3)=2·3−4=2. Der Punkt F hat aber y=1, nicht 2 — also liegt F NICHT auf der Geraden."},
+ {q:"Vertauscht man bei der Steigungsformel die Punkte A und B in Zähler UND Nenner, was passiert?",
+  a:["Das Ergebnis ändert sich","Das Ergebnis bleibt exakt gleich","Man erhält immer 0","Man erhält den Kehrwert"],r:1,
+  why:"Vertauscht man A und B konsequent in Zähler UND Nenner, kürzen sich die entstehenden Minuszeichen weg — das Ergebnis bleibt unverändert."}
+];
+const DECK_ID="funktionen/deck33";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), oi===item.r);
+        answered++; if(oi===item.r) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estNull33', {
+    frage: 'p(x) = 6x − 18. Bei welchem x-Wert liegt die Nullstelle?',
+    min: -10, max: 10, korrekt: 3, toleranz: 0,
+    begruendung: '6x−18=0 → 6x=18 → x=3.'
+  });
+});
+</script>
+</body>
+</html>

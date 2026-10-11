@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Zufall &amp; Ereignisse als Mengen</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .warnbox{background:#3d1c1c;border-left:5px solid #c0392b;border-radius:8px;padding:10px 16px;font-size:min(1.9vw,16px);color:#ffd9d0;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel + Story-Hook -->
+  <section class="slide center active">
+    <h1>ZUFALL &amp; EREIGNISSE</h1>
+    <h2>Kapitel 18 · Teil 1 — Ereignisse als Mengen</h2>
+    <div class="hook" style="max-width:70ch;">Zwei Kinder — mindestens eines davon ist ein Junge. Wie wahrscheinlich sind zwei Jungen? Fast jeder tippt <b>1/2</b> — falsch! Wir lösen dieses Rätsel am Ende von Teil 3 mit dem Baumdiagramm.</div>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 18.1</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Konzept Zufallsexperiment -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Was ist ein Zufallsexperiment?</h2>
+      <div class="defbox">Ein <b>Zufallsexperiment</b> ist ein Vorgang, dessen Ausgang nicht vorhersagbar ist, der mindestens zwei mögliche Ergebnisse hat und der unter gleichen Bedingungen beliebig oft wiederholt werden kann.</div>
+      <div class="defbox">Beispiel: In der Werkstatt wird ein vierseitiger Würfel (Tetraeder, Zahlen 1 bis 4) geworfen, um zufällig ein Ersatzteil-Fach auszuwählen. Vorher weiß niemand, welche Zahl fällt.</div>
+    </div>
+  </section>
+
+  <!-- 3 Ergebnisraum -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Ergebnis und Ergebnisraum <span class="chip">Ω</span></h2>
+      <div class="svgbox"><div id="svgTetra"></div><div class="svgcaption">Vierseitiger Würfel — vier gleich wahrscheinliche Ergebnisse</div></div>
+      <div class="defbox">Die Menge aller möglichen Ergebnisse heißt <b>Ergebnisraum Ω</b>. Für den Tetraeder-Wurf gilt Ω={1;2;3;4}. Die Anzahl der Elemente heißt <b>Mächtigkeit</b> |Ω| — hier |Ω|=4.</div>
+    </div>
+  </section>
+
+  <!-- 4 Ereignis = Teilmenge -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Ereignis = Teilmenge von Ω <span class="chip">🌉 Brücke zu Kapitel 1</span></h2>
+      <div class="defbox">Ein <b>Ereignis</b> ist eine Teilmenge E ⊆ Ω des Ergebnisraums. Beispiel: E = „gerade Zahl" = {2;4} ⊆ {1;2;3;4}. Das ist GENAU die Teilmengen-Beziehung aus Kapitel 1 — nur heißt die Grundmenge jetzt Ω statt einfach M!</div>
+      <div class="defbox">Ein Ereignis mit nur einem Element heißt <b>Elementarereignis</b>, z.B. {2}. Das <b>sichere Ereignis</b> ist Ω selbst (tritt immer ein), das <b>unmögliche Ereignis</b> ist die leere Menge {} (tritt nie ein).</div>
+    </div>
+  </section>
+
+  <!-- 5 Steps Text zu Mengenschreibweise -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Ereignis aus Worten in Mengenschreibweise</h2>
+      <div class="defbox">Ein Werkzeugkasten enthält fünf Werkzeuge: Ω={Hammer; Zange; Säge; Feile; Schraubendreher}. Gesucht ist das Ereignis E1: „Das gezogene Werkzeug schneidet."</div>
+      <div class="step" id="s5_1"><b class="lbl">Schritt 1 — Elemente prüfen:</b> Zange schneidet (Draht kappen), Säge schneidet, Feile trägt eher ab als zu schneiden — zählt hier NICHT als schneidend, Hammer und Schraubendreher schneiden nicht.</div>
+      <div class="step" id="s5_2"><b class="lbl">Schritt 2 — Mengenschreibweise:</b> E1={Zange; Säge} ⊆ Ω.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="5" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 6 Venn-Diagramm Grafik -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Venn-Diagramm für Ereignisse</h2>
+      <div class="svgbox"><div id="svgVenn1"></div><div class="svgcaption">Ω = Werkzeugkasten, E1 = schneidende Werkzeuge</div></div>
+      <div class="defbox">Genau wie bei Mengen kann man Ereignisse in einem <b>Venn-Diagramm</b> darstellen: ein Rechteck für Ω, ein Kringel für das Ereignis E1 darin.</div>
+    </div>
+  </section>
+
+  <!-- 7 Konzept logische Verknüpfungen -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Logische Verknüpfung von Ereignissen <span class="chip">🌉 Brücke zu Kapitel 2</span></h2>
+      <div class="defbox"><b>Schnittmenge A∩B</b> („A geschnitten B"): tritt ein, wenn A UND B eintreten. <b>Vereinigungsmenge A∪B</b> („A vereinigt B"): tritt ein, wenn A ODER B (oder beide) eintreten. <b>Gegenereignis Ā = Ω\A</b> („nicht A"): tritt ein, wenn A NICHT eintritt.</div>
+      <div class="defbox">Das sind exakt die Wörter „und / oder / nicht" aus der Aussagenlogik (Kapitel 2) — nur diesmal auf Ereignisse statt Aussagen angewendet!</div>
+    </div>
+  </section>
+
+  <!-- 8 Steps Farbdrehscheibe -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Verknüpfungen an der Farbdrehscheibe</h2>
+      <div class="defbox">Eine Drehscheibe hat 6 gleich große Felder, nummeriert 1 bis 6. A: „durch 3 teilbar" = {3;6}. B: „gerade Zahl" = {2;4;6}.</div>
+      <div class="step" id="s8_1"><b class="lbl">Schnittmenge:</b> A∩B = {6} — die einzige Zahl, die BEIDE Bedingungen erfüllt.</div>
+      <div class="step" id="s8_2"><b class="lbl">Vereinigungsmenge:</b> A∪B = {2;3;4;6} — jede Zahl, die MINDESTENS eine Bedingung erfüllt.</div>
+      <div class="step" id="s8_3"><b class="lbl">Gegenereignis von A:</b> Ā = Ω\A = {1;2;4;5} — alle Zahlen, die NICHT durch 3 teilbar sind.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="8" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 9 Venn A B Grafik -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Venn-Diagramm: A∩B und A∪B</h2>
+      <div class="svgbox"><div id="svgVenn2"></div><div class="svgcaption">A = {3;6}, B = {2;4;6}, Schnittfläche = A∩B = {6}</div></div>
+      <div class="defbox">Die Überlappungsfläche der beiden Kringel ist genau A∩B. Beide Kringel zusammen (die ganze eingefärbte Fläche) sind A∪B.</div>
+    </div>
+  </section>
+
+  <!-- 10 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Ereignis-Mengen-Labor</span><span class="sub">Ereignisse anklicken, Schnitt/Vereinigung/Gegenereignis bauen</span></div>
+    <iframe allow="autoplay" data-src="ereignismengen55_labor.html"></iframe>
+  </section>
+
+  <!-- 11 Eselsbruecke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Ereignis ist Teilmenge. UND ist der Schnitt (∩), ODER ist die Vereinigung (∪), NICHT ist der Überstrich (Gegenereignis)." Genau wie bei Mengen und Aussagen — nur mit Ω statt M und E statt A.</div>
+    </div>
+  </section>
+
+  <!-- 12 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Qualitätskontrolle in der Werkstatt</h2>
+      <div class="defbox">Bei der Prüfung eines Bauteils gibt es zwei Ereignisse: M = „Maßhaltigkeit nicht eingehalten" und O = „Oberflächenfehler". Das Ausschusskriterium „Teil wird aussortiert, wenn M ODER O eintritt" ist genau M∪O. Das Ereignis „Teil hat BEIDE Fehler gleichzeitig" ist M∩O.</div>
+    </div>
+  </section>
+
+  <!-- 13 Intuitions-Regler -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Schätz mal: wie viele Elemente hat A∪B?</h2>
+      <div class="defbox">Ω={1;...;10}, A={2;4;6;8;10} (5 Elemente), B={5;6;7;8;9;10} (6 Elemente), A∩B={6;8;10} (3 Elemente). Wie viele Elemente hat A∪B?</div>
+      <div id="estZufall55"></div>
+    </div>
+  </section>
+
+  <!-- 14 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>Ω</td><td>„groß Omega"</td><td>Ergebnisraum — Menge aller möglichen Ergebnisse</td></tr>
+        <tr><td>ω</td><td>„klein Omega"</td><td>ein einzelnes Ergebnis</td></tr>
+        <tr><td>E ⊆ Ω</td><td>„E ist Teilmenge von Omega"</td><td>Ereignis E ist eine Teilmenge des Ergebnisraums</td></tr>
+        <tr><td>A∩B</td><td>„A geschnitten B"</td><td>A UND B treten beide ein</td></tr>
+        <tr><td>A∪B</td><td>„A vereinigt B"</td><td>A ODER B (oder beide) treten ein</td></tr>
+        <tr><td>Ā</td><td>„A quer" / Gegenereignis</td><td>A tritt NICHT ein</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 15 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Begriff</th><th>Bedeutung</th></tr>
+      <tr><td>Ω</td><td>Menge aller möglichen Ergebnisse eines Zufallsexperiments</td></tr>
+      <tr><td>Ereignis E</td><td>Teilmenge von Ω (E ⊆ Ω)</td></tr>
+      <tr><td>A∩B / A∪B / Ā</td><td>und / oder / nicht — angewendet auf Ereignisse</td></tr>
+    </table>
+  </section>
+
+  <!-- 16 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Ein sechsseitiger Würfel wird geworfen. Gib den Ergebnisraum Ω und das Ereignis E: „Augenzahl mindestens 5" in Mengenschreibweise an.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>Ω={1;2;3;4;5;6}, E={5;6}</details>
+        </li>
+        <li style="margin-top:10px;">Mit A={1;2;3} und B={2;3;4} aus Ω={1;...;6}: berechne A∩B und A∪B.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>A∩B={2;3}, A∪B={1;2;3;4}</details>
+        </li>
+        <li style="margin-top:10px;">Für A={1;2;3} aus Ω={1;...;6}: gib das Gegenereignis Ā an.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>Ā={4;5;6}</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 17 Pruefungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Ergebnisraum Ω und ein Ereignis E ⊆ Ω für ein gegebenes Zufallsexperiment angeben.</b></li>
+        <li><b>A∩B, A∪B und Ā für zwei gegebene Ereignisse berechnen und im Venn-Diagramm darstellen.</b></li>
+        <li><b>Elementarereignis, sicheres Ereignis und unmögliches Ereignis unterscheiden.</b></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 18 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+(function(){
+  let s='<svg viewBox="0 0 220 160" style="width:100%;max-width:240px;height:auto;display:block;margin:0 auto;">';
+  s+='<polygon points="110,20 30,130 190,130" fill="rgba(95,208,199,0.15)" stroke="#5fd0c7" stroke-width="2"/>';
+  s+='<text x="110" y="15" fill="#e6edf3" font-size="12" text-anchor="middle">1</text>';
+  s+='<text x="25" y="145" fill="#e6edf3" font-size="12" text-anchor="middle">2</text>';
+  s+='<text x="195" y="145" fill="#e6edf3" font-size="12" text-anchor="middle">3</text>';
+  s+='<text x="110" y="100" fill="#f2a63c" font-size="12" text-anchor="middle">4</text>';
+  s+='</svg>';
+  document.getElementById('svgTetra').innerHTML=s;
+})();
+(function(){
+  let s='<svg viewBox="0 0 260 140" style="width:100%;max-width:300px;height:auto;display:block;margin:0 auto;">';
+  s+='<rect x="15" y="15" width="230" height="110" fill="none" stroke="#4a5568" stroke-width="2"/>';
+  s+='<ellipse cx="130" cy="70" rx="90" ry="45" fill="rgba(242,166,60,0.2)" stroke="#f2a63c" stroke-width="2"/>';
+  s+='<text x="230" y="25" fill="#9aa4b2" font-size="12">Ω</text>';
+  s+='<text x="130" y="75" fill="#f2a63c" font-size="12" text-anchor="middle">E1={Zange;Säge}</text>';
+  s+='<text x="60" y="35" fill="#e6edf3" font-size="11">Hammer</text>';
+  s+='<text x="60" y="120" fill="#e6edf3" font-size="11">Schraubendreher</text>';
+  s+='<text x="200" y="35" fill="#e6edf3" font-size="11">Feile</text>';
+  s+='</svg>';
+  document.getElementById('svgVenn1').innerHTML=s;
+})();
+(function(){
+  let s='<svg viewBox="0 0 260 150" style="width:100%;max-width:300px;height:auto;display:block;margin:0 auto;">';
+  s+='<rect x="15" y="15" width="230" height="120" fill="none" stroke="#4a5568" stroke-width="2"/>';
+  s+='<ellipse cx="105" cy="75" rx="75" ry="48" fill="rgba(95,208,199,0.22)" stroke="#5fd0c7" stroke-width="2"/>';
+  s+='<ellipse cx="155" cy="75" rx="75" ry="48" fill="rgba(242,166,60,0.22)" stroke="#f2a63c" stroke-width="2"/>';
+  s+='<text x="70" y="55" fill="#5fd0c7" font-size="12">A={3;6}</text>';
+  s+='<text x="190" y="55" fill="#f2a63c" font-size="12">B={2;4;6}</text>';
+  s+='<text x="130" y="80" fill="#e6edf3" font-size="12" text-anchor="middle">6</text>';
+  s+='<text x="90" y="90" fill="#e6edf3" font-size="12" text-anchor="middle">3</text>';
+  s+='<text x="170" y="90" fill="#e6edf3" font-size="12" text-anchor="middle">2,4</text>';
+  s+='<text x="235" y="25" fill="#9aa4b2" font-size="12">Ω</text>';
+  s+='</svg>';
+  document.getElementById('svgVenn2').innerHTML=s;
+})();
+
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Was ist ein Zufallsexperiment?", "Ergebnis und Ergebnisraum", "Ereignis = Teilmenge von Ω", "📐 Schritt für Schritt: Ereignis in Mengenschreibweise", "Venn-Diagramm für Ereignisse", "Logische Verknüpfung von Ereignissen", "📐 Schritt für Schritt: Verknüpfungen an der Farbdrehscheibe", "Venn-Diagramm: A∩B und A∪B", "🧪 Ereignis-Mengen-Labor", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Qualitätskontrolle", "Schätz mal: wie viele Elemente hat A∪B?", "Symbol-Legende", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=18;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck55_s1_Charon.mp3",txt:"Zufall und Ereignisse. Zwei Kinder - mindestens eines davon ist ein Junge. Wie wahrscheinlich sind zwei Jungen? Fast jeder tippt ein Halb - falsch! Wir lösen dieses Rätsel am Ende von Teil drei mit dem Baumdiagramm."},
+ 2:{wav:"narration_deck55_s2_Charon.mp3",txt:"Ein Zufallsexperiment ist ein Vorgang, dessen Ausgang nicht vorhersagbar ist und der beliebig oft wiederholt werden kann."},
+ 3:{wav:"narration_deck55_s3_Charon.mp3",txt:"Die Menge aller möglichen Ergebnisse heißt Ergebnisraum Omega."},
+ 4:{wav:"narration_deck55_s4_Charon.mp3",txt:"Ein Ereignis ist eine Teilmenge von Omega - genau die Teilmengen-Beziehung, die du schon aus Kapitel eins kennst."},
+ 5:{wav:"narration_deck55_s5_Charon.mp3",txt:"Jetzt übersetzen wir gemeinsam ein Ereignis aus Worten in Mengenschreibweise, Schritt für Schritt."},
+ 6:{wav:"narration_deck55_s6_Charon.mp3",txt:"Auch Ereignisse lassen sich im Venn-Diagramm darstellen - ein Kringel innerhalb des Ergebnisraums."},
+ 7:{wav:"narration_deck55_s7_Charon.mp3",txt:"Schnittmenge, Vereinigungsmenge und Gegenereignis - das sind und, oder und nicht, angewendet auf Ereignisse."},
+ 8:{wav:"narration_deck55_s8_Charon.mp3",txt:"Jetzt berechnen wir gemeinsam die Verknüpfungen an einer Farbdrehscheibe, Schritt für Schritt."},
+ 9:{wav:"narration_deck55_s9_Charon.mp3",txt:"Hier siehst du die Schnittmenge und die Vereinigungsmenge im Venn-Diagramm."},
+ 10:{wav:"narration_deck55_s10_Charon.mp3",txt:"Jetzt bist du dran: baue Schnittmenge, Vereinigungsmenge und Gegenereignis selbst zusammen."},
+ 11:{wav:"narration_deck55_s11_Charon.mp3",txt:"Ereignis ist Teilmenge. Und ist der Schnitt, oder ist die Vereinigung, nicht ist das Gegenereignis."},
+ 12:{wav:"narration_deck55_s12_Charon.mp3",txt:"Auch in der Qualitätskontrolle werden Fehlerereignisse mit und und oder verknüpft, um Ausschusskriterien festzulegen."},
+ 13:{wav:"narration_deck55_s13_Charon.mp3",txt:"Bevor es weitergeht: schätz doch mal, wie viele Elemente die Vereinigungsmenge hier hat."},
+ 14:{wav:"narration_deck55_s14_Charon.mp3",txt:"Hier noch mal alle Symbole rund um Ereignisse als Mengen im Überblick."},
+ 15:{wav:"narration_deck55_s15_Charon.mp3",txt:"Fassen wir zusammen: Ergebnisraum, Ereignis als Teilmenge, und die drei Verknüpfungen."},
+ 16:{wav:"narration_deck55_s16_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben rund um Ereignisse als Mengen."},
+ 17:{wav:"narration_deck55_s17_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst."},
+ 18:{wav:"narration_deck55_s18_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"Ω={1;2;3;4;5;6}, E: „Augenzahl größer als 4“. Wie lautet E in Mengenschreibweise?",
+  a:["E={5;6}","E={4;5;6}","E={1;2;3;4}","E={6}"],r:0,
+  why:"Größer als 4 bedeutet 5 und 6, also E={5;6}."},
+ {q:"A={2;4;6;8}, B={4;8;12} — wie lautet A∩B?",
+  a:["{2;4;6;8;12}","{4;8}","{2;6}","{}"],r:1,
+  why:"A∩B enthält nur die Elemente, die in BEIDEN Mengen vorkommen: 4 und 8."},
+ {q:"Ω={1;...;10}, A={1;2;3;4;5}. Wie lautet das Gegenereignis Ā?",
+  a:["{1;2;3;4;5}","{}","{6;7;8;9;10}","Ω"],r:2,
+  why:"Ā=Ω\\A enthält alle Elemente von Ω, die NICHT in A sind: 6 bis 10."},
+ {q:"Welche Aussage über das sichere Ereignis Ω ist richtig?",
+  a:["Ω tritt nie ein","Ω tritt immer ein","Ω hat immer nur ein Element","Ω ist dasselbe wie die leere Menge"],r:1,
+  why:"Das sichere Ereignis ist der gesamte Ergebnisraum Ω selbst — es tritt bei jeder Durchführung ein."},
+ {q:"Ein Schüler behauptet: „Ein Elementarereignis kann auch die leere Menge sein.“ Stimmt das?",
+  a:["Ja, immer","Nein — ein Elementarereignis hat GENAU ein Element, die leere Menge hat null","Ja, aber nur beim Würfeln","Nur wenn Ω unendlich groß ist"],r:1,
+  why:"Elementarereignisse haben per Definition genau ein Element — die leere Menge (0 Elemente) ist das unmögliche Ereignis, kein Elementarereignis."}
+];
+const DECK_ID="zufall/deck55";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), oi===item.r);
+        answered++; if(oi===item.r) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estZufall55', {
+    frage: 'A hat 5, B hat 6, A∩B hat 3 Elemente — wie viele Elemente hat A∪B?',
+    min: 0, max: 15, korrekt: 8, toleranz: 0,
+    begruendung: '|A∪B|=|A|+|B|−|A∩B|=5+6−3=8 — jedes Element von A∩B würde sonst doppelt gezählt.'
+  });
+});
+</script>
+</body>
+</html>

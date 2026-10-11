@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Parabelscharen, Symmetrie &amp; Ungleichungen · Kapitel-Mischquiz</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  .wrap{max-width:820px;margin:0 auto;padding:24px 18px 60px;}
+  h1{font-size:min(6vw,30px);margin:0 0 6px;}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 20px;}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0 20px;}
+  button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 16px;font-size:14px;cursor:pointer;}
+  button:hover{background:#283041;}
+  button.primary{background:var(--accent);color:#12100a;font-weight:700;border:0;}
+  .quizq{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq .deckTag{display:inline-block;background:#1b222c;color:var(--accent);font-size:11.5px;font-weight:600;border-radius:999px;padding:3px 10px;margin-bottom:8px;}
+  .quizq p.qtext{font-size:min(2.3vw,19px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2vw,16px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(1.8vw,14.5px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #result{display:none;}
+  #result.show{display:block;}
+  .scoreBig{font-size:min(6vw,36px);color:var(--accent);text-align:center;margin:10px 0;}
+  .deckRow{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 16px;margin:6px 0;font-size:14.5px;}
+  .deckRow a{color:var(--accent);text-decoration:none;font-size:13px;}
+  .deckRow a:hover{text-decoration:underline;}
+  .weak{border-left:4px solid #e05a5a;}
+  .strong{border-left:4px solid #3dbb7a;}
+  #startScreen .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:16px 20px;font-size:15px;color:#f6e7cf;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔀 Kapitel-Mischquiz — Parabelscharen, Symmetrie &amp; Ungleichungen</h1>
+  <p class="sub">15 zufällig gemischte Fragen aus allen drei Teilen — Interleaving statt Blockübung.</p>
+
+  <div id="startScreen">
+    <div class="defbox">Dieses Quiz zieht bei jedem Start 15 Fragen zufällig aus dem gesamten Kapitel — quer durch Parabelscharen, Symmetrie von Funktionsgraphen und grafisches Lösen von Ungleichungen. Am Ende siehst du, bei welchem Teil du nochmal reinschauen solltest.</div>
+    <div class="bar">
+      <button class="primary" id="startBtn">▶ Quiz starten (15 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+
+  <div id="quizArea"></div>
+  <div id="result">
+    <div class="scoreBig" id="scoreBig"></div>
+    <h2 style="font-size:18px;">Auswertung pro Teil</h2>
+    <div id="deckBreakdown"></div>
+    <div class="bar">
+      <button class="primary" id="againBtn">🔁 Nochmal (neue 15 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;align-self:center;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+</div>
+<script>
+// === Fragenpool: kopiert aus den QUIZ-Arrays der drei Teile + eigene Transferfragen ===
+const POOL = [
+// --- deck43.html: Parabelscharen ---
+{deck:"Teil 1 — Parabelscharen", link:"deck43.html", q:"Gegeben: f_k(x) = x² + kx − 1. Ein Schüler setzt versehentlich x=k in den Term ein statt eine feste Zahl. Was stimmt hier nicht?",
+ a:["Nichts, das ist erlaubt","k ist der Parameter, der die Schar durchnummeriert — er wird NIE für die Variable x eingesetzt","x ist der Parameter, k die Variable","Man darf k und x beliebig vertauschen"],r:1,
+ why:"Der Parameter (hier k) bestimmt WELCHE Parabel gemeint ist, die Variable x läuft über den Graphen dieser einen Parabel."},
+{deck:"Teil 1 — Parabelscharen", link:"deck43.html", q:"Für p_k(x)=x²−2x+k gilt D(k)=4·(1−k). Für welche k-Werte hat p_k KEINE Nullstelle?",
+ a:["k<1","k=1","k>1","Für alle k"],r:2,
+ why:"D(k)<0 bedeutet 4·(1−k)<0, also k>1 — dann verläuft die Parabel komplett über der x-Achse."},
+{deck:"Teil 1 — Parabelscharen", link:"deck43.html", q:"Eine Mitschülerin behauptet: „Jede Parabelschar ist automatisch achsensymmetrisch zur y-Achse, egal welcher Parameter.“ Stimmt das?",
+ a:["Ja, das ist bei Parabeln immer so","Nein, nur ohne Verschiebung — sobald sich der Scheitelpunkt verschiebt, stimmt das nicht mehr","Ja, weil alle Parabeln nach oben geöffnet sind","Nein, Parabeln sind nie achsensymmetrisch"],r:1,
+ why:"Nur eine unverschobene Parabel wie x² ist achsensymmetrisch zur y-Achse. Sobald sie horizontal verschoben ist, gilt das nicht mehr."},
+{deck:"Teil 1 — Parabelscharen", link:"deck43.html", q:"Bei q_a(x)=0,5(x−3)²+a ist für ALLE a der Scheitelpunkt bei x_s=3 fest. Bei f_a(x)=0,25x²+(1−a)x+4a verläuft dagegen jede Parabel durch P(4|8), obwohl sich der Scheitelpunkt bewegt. Was folgt daraus?",
+ a:["Ein gemeinsamer Punkt einer Schar ist immer der Scheitelpunkt","Ein gemeinsamer Punkt einer Schar muss nicht der Scheitelpunkt sein — es kommt auf die konkrete Schar an","Beide Aussagen widersprechen sich, eine davon ist falsch","Ohne Taschenrechner lässt sich das nicht unterscheiden"],r:1,
+ why:"Beide Fälle sind real: bei q_a ist der feste Punkt zufällig der Scheitel, bei f_a ist der feste Punkt ein anderer Punkt der Parabel."},
+{deck:"Teil 1 — Parabelscharen", link:"deck43.html", q:"Die Schar p_k(x)=x²−2x+k trifft auf g(x)=x−1 mit D(k)=5−4k. Für k=2 gilt D(2)=5−8=−3. Welche Lagebeziehung liegt vor?",
+ a:["Tangente","Sekante","Passante","Das lässt sich ohne Grafik nicht bestimmen"],r:2,
+ why:"D(k)<0 bedeutet keine Schnittpunkte — die Gerade verläuft als Passante an der Parabel vorbei."},
+// --- deck44.html: Symmetrie ---
+{deck:"Teil 2 — Symmetrie von Funktionsgraphen", link:"deck44.html", q:"Für welche Bedingung gilt: der Graph ist achsensymmetrisch zur y-Achse?",
+ a:["f(−x) = −f(x)","f(−x) = f(x)","f(x) = −f(x)","f(0) = 0"],r:1,
+ why:"Achsensymmetrie zur y-Achse bedeutet f(−x)=f(x) — der Term bleibt beim Vorzeichenwechsel von x unverändert."},
+{deck:"Teil 2 — Symmetrie von Funktionsgraphen", link:"deck44.html", q:"Ein Mitschüler sagt: „f(−x)=−f(x) heißt doch achsensymmetrisch, oder?“ Stimmt das?",
+ a:["Ja, genau","Nein, das ist die Bedingung für PUNKTsymmetrie zum Ursprung, nicht für Achsensymmetrie","Ja, aber nur bei Parabeln","Nein, das gibt es überhaupt nicht"],r:1,
+ why:"f(−x)=−f(x) ist die Bedingung für Punktsymmetrie — wird häufig mit Achsensymmetrie verwechselt."},
+{deck:"Teil 2 — Symmetrie von Funktionsgraphen", link:"deck44.html", q:"Kann eine Parabel f(x)=ax²+bx+c (a≠0) punktsymmetrisch zum Ursprung sein?",
+ a:["Ja, wenn b=0 ist","Ja, wenn c=0 ist","Nein, das ist bei einer Parabel grundsätzlich unmöglich","Ja, immer"],r:2,
+ why:"Ein Koeffizientenvergleich zeigt: f(−x)=−f(x) würde a=−a, also a=0 erfordern — das widerspricht a≠0."},
+{deck:"Teil 2 — Symmetrie von Funktionsgraphen", link:"deck44.html", q:"k(x)=x²−9 mit eingeschränkter Definitionsmenge D=[−2;5]. Ist der Graph achsensymmetrisch zur y-Achse?",
+ a:["Ja, der Term x²−9 ist symmetrisch","Nein, D ist nicht symmetrisch zu Null (zu x=5 fehlt x=−5)","Ja, weil kein lineares Glied vorhanden ist","Das lässt sich ohne Grafik nicht entscheiden"],r:1,
+ why:"Der Term allein reicht nicht — die Definitionsmenge muss ebenfalls symmetrisch zu Null sein."},
+{deck:"Teil 2 — Symmetrie von Funktionsgraphen", link:"deck44.html", q:"h(x)=x²+x sieht auf den ersten Blick wie eine ganz normale Parabel aus. Ist sie achsensymmetrisch zur y-Achse?",
+ a:["Ja, jede Parabel ist achsensymmetrisch","Nein — das lineare Glied „x“ verschiebt die Parabel und zerstört die Symmetrie zur y-Achse","Ja, weil der Scheitelpunkt auf der x-Achse liegt","Nein, weil a negativ ist"],r:1,
+ why:"h(−x)=x²−x ≠ x²+x=h(x) — sobald ein lineares Glied dazukommt, ist die Parabel horizontal verschoben."},
+// --- deck45.html: Ungleichungen grafisch ---
+{deck:"Teil 3 — Ungleichungen grafisch", link:"deck45.html", q:"Löse x²−16 &gt; 0. Was ist die Lösungsmenge?",
+ a:["]−4;4[","]−∞;−4[ ∪ ]4;∞[","[−4;4]","]−∞;4["],r:1,
+ why:"Nullstellen bei x=±4, Parabel nach oben geöffnet — außerhalb der Nullstellen positiv."},
+{deck:"Teil 3 — Ungleichungen grafisch", link:"deck45.html", q:"f(x)=x²−4, g(x)=0. Für welche x gilt f(x)≤g(x)?",
+ a:["]−2;2[ (offen)","[−2;2] (geschlossen, Randpunkte gehören dazu)","]−∞;−2[∪]2;∞[","Für kein x"],r:1,
+ why:"x²−4≤0 → NST bei ±2, wegen ≤ ist das Intervall GESCHLOSSEN."},
+{deck:"Teil 3 — Ungleichungen grafisch", link:"deck45.html", q:"Eine Ungleichung x²+2x+5<0 hat die Diskriminante D=4−20=−16. Was folgt daraus?",
+ a:["Zwei Lösungsintervalle","Ein einziges Lösungsintervall","Die Ungleichung ist unlösbar — die Parabel liegt komplett über der x-Achse","Die Ungleichung gilt für alle x∈ℝ"],r:2,
+ why:"D<0 bedeutet: die Parabel liegt komplett über der x-Achse — f(x)<0 hat also keine Lösung."},
+{deck:"Teil 3 — Ungleichungen grafisch", link:"deck45.html", q:"Ein Mitschüler behauptet: „Die Lösungsmenge einer Ungleichung ist immer nur der x-Wert der Nullstelle selbst.“ Stimmt das?",
+ a:["Ja, immer","Nein — die Lösungsmenge ist meist ein ganzes Intervall, die Nullstellen sind nur die RÄNDER davon","Ja, aber nur bei linearen Ungleichungen","Nein, es gibt nie eine Lösungsmenge"],r:1,
+ why:"Die Nullstellen markieren nur die Grenzen der Vorzeichenbetrachtung — die Lösungsmenge ist der eingeschlossene Bereich."},
+{deck:"Teil 3 — Ungleichungen grafisch", link:"deck45.html", q:"f(x)=x² und g(x)=x+2. Für welche x verläuft f über g?",
+ a:["Für alle x mit x²−x−2>0, also x<−1 oder x>2","Für alle x∈ℝ","Nur für x=2","Für kein x"],r:0,
+ why:"p(x)=f(x)−g(x)=x²−x−2=(x+1)(x−2), Nullstellen bei −1 und 2, a>0: positiv außerhalb."},
+// --- Eigene Transferfragen (kapitelübergreifend, eigene Werte) ---
+{deck:"Teil 1 — Parabelscharen", link:"deck43.html", q:"Eine Parabelschar hat die Nullstellenformel x=1±√(1−k). Für welches k gibt es GAR KEINE Nullstelle?",
+ a:["k<1","k=1","k>1","Für kein k"],r:2,
+ why:"Unter der Wurzel darf nichts Negatives stehen — 1−k<0 bedeutet k>1, dann existiert keine reelle Nullstelle."},
+{deck:"Teil 2 — Symmetrie von Funktionsgraphen", link:"deck44.html", q:"f_a(x)=0,5(x−2)²+a — für JEDES a liegt der Scheitelpunkt bei x_s=2. Ist der Graph für a=0 achsensymmetrisch ZUR y-ACHSE?",
+ a:["Ja, jede Parabel dieser Schar ist symmetrisch zur y-Achse","Nein — der Graph hat zwar eine eigene Symmetrieachse bei x=2, aber die ist NICHT die y-Achse (x=0)","Ja, weil a=0 ist","Das kommt auf k an"],r:1,
+ why:"Achsensymmetrie ZUR y-ACHSE verlangt konkret x_s=0. Jede Parabel hat irgendeine Symmetrieachse durch ihren Scheitel — aber nur bei x_s=0 ist das die y-Achse selbst."},
+{deck:"Teil 3 — Ungleichungen grafisch", link:"deck45.html", q:"p_k(x)=x²−2x+k; für k=5 ist D(k)=4·(1−5)=−16. Ist p_5(x)>0 dann für ALLE x∈ℝ wahr?",
+ a:["Ja — die Parabel berührt die x-Achse nie und liegt komplett darüber","Nein, nur für x>0","Nein, das lässt sich ohne Grafik nicht sagen","Ja, aber nur für x<0"],r:0,
+ why:"D<0 und a=1>0 bedeutet: die Parabel liegt komplett über der x-Achse — p_5(x)>0 gilt für jedes x∈ℝ."},
+{deck:"Teil 3 — Ungleichungen grafisch", link:"deck45.html", q:"Welches der folgenden Themen gehört NICHT zum Themenbereich „Funktionen“?",
+ a:["Parabelscharen","Symmetrie von Funktionsgraphen","Grafisches Lösen von Ungleichungen","Lineare Gleichungssysteme"],r:3,
+ why:"Lineare Gleichungssysteme sind ein eigenes, neues Thema — dort geht es um mehrere Gleichungen gleichzeitig, nicht um einzelne Funktionsgraphen."}
+];
+
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+let current=[];
+let deckStats={};
+
+function startQuiz(){
+  current = shuffle(POOL).slice(0,15);
+  deckStats={};
+  document.getElementById('startScreen').style.display='none';
+  document.getElementById('result').classList.remove('show');
+  const area=document.getElementById('quizArea');
+  area.innerHTML='';
+  let answered=0, score=0;
+  current.forEach((item,qi)=>{
+    if(!deckStats[item.deck]) deckStats[item.deck]={right:0,total:0,link:item.link};
+    deckStats[item.deck].total++;
+    const box=document.createElement('div'); box.className='quizq';
+    const tag=document.createElement('span'); tag.className='deckTag'; tag.textContent=item.deck; box.appendChild(tag);
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        answered++;
+        if(oi===item.r){ score++; deckStats[item.deck].right++; }
+        if(answered===current.length) showResult(score);
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    area.appendChild(box);
+  });
+}
+
+function showResult(score){
+  const res=document.getElementById('result');
+  res.classList.add('show');
+  document.getElementById('scoreBig').textContent='Ergebnis: '+score+' / '+current.length+' — '+
+    (score>=current.length*0.8?'stark! 💪':(score>=current.length*0.5?'solide, ein paar Themen nochmal ansehen':'lohnt sich, mehrere Teile zu wiederholen'));
+  const bd=document.getElementById('deckBreakdown');
+  bd.innerHTML='';
+  Object.keys(deckStats).sort().forEach(deck=>{
+    const s=deckStats[deck];
+    const row=document.createElement('div');
+    const pct=s.right/s.total;
+    row.className='deckRow '+(pct<0.5?'weak':(pct===1?'strong':''));
+    row.innerHTML='<span>'+deck+': '+s.right+' / '+s.total+' richtig'+(pct<0.6?' — nochmal ansehen empfohlen':'')+'</span><a href="'+s.link+'">Teil öffnen →</a>';
+    bd.appendChild(row);
+  });
+  res.scrollIntoView({behavior:'smooth'});
+}
+
+document.getElementById('startBtn').onclick=startQuiz;
+document.getElementById('againBtn').onclick=startQuiz;
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

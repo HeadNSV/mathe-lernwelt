@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Büschelpunkt-Jäger — Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{max-width:680px;margin:0 auto;padding:18px 20px 44px;}
+  h3{margin:0 0 6px;}
+  h4{margin:26px 0 6px;color:var(--accent);}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  .card{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:14px;}
+  #progress{font-size:13px;color:var(--muted);margin-bottom:6px;}
+  #missionText{font-size:14px;color:var(--accent);text-align:center;font-weight:700;margin-bottom:10px;}
+  .row{display:flex;align-items:center;gap:12px;margin:8px 0;}
+  .row label{font-size:14px;color:var(--muted);min-width:22px;}
+  input[type=range]{flex:1;}
+  .valbox{background:#1f2630;border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:14px;font-weight:700;color:var(--accent);min-width:40px;text-align:center;}
+  #svgHost{background:#0e131b;border:1px solid var(--line);border-radius:8px;padding:8px;text-align:center;margin:8px 0;}
+  .btnRow{display:flex;gap:8px;justify-content:center;margin:8px 0;flex-wrap:wrap;}
+  .btnRow button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer;}
+  .btnRow button:hover{background:#283041;}
+  .optRow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px;}
+  .opt{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;}
+  .opt:hover{background:#283041;}
+  .opt.correct{background:#1c3d24;border-color:#4caf50;}
+  .opt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .opt:disabled{cursor:default;}
+  #missionResult{text-align:center;font-size:14px;min-height:20px;margin-top:8px;color:#5fd0c7;}
+  #nextMissionBtn{display:none;margin:8px auto 0;background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:9px 18px;font-size:14px;cursor:pointer;}
+  .puzzleItem{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:12px 0;}
+  .puzzleWhy{margin-top:9px;font-size:13px;color:var(--muted);display:none;}
+  .puzzleWhy.show{display:block;}
+  #doneBox{text-align:center;font-size:16px;color:var(--accent);font-weight:700;margin-top:18px;display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h3>🎯 Büschelpunkt-Jäger</h3>
+  <p class="hint">Teste verschiedene k-Werte, friere Geraden ein, und finde den verborgenen Büschelpunkt.</p>
+
+  <div class="card">
+    <div id="progress">Fall 1 / 3</div>
+    <div id="missionText"></div>
+    <div class="row"><label for="kSlider">k</label><input type="range" id="kSlider" min="-3" max="3" step="1" value="0"/><span class="valbox" id="kVal">0</span></div>
+    <div id="svgHost"></div>
+    <div class="btnRow">
+      <button id="freezeBtn">❄️ Einfrieren</button>
+      <button id="clearBtn">🗑️ Löschen</button>
+    </div>
+    <p class="hint" style="text-align:center;margin:6px 0;">Wo, glaubst du, treffen sich alle eingefrorenen Geraden?</p>
+    <div class="optRow" id="pointOptions"></div>
+    <div id="missionResult"></div>
+    <button id="nextMissionBtn">Nächster Fall ▸</button>
+  </div>
+
+  <h4>🧩 Köder-Frage</h4>
+  <div class="puzzleItem" id="puzzleBox">
+    <p style="margin:0 0 10px;">Behauptung: „Bei der Schar r<sub>k</sub>(x) = k·(x−1) + 3 liegt JEDER Punkt der Ebene auf mindestens einer Geraden der Schar."</p>
+    <div class="optRow">
+      <button class="opt" id="puzTrue">Stimmt</button>
+      <button class="opt" id="puzFalse">Stimmt nicht</button>
+    </div>
+    <div class="puzzleWhy" id="puzzleWhy">Falsch — jede Gerade der Schar geht durch den Büschelpunkt (1|3). Bei x=1 liefert JEDE Gerade der Schar y=3, egal welches k gewählt wird. Ein Punkt wie (1|5) liegt daher auf KEINER Geraden dieser Schar — der gesamte senkrechte Streifen bei x=1 (außer dem Büschelpunkt selbst) ist für diese Schar unerreichbar.</div>
+  </div>
+
+  <div id="doneBox">✅ Alle drei Büschelpunkte gefunden und die Köder-Frage durchschaut — starke Leistung!</div>
+</div>
+<script>
+const MISSIONS=[
+  {label:"Schar r_k(x) = k·(x−1) + 3", fn:(k,x)=>k*(x-1)+3, correct:[1,3], opts:[[1,3],[3,1],[0,3],[-1,3]]},
+  {label:"Schar r_k(x) = k·(x+2) − 1", fn:(k,x)=>k*(x+2)-1, correct:[-2,-1], opts:[[-2,-1],[2,-1],[-2,1],[0,-1]]},
+  {label:"Schar r_k(x) = k·x + 4", fn:(k,x)=>k*x+4, correct:[0,4], opts:[[0,4],[4,0],[1,4],[0,-4]]}
+];
+let mi=0, k=0, frozen=[], missionSolved=[false,false,false];
+
+function toX(x){ return 150+x*20; }
+function toY(y){ return 150-y*20; }
+function buildSVG(){
+  const m=MISSIONS[mi];
+  let s='<svg viewBox="0 0 300 300" style="width:100%;max-width:300px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="0" y1="150" x2="300" y2="150" stroke="#9aa4b2" stroke-width="1"/>';
+  s+='<line x1="150" y1="0" x2="150" y2="300" stroke="#9aa4b2" stroke-width="1"/>';
+  const x1=-7, x2=7;
+  frozen.forEach(fk=>{
+    s+='<line x1="'+toX(x1)+'" y1="'+toY(m.fn(fk,x1))+'" x2="'+toX(x2)+'" y2="'+toY(m.fn(fk,x2))+'" stroke="#5fd0c7" stroke-width="1.5" opacity="0.4"/>';
+  });
+  s+='<line x1="'+toX(x1)+'" y1="'+toY(m.fn(k,x1))+'" x2="'+toX(x2)+'" y2="'+toY(m.fn(k,x2))+'" stroke="#f2a63c" stroke-width="2.5"/>';
+  s+='</svg>';
+  return s;
+}
+function shuffleArr(a){ return [...a].sort(()=>Math.random()-0.5); }
+function render(){
+  const m=MISSIONS[mi];
+  document.getElementById('progress').textContent='Fall '+(mi+1)+' / '+MISSIONS.length;
+  document.getElementById('missionText').textContent=m.label;
+  document.getElementById('missionResult').textContent='';
+  document.getElementById('nextMissionBtn').style.display='none';
+  frozen=[]; k=0;
+  document.getElementById('kSlider').value=0;
+  updateDisplay();
+  const row=document.getElementById('pointOptions');
+  row.innerHTML='';
+  shuffleArr(m.opts).forEach(pt=>{
+    const b=document.createElement('button'); b.className='opt'; b.textContent='('+pt[0]+'|'+pt[1]+')';
+    b.dataset.x=pt[0]; b.dataset.y=pt[1];
+    b.onclick=()=>checkPoint(pt,b);
+    row.appendChild(b);
+  });
+}
+function updateDisplay(){
+  document.getElementById('kVal').textContent=k;
+  document.getElementById('svgHost').innerHTML=buildSVG();
+}
+document.getElementById('kSlider').addEventListener('input', e=>{ k=parseInt(e.target.value); updateDisplay(); });
+document.getElementById('freezeBtn').onclick=()=>{ if(!frozen.includes(k)) frozen.push(k); updateDisplay(); };
+document.getElementById('clearBtn').onclick=()=>{ frozen=[]; updateDisplay(); };
+function checkPoint(pt, btn){
+  if(missionSolved[mi]) return;
+  const m=MISSIONS[mi];
+  const isCorrect = pt[0]===m.correct[0] && pt[1]===m.correct[1];
+  [...document.getElementById('pointOptions').children].forEach(b=>{
+    b.disabled=true;
+    if(parseInt(b.dataset.x)===m.correct[0] && parseInt(b.dataset.y)===m.correct[1]) b.classList.add('correct');
+  });
+  if(!isCorrect) btn.classList.add('wrong');
+  missionSolved[mi]=true;
+  document.getElementById('missionResult').textContent='✅ Büschelpunkt: ('+m.correct[0]+'|'+m.correct[1]+')';
+  window.lwAward && window.lwAward('mission', 'fall'+(mi+1));
+  document.getElementById('nextMissionBtn').style.display = (mi<MISSIONS.length-1) ? 'block' : 'none';
+  checkAllDone();
+}
+document.getElementById('nextMissionBtn').onclick=()=>{
+  if(mi<MISSIONS.length-1){ mi++; render(); }
+};
+render();
+
+let puzzleAnswered=false;
+function answerPuzzle(guessTrue, btn){
+  if(puzzleAnswered) return;
+  puzzleAnswered=true;
+  const other = guessTrue ? document.getElementById('puzFalse') : document.getElementById('puzTrue');
+  document.getElementById('puzTrue').disabled=true;
+  document.getElementById('puzFalse').disabled=true;
+  if(guessTrue){ btn.classList.add('wrong'); other.classList.add('correct'); }
+  else { btn.classList.add('correct'); }
+  document.getElementById('puzzleWhy').classList.add('show');
+  window.lwAward && window.lwAward('mission', 'koeder');
+  checkAllDone();
+}
+document.getElementById('puzTrue').onclick=(e)=>answerPuzzle(true, e.target);
+document.getElementById('puzFalse').onclick=(e)=>answerPuzzle(false, e.target);
+
+function checkAllDone(){
+  if(missionSolved.every(Boolean) && puzzleAnswered){
+    document.getElementById('doneBox').style.display='block';
+    window.lwAward && window.lwAward('mission', 'bueschelpunkt_komplett');
+  }
+}
+
+// Test-Hook fuer Playwright-Verifikation
+window.LAB = {
+  state: () => ({ mission: mi, k: k, frozen: frozen.slice(), missionSolved: missionSolved.slice(), puzzleAnswered: puzzleAnswered }),
+  setK: (v) => { k=v; document.getElementById('kSlider').value=v; updateDisplay(); },
+  freeze: () => document.getElementById('freezeBtn').click(),
+  pickPoint: (x, y) => {
+    const b=[...document.getElementById('pointOptions').children].find(el=>parseInt(el.dataset.x)===x && parseInt(el.dataset.y)===y);
+    if(b) b.click();
+  },
+  nextMission: () => document.getElementById('nextMissionBtn').click(),
+  answerPuzzle: (guessTrue) => (guessTrue ? document.getElementById('puzTrue') : document.getElementById('puzFalse')).click()
+};
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

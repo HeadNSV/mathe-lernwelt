@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Lineare Gleichungen · Teil 3 — Formvariablen</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .warnbox{background:#3d1c1c;border-left:5px solid #c0392b;border-radius:8px;padding:10px 16px;font-size:min(1.9vw,16px);color:#ffd9d0;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>LINEARE GLEICHUNGEN <span class="accent">· Teil 3</span></h1>
+    <h2>Formvariablen</h2>
+    <div class="hook" style="max-width:70ch;">Manchmal will man eine Gleichung nicht nur EINMAL lösen, sondern für viele verschiedene Ausgangswerte gleichzeitig — dafür gibt es Formvariablen: Platzhalter, die wie Zahlen behandelt werden, aber selbst noch unbestimmt bleiben.</div>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 7.3</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Bedeutung einer Formvariablen -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Bedeutung einer Formvariablen</h2>
+      <div class="defbox">Ein Taxiunternehmen berechnet den Fahrpreis so: Grundpreis g + 2€ pro gefahrenem Kilometer x. Ein Fahrgast hat genau 20€ Budget. Verschiedene Taxiunternehmen verlangen aber unterschiedliche Grundpreise — g ist hier eine Formvariable: ein Platzhalter für „irgendeinen Grundpreis", nicht für eine feste Zahl.</div>
+      <ul class="bul">
+        <li>Gleichung: g + 2x = 20 — gesucht ist x (die Lösungsvariable), g bleibt als Formvariable stehen.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 3 Taxi-Beispiel durchgerechnet -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Einmal lösen, für alle g nutzen</h2>
+      <div class="defbox">g + 2x = 20 |−g ⇔ 2x = 20−g |:2 ⇔ x = (20−g)/2 — jetzt kann man für JEDEN Grundpreis g sofort die maximale Kilometerzahl einsetzen, ohne neu zu rechnen.</div>
+      <table class="legend">
+        <tr><th>Grundpreis g</th><th>maximale km x = (20−g)/2</th></tr>
+        <tr><td>4€</td><td>8 km</td></tr>
+        <tr><td>6€</td><td>7 km</td></tr>
+        <tr><td>10€</td><td>5 km</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 4 Loesen mit Formvariable -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Lösen einer linearen Gleichung mit einer Formvariablen</h2>
+      <div class="defbox">Eine Formvariable wird beim Umformen wie eine ganz normale Zahl behandelt — man darf mit ihr genauso addieren, subtrahieren, multiplizieren und dividieren (nur nicht durch 0!).</div>
+      <ul class="bul">
+        <li>Beispiel: −3x+a=0 |−a ⇔ −3x=−a |:(−3) ⇔ x=a/3, also L<sub>a</sub>={a/3}.</li>
+        <li>Für a=6: x=2. Für a=−9: x=−3.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 5 Fallunterscheidung Teil 1 -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">⚠️ Notwendigkeit einer Fallunterscheidung</span> Division durch die Formvariable selbst</h2>
+      <div class="defbox">Aufgabe: a·x=6. Um x zu isolieren, müsste man durch a teilen — aber a KÖNNTE 0 sein, und durch 0 darf man nicht teilen. Deshalb: Fallunterscheidung.</div>
+      <div class="svgbox"><div id="svgTree1"></div></div>
+    </div>
+  </section>
+
+  <!-- 6 Fallunterscheidung Teil 2 -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">⚠️ Notwendigkeit einer Fallunterscheidung</span> Division durch einen Term mit Formvariable</h2>
+      <div class="defbox">Aufgabe: (a+2)/4·x−1=1 → (a+2)·x=8. Diesmal muss man durch den TERM (a+2) teilen — der könnte ebenfalls 0 werden, nämlich bei a=−2.</div>
+      <div class="svgbox"><div id="svgTree2"></div></div>
+    </div>
+  </section>
+
+  <!-- 7 Formeln umstellen: U=R.I -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Formeln umstellen</span> U = R·I nach R</h2>
+      <div class="defbox">In Ausbildungsberufen (z.B. Elektrotechnik) MUSS man Formeln ständig nach unterschiedlichen Größen umstellen — genau das ist Formvariablen-Rechnen in der Praxis.</div>
+      <ul class="bul">
+        <li>U=R·I (Spannung = Widerstand mal Stromstärke, hier nur als Formel-Beispiel, keine Physik-Vertiefung) |:I ⇔ U/I = R.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 8 Formeln umstellen: v=s/t -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Formeln umstellen</span> v = s/t nach t</h2>
+      <div class="step" id="s8_1"><b class="lbl">Schritt 1:</b> v=s/t |·t (beide Seiten mit t multiplizieren, um t aus dem Nenner zu holen) ⇔ v·t=s.</div>
+      <div class="step" id="s8_2"><b class="lbl">Schritt 2:</b> |:v ⇔ t=s/v.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="8" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 9 Eselsbruecke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Formvariable = Zahl mit Denkpause." Rechne mit ihr wie mit jeder Zahl — aber IMMER bevor du durch sie (oder einen Term mit ihr) teilst, halte kurz inne und frage: „Könnte das hier 0 sein?"</div>
+    </div>
+  </section>
+
+  <!-- 10 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Formeln umstellen ist Handwerkszeug</h2>
+      <div class="defbox">Ob Elektrotechnik, Maschinenbau oder Bäckerei-Kalkulation: in fast jedem technischen Beruf steht irgendwann eine fertige Formel da, aber man kennt eine ANDERE Größe als die, nach der die Formel aufgelöst ist — dann muss man selbst umstellen, oft unter Zeitdruck.</div>
+    </div>
+  </section>
+
+  <!-- 11 Intuitions-Regler -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Schätz mal: Formvariable einsetzen</h2>
+      <div class="defbox">Für a·x=6 mit a=3 — welchen Wert hat x?</div>
+      <div id="estForm22"></div>
+    </div>
+  </section>
+
+  <!-- 12 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>x</td><td>„Lösungsvariable"</td><td>die gesuchte, unbekannte Größe</td></tr>
+        <tr><td>a, t, k, …</td><td>„Formvariable"</td><td>Platzhalter für einen noch unbestimmten, aber FESTEN Ausgangswert</td></tr>
+        <tr><td>L<sub>a</sub></td><td>„Lösungsmenge in Abhängigkeit von a"</td><td>die Lösung hängt vom Wert der Formvariable ab</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 13 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Formel-Umsteller</span><span class="sub">Zielvariable wählen, mit Kacheln umstellen</span></div>
+    <iframe allow="autoplay" data-src="umsteller22_labor.html"></iframe>
+  </section>
+
+  <!-- 14 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Begriff</th><th>Kernaussage</th></tr>
+      <tr><td>Formvariable</td><td>Platzhalter, wird wie eine Zahl behandelt</td></tr>
+      <tr><td>Fallunterscheidung</td><td>IMMER nötig, bevor durch eine Formvariable/einen Term mit ihr geteilt wird</td></tr>
+      <tr><td>Formeln umstellen</td><td>gleiche Äquivalenzumformungen, nur mit Buchstaben statt Zahlen</td></tr>
+    </table>
+  </section>
+
+  <!-- 15 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Löse 2x−a=0 nach x auf.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>x=a/2</details>
+        </li>
+        <li style="margin-top:10px;">Für welchen Wert von k ist bei k·x=9 eine Fallunterscheidung nötig, und wie lautet L₀?
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>Bei k=0, denn dann müsste man durch 0 teilen. Eingesetzt: 0=9 (falsch) → L₀={ }.</details>
+        </li>
+        <li style="margin-top:10px;">Stelle A=a·b nach b um.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>b=A/a</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 16 Pruefungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Formvariablen wie normale Zahlen behandeln</b> können — beim Addieren, Subtrahieren, Multiplizieren.</li>
+        <li><b>Erkennen, WANN eine Fallunterscheidung nötig ist</b> — immer vor einer Division durch eine Formvariable oder einen Term mit ihr.</li>
+        <li><b>Formeln nach einer beliebigen Variablen umstellen</b> können, mit denselben Äquivalenzumformungen wie bei Zahlengleichungen.</li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">Kapitel-Brücke — Transferaufgabe mit Teil 2: <i>„Für die Gleichung a·x=0 (a als Formvariable): welche Lösungsmenge ergibt sich für a≠0, und welche für a=0?"</i> → Für a≠0: x=0/a=0, also L<sub>a</sub>={0}. Für a=0: 0·x=0 ist für JEDES x wahr → L₀=G (unendlich viele Lösungen, vgl. den „unendlich viele"-Fall aus Teil 2!).</div>
+    </div>
+  </section>
+
+  <!-- 17 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+// === SVG: Entscheidungsbaum fuer Fallunterscheidung ===
+function treeBox(x,y,w,h,text,color){
+  return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="6" fill="rgba(255,255,255,0.03)" stroke="'+color+'" stroke-width="1.5"/><text x="'+(x+w/2)+'" y="'+(y+h/2+5)+'" text-anchor="middle" font-size="12.5" font-weight="600" fill="'+color+'">'+text+'</text>';
+}
+function buildTreeSVG(top, leftCond, leftRes, rightCond, rightRes){
+  const topX=150, topW=170;
+  let s='<svg viewBox="0 0 470 230" style="width:100%;max-width:470px;height:auto;display:block;margin:0 auto;">';
+  s+=treeBox(topX,10,topW,40,top,'#f2a63c');
+  s+='<line x1="'+(topX+topW/2)+'" y1="50" x2="90" y2="90" stroke="#9aa4b2" stroke-width="1.5"/>';
+  s+='<line x1="'+(topX+topW/2)+'" y1="50" x2="380" y2="90" stroke="#9aa4b2" stroke-width="1.5"/>';
+  s+=treeBox(10,90,160,40,leftCond,'#5fd0c7');
+  s+='<line x1="90" y1="130" x2="90" y2="160" stroke="#9aa4b2" stroke-width="1.5"/>';
+  s+=treeBox(10,160,160,40,leftRes,'#5fd0c7');
+  s+=treeBox(300,90,160,40,rightCond,'#c0392b');
+  s+='<line x1="380" y1="130" x2="380" y2="160" stroke="#9aa4b2" stroke-width="1.5"/>';
+  s+=treeBox(300,160,160,40,rightRes,'#c0392b');
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgTree1').innerHTML=buildTreeSVG('a·x=6', 'a≠0', 'x=6/a → Lₐ={6/a}', 'a=0', '0=6 (falsch) → L₀={ }');
+document.getElementById('svgTree2').innerHTML=buildTreeSVG('(a+2)·x=8', 'a≠−2', 'x=8/(a+2)', 'a=−2', '0=8 (falsch) → L₋₂={ }');
+
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Bedeutung einer Formvariablen", "Einmal lösen, für alle g nutzen", "Lösen einer linearen Gleichung mit einer Formvariablen", "⚠️ Fallunterscheidung: Division durch die Formvariable selbst", "⚠️ Fallunterscheidung: Division durch einen Term mit Formvariable", "🔧 Formeln umstellen: U = R·I nach R", "🔧 Formeln umstellen: v = s/t nach t", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Formeln umstellen ist Handwerkszeug", "Schätz mal: Formvariable einsetzen", "Symbol-Legende", "🧪 Formel-Umsteller", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=17;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck22_s1_Charon.mp3",txt:"Lineare Gleichungen, Teil drei. Manchmal will man eine Gleichung nicht nur einmal lösen, sondern für viele verschiedene Ausgangswerte gleichzeitig - dafür gibt es Formvariablen: Platzhalter, die wie Zahlen behandelt werden, aber selbst noch unbestimmt bleiben."},
+ 2:{wav:"narration_deck22_s2_Charon.mp3",txt:"Ein Taxiunternehmen berechnet den Fahrpreis aus Grundpreis plus zwei Euro pro Kilometer. Verschiedene Unternehmen verlangen unterschiedliche Grundpreise - dieser Grundpreis ist eine Formvariable, ein Platzhalter für irgendeinen festen, aber noch nicht genannten Wert."},
+ 3:{wav:"narration_deck22_s3_Charon.mp3",txt:"Löst man die Gleichung EINMAL nach der Formvariable auf, kann man danach für jeden beliebigen Grundpreis sofort das Ergebnis einsetzen, ohne neu zu rechnen."},
+ 4:{wav:"narration_deck22_s4_Charon.mp3",txt:"Eine Formvariable wird beim Umformen wie eine ganz normale Zahl behandelt - addieren, subtrahieren, multiplizieren, dividieren, alles erlaubt, nur nicht durch Null."},
+ 5:{wav:"narration_deck22_s5_Charon.mp3",txt:"Aber Achtung: will man durch eine Formvariable selbst teilen, könnte die ja Null sein - und durch Null darf man nicht teilen. Deshalb braucht es eine Fallunterscheidung."},
+ 6:{wav:"narration_deck22_s6_Charon.mp3",txt:"Dasselbe Problem taucht auf, wenn man durch einen ganzen Term teilen muss, der eine Formvariable enthält - auch der könnte am Ende Null ergeben."},
+ 7:{wav:"narration_deck22_s7_Charon.mp3",txt:"In technischen Ausbildungsberufen muss man Formeln ständig nach unterschiedlichen Größen umstellen - genau das ist Formvariablen-Rechnen in der Praxis."},
+ 8:{wav:"narration_deck22_s8_Charon.mp3",txt:"Steht die gesuchte Größe im Nenner, braucht man einen zusätzlichen Schritt: erst mit dem Nenner multiplizieren, dann erst nach der gesuchten Größe auflösen."},
+ 9:{wav:"narration_deck22_s9_Charon.mp3",txt:"Merk dir: Formvariable ist eine Zahl mit Denkpause. Rechne mit ihr wie mit jeder Zahl, aber halte vor jeder Division kurz inne und frage dich, ob sie Null sein könnte."},
+ 10:{wav:"narration_deck22_s10_Charon.mp3",txt:"In fast jedem technischen Beruf steht irgendwann eine fertige Formel da, aber man kennt eine andere Größe als die, nach der aufgelöst ist - dann muss selbst umgestellt werden."},
+ 11:{wav:"narration_deck22_s11_Charon.mp3",txt:"Bevor du ins Labor gehst: schätz doch mal, welchen Wert x annimmt, wenn du für die Formvariable eine konkrete Zahl einsetzt."},
+ 12:{wav:"narration_deck22_s12_Charon.mp3",txt:"Hier noch mal alle Begriffe rund um Formvariablen im Überblick, bevor du selbst im Labor Formeln umstellst."},
+ 13:{wav:"narration_deck22_s13_Charon.mp3",txt:"Jetzt bist du dran: wähle eine Zielvariable und stelle die Formel mit den passenden Kacheln um."},
+ 14:{wav:"narration_deck22_s14_Charon.mp3",txt:"Fassen wir zusammen: was eine Formvariable ist, wann eine Fallunterscheidung nötig ist, und wie das Umstellen von Formeln funktioniert."},
+ 15:{wav:"narration_deck22_s15_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben zu Formvariablen und Fallunterscheidung."},
+ 16:{wav:"narration_deck22_s16_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst - inklusive einer Transferaufgabe, die den unendlich-viele-Lösungen-Fall aus Teil zwei wieder aufgreift."},
+ 17:{wav:"narration_deck22_s17_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"Was ist eine Formvariable?",
+  a:["Eine Rechtschreibregel","Ein Platzhalter für einen noch unbestimmten, aber festen Ausgangswert — wird wie eine Zahl behandelt","Ein Fehler in der Gleichung","Das Gleiche wie die Lösungsvariable"],r:1,
+  why:"Eine Formvariable steht für einen bestimmten Wert, der aber noch nicht konkret genannt ist — man rechnet mit ihr trotzdem wie mit einer normalen Zahl."},
+ {q:"Bei a·x=6 willst du nach x auflösen. Warum reicht „einfach durch a teilen“ nicht ohne Weiteres?",
+  a:["Weil a immer negativ ist","Weil a den Wert 0 haben könnte, und Division durch 0 ist verboten","Weil x schon isoliert ist","Weil a keine Zahl sein darf"],r:1,
+  why:"Eine Formvariable KANN 0 sein — deshalb muss man erst den Fall a≠0 vom Fall a=0 unterscheiden, bevor man teilt."},
+ {q:"Bei a·x=0 (a als Formvariable) — was passiert im Fall a=0?",
+  a:["Es gibt keine Lösung","0·x=0 ist für JEDES x wahr → unendlich viele Lösungen","x=0 ist die einzige Lösung","Das ist nicht erlaubt"],r:1,
+  why:"Setzt man a=0 ein, steht dort 0·x=0 — das stimmt für jede beliebige Zahl x, also L₀=G."},
+ {q:"Darf man eine Formvariable wie eine ganz normale Zahl behandeln, OHNE jemals eine Fallunterscheidung zu machen?",
+  a:["Ja, immer", "Nein — sobald man durch die Formvariable (oder einen Term mit ihr) teilen will, MUSS man erst prüfen, ob sie 0 sein könnte", "Nein, Formvariablen darf man gar nicht benutzen", "Nur bei positiven Formvariablen"],r:1,
+  why:"Addieren, Subtrahieren, Multiplizieren geht immer wie bei Zahlen — aber vor jeder Division durch die Formvariable ist eine Fallunterscheidung Pflicht."},
+ {q:"Stelle v=s/t nach t um — was ist der ERSTE sinnvolle Schritt?",
+  a:["Direkt durch v teilen","Beide Seiten mit t multiplizieren, um t aus dem Nenner zu holen","Beide Seiten quadrieren","s und v vertauschen"],r:1,
+  why:"t steht im Nenner — um es dort herauszuholen, multipliziert man zuerst beide Seiten mit t: v·t=s. Erst danach teilt man durch v."},
+ {q:"Für a·x=6 mit a=3 — welchen Wert hat x?",
+  a:["x=2","x=3","x=6","x=18"],r:0,
+  why:"3·x=6 |:3 ⇔ x=2."}
+];
+const DECK_ID="gleichungen/deck22";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), oi===item.r);
+        answered++; if(oi===item.r) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estForm22', {
+    frage: 'Für a·x=6 mit a=3 — welchen Wert hat x?',
+    min: 0, max: 10, korrekt: 2, toleranz: 0,
+    begruendung: '3·x=6 |:3 ⇔ x=2.'
+  });
+});
+</script>
+</body>
+</html>

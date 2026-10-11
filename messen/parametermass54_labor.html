@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Parameter-Maß-Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:16px 22px 40px;max-width:900px;margin:0 auto;}
+  h2{margin:0 0 4px;font-size:22px;}
+  .lead{color:var(--muted);font-size:15px;margin:0 0 14px;}
+  .panel{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:14px;}
+  .row{display:flex;align-items:center;gap:12px;margin:10px 0;flex-wrap:wrap;}
+  .row label{min-width:70px;font-size:15px;}
+  input[type=range]{flex:1;min-width:220px;}
+  .val{font-weight:700;color:var(--accent);min-width:60px;text-align:right;}
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:640px){ .twocol{grid-template-columns:1fr;} }
+  #svgRect,#svgGraph{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;}
+  .info{font-size:16px;text-align:center;margin-top:10px;font-weight:700;color:var(--accent);}
+  .mission{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:10px 16px;margin-top:10px;font-size:15px;}
+  .mission.solved{background:#1c3d24;border-left-color:#4caf50;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h2>🧪 Parameter-Maß-Labor</h2>
+  <p class="lead">Weidezaun mit 80m Länge (3 Seiten) — stelle die Breite x ein und beobachte Fläche und Graph gleichzeitig.</p>
+  <div class="panel">
+    <div class="row">
+      <label for="xSlide">Breite x</label>
+      <input type="range" id="xSlide" min="1" max="39" step="0.5" value="5">
+      <span class="val" id="xVal">5m</span>
+    </div>
+    <div class="twocol">
+      <div id="svgRect"></div>
+      <div id="svgGraph"></div>
+    </div>
+    <div class="info" id="info"></div>
+    <div class="mission" id="missionA">🎯 Mission 1: Für welches x wird A(x)=800 (das Maximum)?</div>
+    <div class="mission" id="missionB">🎯 Mission 2: Stelle x so ein, dass A(x)≥700 ist.</div>
+  </div>
+</div>
+
+<script>
+function toX(x,ox,sx){ return ox+x*sx; }
+function toY(y,oy,sy){ return oy-y*sy; }
+const de1=(x)=>x.toFixed(1).replace('.',',');
+
+let x=5;
+let m1solved=false, m2solved=false;
+function A(xv){ return xv*(80-2*xv); }
+
+function renderRect(){
+  const l = 80-2*x;
+  const w=260,h=180;
+  const scale = 3;
+  const rw = Math.min(l*scale, 220), rh = Math.min(x*scale*2, 100);
+  let s='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;max-width:280px;height:auto;display:block;margin:0 auto;">';
+  const ox=(w-rw)/2, oy=(h-rh)/2;
+  s+='<rect x="'+ox+'" y="'+oy+'" width="'+rw+'" height="'+rh+'" fill="rgba(95,208,199,0.2)" stroke="#5fd0c7" stroke-width="2"/>';
+  s+='<line x1="0" y1="'+(oy+rh+10)+'" x2="'+w+'" y2="'+(oy+rh+10)+'" stroke="#4a5568" stroke-width="4"/>';
+  s+='<text x="'+(w/2)+'" y="'+(h-4)+'" fill="#e6edf3" font-size="11" text-anchor="middle">Fluss</text>';
+  s+='<text x="'+(w/2)+'" y="'+(oy-6)+'" fill="#f2a63c" font-size="12" text-anchor="middle">l='+de1(l)+'m</text>';
+  s+='</svg>';
+  document.getElementById('svgRect').innerHTML=s;
+}
+
+function renderGraph(){
+  const w=260,h=180, ox=30, oy=150, sx=2.6, sy=0.16;
+  let s='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;max-width:280px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="0" y1="'+oy+'" x2="'+w+'" y2="'+oy+'" stroke="#9aa4b2" stroke-width="1"/>';
+  s+='<line x1="'+ox+'" y1="0" x2="'+ox+'" y2="'+h+'" stroke="#9aa4b2" stroke-width="1"/>';
+  let pts=[];
+  for(let xv=0; xv<=40; xv+=1){
+    const yv=A(xv);
+    const py=toY(yv,oy,sy);
+    pts.push(toX(xv,ox,sx)+','+py);
+  }
+  s+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="#5fd0c7" stroke-width="2"/>';
+  const px=toX(x,ox,sx), py=toY(A(x),oy,sy);
+  s+='<circle cx="'+px+'" cy="'+py+'" r="4.5" fill="#f2a63c"/>';
+  s+='</svg>';
+  document.getElementById('svgGraph').innerHTML=s;
+}
+
+function render(){
+  renderRect();
+  renderGraph();
+  const a=A(x);
+  document.getElementById('info').textContent='A('+de1(x)+') = '+de1(a)+' m²';
+
+  const boxA=document.getElementById('missionA');
+  if(Math.abs(a-800)<8 && Math.abs(x-20)<1){
+    if(!m1solved) m1solved=true;
+  }
+  if(m1solved){
+    boxA.classList.add('solved');
+    boxA.innerHTML='✅ Mission 1 gelöst: bei x=20m ist A(x)=800m² das Maximum.';
+  } else {
+    boxA.classList.remove('solved');
+    boxA.innerHTML='🎯 Mission 1: Für welches x wird A(x)=800 (das Maximum)?';
+  }
+
+  const boxB=document.getElementById('missionB');
+  if(a>=700){
+    if(!m2solved) m2solved=true;
+  }
+  if(m2solved){
+    boxB.classList.add('solved');
+    boxB.innerHTML='✅ Mission 2 gelöst: bei x='+de1(x)+'m ist A(x)='+de1(a)+'m² ≥ 700m².';
+  } else {
+    boxB.classList.remove('solved');
+    boxB.innerHTML='🎯 Mission 2: Stelle x so ein, dass A(x)≥700 ist. (aktuell '+de1(a)+'m²)';
+  }
+}
+document.getElementById('xSlide').addEventListener('input', e=>{
+  x=parseFloat(e.target.value);
+  document.getElementById('xVal').textContent=de1(x)+'m';
+  render();
+});
+render();
+
+window.LAB={
+  state(){
+    return {
+      x: x,
+      A: A(x),
+      missionSolved: [m1solved, m2solved]
+    };
+  },
+  setX(v){
+    x=v;
+    document.getElementById('xSlide').value=v;
+    document.getElementById('xVal').textContent=de1(v)+'m';
+    render();
+  }
+};
+</script>
+</body>
+</html>

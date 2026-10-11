@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Körper-Baukasten</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:16px 22px 40px;max-width:900px;margin:0 auto;}
+  h2{margin:0 0 4px;font-size:22px;}
+  .lead{color:var(--muted);font-size:15px;margin:0 0 14px;}
+  .modebar{display:flex;gap:8px;margin-bottom:14px;}
+  .modebtn{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 16px;font-size:15px;cursor:pointer;}
+  .modebtn.active{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  .panel{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:14px;}
+  .row{display:flex;align-items:center;gap:12px;margin:10px 0;flex-wrap:wrap;}
+  .row label{min-width:110px;font-size:15px;}
+  select{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:14px;}
+  input[type=range]{flex:1;min-width:160px;}
+  .val{font-weight:700;color:var(--accent);min-width:50px;text-align:right;}
+  #svgHost{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;}
+  .info{font-size:15px;line-height:1.6;margin-top:10px;text-align:center;}
+  .mission{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:10px 16px;margin-top:10px;font-size:15px;}
+  .mission.solved{background:#1c3d24;border-left-color:#4caf50;}
+  .cmptable{width:100%;margin-top:10px;font-size:15px;}
+  .cmptable td{padding:6px 10px;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h2>🧪 Körper-Baukasten</h2>
+  <p class="lead">Wähle einen Körper und stelle die Maße ein — oder vergleiche Zylinder, Kegel und Kugel bei gleichem Durchmesser und gleicher Höhe.</p>
+  <div class="modebar">
+    <button class="modebtn active" id="btnModeA">Modus: Baukasten</button>
+    <button class="modebtn" id="btnModeB">Modus: Verhältnis-Vergleich</button>
+  </div>
+
+  <div class="panel" id="panelA">
+    <div class="row">
+      <label for="koerperSel">Körper</label>
+      <select id="koerperSel">
+        <option value="wuerfel">Würfel</option>
+        <option value="quader">Quader</option>
+        <option value="zylinder">Zylinder</option>
+        <option value="kegel">Kegel</option>
+      </select>
+    </div>
+    <div id="slidersHost"></div>
+    <div id="svgHostA"></div>
+    <div class="info" id="infoA"></div>
+    <div class="mission" id="missionA">🎯 Mission: Wähle „Zylinder" und stelle r und h so ein, dass V zwischen 130 und 150 liegt UND O unter 160 bleibt.</div>
+  </div>
+
+  <div class="panel" id="panelB" style="display:none;">
+    <div class="row">
+      <label for="rSlide">Radius r</label>
+      <input type="range" id="rSlide" min="1" max="6" step="0.5" value="2">
+      <span class="val" id="rVal">2</span>
+    </div>
+    <div id="svgHostB"></div>
+    <table class="cmptable">
+      <tr><td>Zylinder (h=d)</td><td id="vZyl"></td></tr>
+      <tr><td>Kugel</td><td id="vKug"></td></tr>
+      <tr><td>Kegel (h=d)</td><td id="vKeg"></td></tr>
+    </table>
+    <div class="info" id="infoB"></div>
+    <div class="mission" id="missionB">🎯 Mission: Bestätige das Verhältnis 3:2:1 bei mindestens 2 verschiedenen Radien.</div>
+  </div>
+</div>
+
+<script>
+const de2=(x)=>{ const r=Math.round(x*100)/100; return r.toString().replace('.',','); };
+
+// ===== Modus A: Baukasten =====
+let koerper='wuerfel';
+let params={ wuerfel:{a:2}, quader:{l:3,b:2,h:2}, zylinder:{r:2,h:2}, kegel:{r:2,h:3} };
+let missionASolved=false;
+
+function renderSliders(){
+  const host=document.getElementById('slidersHost');
+  host.innerHTML='';
+  const defs = {
+    wuerfel:[{key:'a',label:'Kante a',min:1,max:8,step:0.5}],
+    quader:[{key:'l',label:'Länge l',min:1,max:8,step:0.5},{key:'b',label:'Breite b',min:1,max:8,step:0.5},{key:'h',label:'Höhe h',min:1,max:8,step:0.5}],
+    zylinder:[{key:'r',label:'Radius r',min:1,max:6,step:0.5},{key:'h',label:'Höhe h',min:1,max:10,step:0.5}],
+    kegel:[{key:'r',label:'Radius r',min:1,max:6,step:0.5},{key:'h',label:'Höhe h',min:1,max:10,step:0.5}]
+  };
+  defs[koerper].forEach(d=>{
+    const row=document.createElement('div'); row.className='row';
+    const label=document.createElement('label'); label.textContent=d.label;
+    const input=document.createElement('input'); input.type='range'; input.min=d.min; input.max=d.max; input.step=d.step; input.value=params[koerper][d.key];
+    const val=document.createElement('span'); val.className='val'; val.textContent=de2(params[koerper][d.key]);
+    input.addEventListener('input', e=>{
+      params[koerper][d.key]=parseFloat(e.target.value);
+      val.textContent=de2(params[koerper][d.key]);
+      renderA();
+    });
+    row.appendChild(label); row.appendChild(input); row.appendChild(val);
+    host.appendChild(row);
+  });
+}
+
+function computeVO(){
+  const p=params[koerper];
+  if(koerper==='wuerfel') return { V:p.a**3, O:6*p.a*p.a };
+  if(koerper==='quader') return { V:p.l*p.b*p.h, O:2*(p.l*p.b+p.l*p.h+p.b*p.h) };
+  if(koerper==='zylinder') return { V:Math.PI*p.r*p.r*p.h, O:2*Math.PI*p.r*p.h+2*Math.PI*p.r*p.r };
+  if(koerper==='kegel'){
+    const s=Math.sqrt(p.r*p.r+p.h*p.h);
+    return { V:(1/3)*Math.PI*p.r*p.r*p.h, O:Math.PI*p.r*s+Math.PI*p.r*p.r };
+  }
+}
+
+function renderA(){
+  const {V,O}=computeVO();
+  const w=260,h=200;
+  let sv='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;max-width:280px;height:auto;display:block;margin:0 auto;">';
+  const scale = 12;
+  if(koerper==='wuerfel'){
+    const a=params.wuerfel.a*scale*0.6;
+    sv+='<rect x="'+(130-a/2)+'" y="'+(150-a)+'" width="'+a+'" height="'+a+'" fill="none" stroke="#5fd0c7" stroke-width="2"/>';
+    sv+='<rect x="'+(130-a/2+a*0.2)+'" y="'+(150-a-a*0.2)+'" width="'+a+'" height="'+a+'" fill="none" stroke="#5fd0c7" stroke-width="1.2" opacity="0.5"/>';
+  } else if(koerper==='quader'){
+    const l=params.quader.l*scale*0.5, ht=params.quader.h*scale*0.5;
+    sv+='<rect x="'+(130-l/2)+'" y="'+(160-ht)+'" width="'+l+'" height="'+ht+'" fill="none" stroke="#f2a63c" stroke-width="2"/>';
+  } else if(koerper==='zylinder'){
+    const r=params.zylinder.r*scale*0.5, ht=params.zylinder.h*scale*0.5;
+    sv+='<ellipse cx="130" cy="'+(160-ht)+'" rx="'+r+'" ry="'+(r*0.3)+'" fill="none" stroke="#e06fa0" stroke-width="2"/>';
+    sv+='<line x1="'+(130-r)+'" y1="'+(160-ht)+'" x2="'+(130-r)+'" y2="160" stroke="#e06fa0" stroke-width="2"/>';
+    sv+='<line x1="'+(130+r)+'" y1="'+(160-ht)+'" x2="'+(130+r)+'" y2="160" stroke="#e06fa0" stroke-width="2"/>';
+    sv+='<ellipse cx="130" cy="160" rx="'+r+'" ry="'+(r*0.3)+'" fill="none" stroke="#e06fa0" stroke-width="2"/>';
+  } else if(koerper==='kegel'){
+    const r=params.kegel.r*scale*0.5, ht=params.kegel.h*scale*0.5;
+    sv+='<ellipse cx="130" cy="160" rx="'+r+'" ry="'+(r*0.3)+'" fill="none" stroke="#6fcf6f" stroke-width="2"/>';
+    sv+='<line x1="'+(130-r)+'" y1="160" x2="130" y2="'+(160-ht)+'" stroke="#6fcf6f" stroke-width="2"/>';
+    sv+='<line x1="'+(130+r)+'" y1="160" x2="130" y2="'+(160-ht)+'" stroke="#6fcf6f" stroke-width="2"/>';
+  }
+  sv+='</svg>';
+  document.getElementById('svgHostA').innerHTML=sv;
+  document.getElementById('infoA').innerHTML='V ≈ '+de2(V)+' &nbsp;·&nbsp; O ≈ '+de2(O);
+
+  const box=document.getElementById('missionA');
+  const targetMatch = koerper==='zylinder' && V>=130 && V<=150 && O<160;
+  if(targetMatch){
+    missionASolved=true;
+    box.classList.add('solved');
+    box.innerHTML='✅ Mission erfüllt: Zylinder mit V≈'+de2(V)+' (zwischen 130 und 150) und O≈'+de2(O)+' (unter 160).';
+  } else if(missionASolved){
+    box.classList.add('solved');
+    box.innerHTML='✅ Mission bereits erfüllt (Regler seither verändert).';
+  } else {
+    box.classList.remove('solved');
+    box.innerHTML='🎯 Mission: Wähle „Zylinder" und stelle r und h so ein, dass V zwischen 130 und 150 liegt UND O unter 160 bleibt.';
+  }
+}
+document.getElementById('koerperSel').addEventListener('change', e=>{ koerper=e.target.value; renderSliders(); renderA(); });
+renderSliders();
+renderA();
+
+// ===== Modus B: Verhaeltnis-Vergleich =====
+let r=2;
+let triedSetB=new Set();
+let missionBSolved=false;
+function renderB(){
+  const d=2*r, h=d;
+  const vZyl=Math.PI*r*r*h;
+  const vKug=(4/3)*Math.PI*r*r*r;
+  const vKeg=(1/3)*Math.PI*r*r*h;
+  document.getElementById('vZyl').textContent='V ≈ '+de2(vZyl);
+  document.getElementById('vKug').textContent='V ≈ '+de2(vKug);
+  document.getElementById('vKeg').textContent='V ≈ '+de2(vKeg);
+  const ratio = (vZyl/vKeg).toFixed(2)+' : '+(vKug/vKeg).toFixed(2)+' : 1';
+  document.getElementById('infoB').textContent='Verhältnis Zylinder:Kugel:Kegel ≈ '+ratio+' (theoretisch genau 3:2:1)';
+  let sv='<svg viewBox="0 0 260 160" style="width:100%;max-width:280px;height:auto;display:block;margin:0 auto;">';
+  const s=10;
+  sv+='<ellipse cx="60" cy="140" rx="'+(r*s)+'" ry="'+(r*s*0.3)+'" fill="none" stroke="#e06fa0" stroke-width="2"/>';
+  sv+='<line x1="'+(60-r*s)+'" y1="140" x2="'+(60-r*s)+'" y2="'+(140-2*r*s)+'" stroke="#e06fa0" stroke-width="2"/>';
+  sv+='<line x1="'+(60+r*s)+'" y1="140" x2="'+(60+r*s)+'" y2="'+(140-2*r*s)+'" stroke="#e06fa0" stroke-width="2"/>';
+  sv+='<ellipse cx="60" cy="'+(140-2*r*s)+'" rx="'+(r*s)+'" ry="'+(r*s*0.3)+'" fill="none" stroke="#e06fa0" stroke-width="2"/>';
+  sv+='<circle cx="130" cy="'+(140-r*s)+'" r="'+(r*s)+'" fill="none" stroke="#5fd0c7" stroke-width="2"/>';
+  sv+='<ellipse cx="200" cy="140" rx="'+(r*s)+'" ry="'+(r*s*0.3)+'" fill="none" stroke="#6fcf6f" stroke-width="2"/>';
+  sv+='<line x1="'+(200-r*s)+'" y1="140" x2="200" y2="'+(140-2*r*s)+'" stroke="#6fcf6f" stroke-width="2"/>';
+  sv+='<line x1="'+(200+r*s)+'" y1="140" x2="200" y2="'+(140-2*r*s)+'" stroke="#6fcf6f" stroke-width="2"/>';
+  sv+='</svg>';
+  document.getElementById('svgHostB').innerHTML=sv;
+
+  triedSetB.add(r);
+  const box=document.getElementById('missionB');
+  if(triedSetB.size>=2 && !missionBSolved) missionBSolved=true;
+  if(missionBSolved){
+    box.classList.add('solved');
+    box.innerHTML='✅ Bestätigt bei '+triedSetB.size+' verschiedenen Radien: das Verhältnis Zylinder:Kugel:Kegel bleibt immer 3:2:1.';
+  } else {
+    box.innerHTML='🎯 Mission: Bestätige das Verhältnis 3:2:1 bei mindestens 2 verschiedenen Radien. ('+triedSetB.size+'/2)';
+  }
+}
+document.getElementById('rSlide').addEventListener('input', e=>{ r=parseFloat(e.target.value); document.getElementById('rVal').textContent=de2(r); renderB(); });
+renderB();
+
+// ===== Modus-Umschaltung =====
+const btnModeA=document.getElementById('btnModeA'), btnModeB=document.getElementById('btnModeB');
+const panelA=document.getElementById('panelA'), panelB=document.getElementById('panelB');
+let mode='baukasten';
+btnModeA.onclick=()=>{ mode='baukasten'; btnModeA.classList.add('active'); btnModeB.classList.remove('active'); panelA.style.display='block'; panelB.style.display='none'; };
+btnModeB.onclick=()=>{ mode='vergleich'; btnModeB.classList.add('active'); btnModeA.classList.remove('active'); panelA.style.display='none'; panelB.style.display='block'; };
+
+window.LAB={
+  state(){
+    return {
+      mode: mode,
+      koerper: koerper,
+      params: JSON.parse(JSON.stringify(params[koerper])),
+      missionASolved: missionASolved,
+      r: r,
+      triedCountB: triedSetB.size,
+      missionBSolved: missionBSolved
+    };
+  },
+  setMode(m){ if(m==='baukasten') btnModeA.onclick(); else btnModeB.onclick(); },
+  setKoerper(k){ koerper=k; document.getElementById('koerperSel').value=k; renderSliders(); renderA(); },
+  setParam(key, val){
+    params[koerper][key]=val;
+    renderSliders();
+    const inputs=document.querySelectorAll('#slidersHost input');
+    renderA();
+  },
+  setR(v){ r=v; document.getElementById('rSlide').value=v; document.getElementById('rVal').textContent=de2(v); renderB(); }
+};
+</script>
+</body>
+</html>

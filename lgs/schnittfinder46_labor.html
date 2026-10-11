@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Schnitt-Finder</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:16px 22px 40px;max-width:920px;margin:0 auto;}
+  h2{margin:0 0 4px;font-size:22px;}
+  .lead{color:var(--muted);font-size:15px;margin:0 0 14px;}
+  .panel{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:14px;}
+  .row{display:flex;align-items:center;gap:12px;margin:10px 0;flex-wrap:wrap;}
+  .row label{min-width:120px;font-size:15px;}
+  input[type=range]{flex:1;min-width:160px;}
+  .val{font-weight:700;color:var(--accent);min-width:56px;text-align:right;}
+  #svgHost{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;}
+  .info{font-size:15px;line-height:1.6;margin-top:10px;}
+  .mission{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:10px 16px;margin-top:10px;font-size:15px;}
+  .mission.solved{background:#1c3d24;border-left-color:#4caf50;}
+  .mcopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:15px;cursor:pointer;}
+  .mcopt:hover{background:#283041;}
+  .mcopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .mcopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .mcopt:disabled{cursor:default;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h2>🧪 Schnitt-Finder</h2>
+  <p class="lead">Stelle zwei Geraden per Regler ein und finde alle drei Lösungsfälle eines LGS.</p>
+
+  <div class="panel">
+    <div class="row">
+      <label for="m1">Gerade 1: m₁</label>
+      <input type="range" id="m1" min="-3" max="3" step="0.5" value="1">
+      <span class="val" id="m1Val">1,0</span>
+      <label for="b1">b₁</label>
+      <input type="range" id="b1" min="-4" max="4" step="0.5" value="2">
+      <span class="val" id="b1Val">2,0</span>
+    </div>
+    <div class="row">
+      <label for="m2">Gerade 2: m₂</label>
+      <input type="range" id="m2" min="-3" max="3" step="0.5" value="2">
+      <span class="val" id="m2Val">2,0</span>
+      <label for="b2">b₂</label>
+      <input type="range" id="b2" min="-4" max="4" step="0.5" value="-1">
+      <span class="val" id="b2Val">−1,0</span>
+    </div>
+    <div id="svgHost"></div>
+    <div class="info" id="info"></div>
+    <div class="mission" id="missionA">🎯 Mission 1: Stelle die Regler so ein, dass die beiden Geraden PARALLEL sind (gleiche Steigung, aber verschiedene b).</div>
+    <div class="mission" id="missionB">🎯 Mission 2: Stelle die Regler so ein, dass die beiden Geraden IDENTISCH sind (gleiche Steigung UND gleiches b).</div>
+    <div id="mcBox" style="display:none;margin-top:10px;"></div>
+  </div>
+</div>
+
+<script>
+function toX(x,ox,sx){ return ox+x*sx; }
+function toY(y,oy,sy){ return oy-y*sy; }
+function curvePts(fn, xr, ox, oy, sx, sy, w, h){
+  let pts=[];
+  for(let x=xr[0]; x<=xr[1]+0.001; x+=0.2){
+    const y=fn(x);
+    const py=toY(y,oy,sy);
+    if(py>-40 && py<h+40) pts.push(toX(x,ox,sx)+","+py);
+  }
+  return pts.join(" ");
+}
+const de1=(x)=>x.toFixed(1).replace('.',',').replace('-','−');
+
+let m1=1, b1=2, m2=2, b2=-1;
+let mAsolved=false, mBsolved=false, mcAnswered=false;
+
+function render(){
+  const w=340,h=260,ox=90,oy=180,sx=24,sy=18;
+  let s='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;max-width:480px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="0" y1="'+oy+'" x2="'+w+'" y2="'+oy+'" stroke="#9aa4b2" stroke-width="1"/>';
+  s+='<line x1="'+ox+'" y1="0" x2="'+ox+'" y2="'+h+'" stroke="#9aa4b2" stroke-width="1"/>';
+  s+='<polyline points="'+curvePts(x=>m1*x+b1,[-8,8],ox,oy,sx,sy,w,h)+'" fill="none" stroke="#5fd0c7" stroke-width="2.4"/>';
+  s+='<polyline points="'+curvePts(x=>m2*x+b2,[-8,8],ox,oy,sx,sy,w,h)+'" fill="none" stroke="#e06fa0" stroke-width="2.4"/>';
+
+  let art, artClass;
+  const sameM = Math.abs(m1-m2)<0.001;
+  const sameB = Math.abs(b1-b2)<0.001;
+  if(!sameM){
+    const xs=(b2-b1)/(m1-m2), ys=m1*xs+b1;
+    const px=toX(xs,ox,sx), py=toY(ys,oy,sy);
+    if(py>-40 && py<h+40 && px>-40 && px<w+40){ s+='<circle cx="'+px+'" cy="'+py+'" r="4.5" fill="#f2a63c"/>'; }
+    art='genau eine Lösung — Schnittpunkt S('+de1(xs)+'|'+de1(ys)+')';
+  } else if(sameM && !sameB){
+    art='keine Lösung — Geraden echt parallel, L={ }';
+  } else {
+    art='unendlich viele Lösungen — Geraden identisch';
+  }
+  s+='</svg>';
+  document.getElementById('svgHost').innerHTML=s;
+  document.getElementById('info').innerHTML='g: y='+de1(m1)+'x+('+de1(b1)+') &nbsp;(<span style="color:#5fd0c7;">teal</span>) &nbsp;·&nbsp; h: y='+de1(m2)+'x+('+de1(b2)+') &nbsp;(<span style="color:#e06fa0;">pink</span>)<br><b>'+art+'</b>';
+
+  // Mission A: parallel (sticky - einmal erreicht, bleibt gewertet)
+  const boxA=document.getElementById('missionA');
+  const nowParallel = sameM && !sameB;
+  if(nowParallel && !mAsolved){ mAsolved=true; }
+  if(nowParallel){
+    boxA.classList.add('solved');
+    boxA.innerHTML='✅ Mission 1 gelöst: gleiche Steigung, verschiedenes b — die Geraden laufen parallel, das LGS hat keine Lösung.';
+  } else if(mAsolved){
+    boxA.classList.add('solved');
+    boxA.innerHTML='✅ Mission 1 bereits gelöst (Regler seither verändert).';
+  } else {
+    boxA.classList.remove('solved');
+    boxA.innerHTML='🎯 Mission 1: Stelle die Regler so ein, dass die beiden Geraden PARALLEL sind (gleiche Steigung, aber verschiedene b).';
+  }
+
+  // Mission B: identical -> triggert MC (sticky sobald MC richtig beantwortet)
+  const boxB=document.getElementById('missionB');
+  const mcBox=document.getElementById('mcBox');
+  const nowIdentical = sameM && sameB;
+  if(nowIdentical){
+    boxB.classList.add('solved');
+    boxB.innerHTML='✅ Mission 2 erreicht: gleiche Steigung UND gleiches b — die Geraden sind identisch, unendlich viele Lösungen.';
+    if(!mcAnswered) showMC();
+  } else if(mBsolved){
+    boxB.classList.add('solved');
+    boxB.innerHTML='✅ Mission 2 bereits gelöst (Regler seither verändert).';
+  } else {
+    boxB.classList.remove('solved');
+    boxB.innerHTML='🎯 Mission 2: Stelle die Regler so ein, dass die beiden Geraden IDENTISCH sind (gleiche Steigung UND gleiches b).';
+    mcBox.style.display='none';
+    mcBox.innerHTML='';
+  }
+}
+function showMC(){
+  const box=document.getElementById('mcBox');
+  box.style.display='block';
+  box.innerHTML='<p style="margin:6px 0;">Die Geraden sind jetzt identisch — unendlich viele Lösungen. Ist deshalb JEDES beliebige Zahlenpaar (x|y) eine Lösung des LGS?</p>';
+  const opts=[
+    {t:'Ja, jedes Zahlenpaar der Ebene ist eine Lösung', ok:false},
+    {t:'Nein, nur die Zahlenpaare, die AUF der gemeinsamen Geraden liegen', ok:true}
+  ];
+  opts.forEach(o=>{
+    const b=document.createElement('button'); b.className='mcopt'; b.textContent=o.t;
+    b.onclick=()=>{
+      if(mcAnswered) return;
+      mcAnswered=true;
+      mBsolved=o.ok;
+      box.querySelectorAll('.mcopt').forEach(x=>x.disabled=true);
+      if(o.ok){
+        b.classList.add('correct');
+      } else {
+        b.classList.add('wrong');
+        box.querySelectorAll('.mcopt').forEach(x=>{ if(x.textContent.indexOf('Nein')===0) x.classList.add('correct'); });
+      }
+    };
+    box.appendChild(b);
+  });
+}
+
+['m1','b1','m2','b2'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', e=>{
+    const v=parseFloat(e.target.value);
+    if(id==='m1') m1=v; if(id==='b1') b1=v; if(id==='m2') m2=v; if(id==='b2') b2=v;
+    document.getElementById(id+'Val').textContent=de1(v);
+    render();
+  });
+});
+render();
+
+window.LAB={
+  state(){
+    return {
+      m1:m1, b1:b1, m2:m2, b2:b2,
+      mcAnswered: mcAnswered,
+      missionSolved: [mAsolved, mBsolved && mcAnswered]
+    };
+  },
+  set(id, v){
+    const el=document.getElementById(id);
+    el.value=v;
+    el.dispatchEvent(new Event('input'));
+  },
+  answerMC(idx){ const btns=document.querySelectorAll('#mcBox .mcopt'); if(btns[idx]) btns[idx].click(); }
+};
+</script>
+</body>
+</html>

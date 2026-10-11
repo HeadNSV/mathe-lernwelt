@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Rechnen mit ganzen Zahlen · Kapitel-Mischquiz</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  .wrap{max-width:820px;margin:0 auto;padding:24px 18px 60px;}
+  h1{font-size:min(6vw,30px);margin:0 0 6px;}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 20px;}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0 20px;}
+  button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 16px;font-size:14px;cursor:pointer;}
+  button:hover{background:#283041;}
+  button.primary{background:var(--accent);color:#12100a;font-weight:700;border:0;}
+  .quizq{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq .deckTag{display:inline-block;background:#1b222c;color:var(--accent);font-size:11.5px;font-weight:600;border-radius:999px;padding:3px 10px;margin-bottom:8px;}
+  .quizq p.qtext{font-size:min(2.3vw,19px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2vw,16px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(1.8vw,14.5px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #result{display:none;}
+  #result.show{display:block;}
+  .scoreBig{font-size:min(6vw,36px);color:var(--accent);text-align:center;margin:10px 0;}
+  .deckRow{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 16px;margin:6px 0;font-size:14.5px;}
+  .deckRow a{color:var(--accent);text-decoration:none;font-size:13px;}
+  .deckRow a:hover{text-decoration:underline;}
+  .weak{border-left:4px solid #e05a5a;}
+  .strong{border-left:4px solid #3dbb7a;}
+  #startScreen .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:16px 20px;font-size:15px;color:#f6e7cf;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔀 Kapitel-Mischquiz — Rechnen mit ganzen Zahlen</h1>
+  <p class="sub">15 zufällig gemischte Fragen aus allen drei Teilen — Interleaving statt Blockübung.</p>
+
+  <div id="startScreen">
+    <div class="defbox">Dieses Quiz zieht bei jedem Start 15 Fragen zufällig aus dem gesamten Kapitel — quer durch Addition/Subtraktion, Multiplikation/Potenz/Division und Primfaktoren/ggT/kgV. Am Ende siehst du, bei welchem Teil du nochmal reinschauen solltest.</div>
+    <div class="bar">
+      <button class="primary" id="startBtn">▶ Quiz starten (15 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+
+  <div id="quizArea"></div>
+  <div id="result">
+    <div class="scoreBig" id="scoreBig"></div>
+    <h2 style="font-size:18px;">Auswertung pro Teil</h2>
+    <div id="deckBreakdown"></div>
+    <div class="bar">
+      <button class="primary" id="againBtn">🔁 Nochmal (neue 15 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;align-self:center;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+</div>
+<script>
+// === Fragenpool: kopiert aus den QUIZ-Arrays aller drei Decks (deck-Feld + Ruecksprung-Link) ===
+const POOL = [
+// --- deck7.html: Addition & Subtraktion in Z ---
+{deck:"Teil 1 — Addition & Subtraktion", link:"deck7.html", q:"Was ergibt −(5x − 3) beim korrekten Auflösen der Minusklammer?",
+ a:["−5x − 3","−5x + 3","5x − 3","5x + 3"],r:1,
+ why:"Bei einer Minusklammer drehen sich ALLE Vorzeichen innerhalb um: −(5x−3) = −5x+3."},
+{deck:"Teil 1 — Addition & Subtraktion", link:"deck7.html", q:"Gilt bei der Subtraktion das Kommutativgesetz (a−b = b−a)?",
+ a:["Ja, immer","Nein — Gegenbeispiel: 5−3=2, aber 3−5=−2","Nur bei positiven Zahlen","Nur bei gleichen Zahlen"],r:1,
+ why:"5−3=2 und 3−5=−2 sind verschieden — die Subtraktion ist nicht kommutativ."},
+{deck:"Teil 1 — Addition & Subtraktion", link:"deck7.html", q:"Wie fasst man 7a + 3b + 10a zusammen?",
+ a:["20ab","17a + 3b","7a + 13b","20a + 3b"],r:1,
+ why:"Nur gleichartige Terme (mit a) dürfen verrechnet werden: 7a+10a=17a, 3b bleibt stehen."},
+{deck:"Teil 1 — Addition & Subtraktion", link:"deck7.html", q:"In welcher Reihenfolge löst man 10 − [3x − (4 + 5x)] auf?",
+ a:["Erst die eckige, dann die runde Klammer","Erst die runde (innerste), dann die eckige Klammer","Beide gleichzeitig","Reihenfolge ist egal"],r:1,
+ why:"Verschachtelte Klammern werden von innen nach außen aufgelöst."},
+{deck:"Teil 1 — Addition & Subtraktion", link:"deck7.html", q:"Ein Kontostand steht bei −80 €. Nach +650 € und −540 € Buchung steht er bei…",
+ a:["−1270 €","30 €","1110 €","−30 €"],r:1,
+ why:"−80 + 650 − 540 = 30 €."},
+
+// --- deck8.html: Multiplikation, Potenz & Division ---
+{deck:"Teil 2 — Multiplikation, Potenz & Division", link:"deck8.html", q:"Was ergibt (−7) · (−3)?",
+ a:["−21","21","−10","10"],r:1,
+ why:"Gleiche Vorzeichen (beide minus) → das Ergebnis ist positiv: (−7)·(−3)=21."},
+{deck:"Teil 2 — Multiplikation, Potenz & Division", link:"deck8.html", q:"Was ergibt (−4) · 6?",
+ a:["24","−24","−10","10"],r:1,
+ why:"Unterschiedliche Vorzeichen → das Ergebnis ist negativ: (−4)·6=−24."},
+{deck:"Teil 2 — Multiplikation, Potenz & Division", link:"deck8.html", q:"Multipliziere aus: 4·(3x − 2).",
+ a:["12x − 2","12x − 8","7x − 2","3x − 8"],r:1,
+ why:"4·(3x−2) = 4·3x + 4·(−2) = 12x − 8."},
+{deck:"Teil 2 — Multiplikation, Potenz & Division", link:"deck8.html", q:"Welche Rechenart stellt der Term 2·(3+4) dar?",
+ a:["Summe, wegen des Pluszeichens in der Klammer","Produkt, weil die letzte auszuführende Operation eine Multiplikation ist","Differenz","Das lässt sich nicht bestimmen"],r:1,
+ why:"Die Klammer wird zuerst berechnet, aber die LETZTE Operation ist die Multiplikation — der ganze Term ist ein Produkt."},
+{deck:"Teil 2 — Multiplikation, Potenz & Division", link:"deck8.html", q:"Was gilt für a : 0?",
+ a:["Das Ergebnis ist 0","Das Ergebnis ist 1","Nicht definiert","Das Ergebnis ist a"],r:2,
+ why:"Eine Division durch 0 ist mathematisch nicht definiert."},
+{deck:"Teil 2 — Multiplikation, Potenz & Division", link:"deck8.html", q:"In 5⁴ — was ist die 4?",
+ a:["Die Basis","Der Exponent","Das Produkt","Der Koeffizient"],r:1,
+ why:"Bei xⁿ ist x die Basis und n der Exponent."},
+
+// --- deck9.html: Primfaktoren, ggT & kgV ---
+{deck:"Teil 3 — Primfaktoren, ggT & kgV", link:"deck9.html", q:"Was ist die Primfaktordarstellung von 60?",
+ a:["2·2·3·5","2·3·10","2·2·2·15","6·10"],r:0,
+ why:"60 = 2·30 = 2·2·15 = 2·2·3·5."},
+{deck:"Teil 3 — Primfaktoren, ggT & kgV", link:"deck9.html", q:"Was ist ggT(24;36)?",
+ a:["6","12","72","4"],r:1,
+ why:"24=2·2·2·3, 36=2·2·3·3 — gemeinsam sind 2·2·3 = 12."},
+{deck:"Teil 3 — Primfaktoren, ggT & kgV", link:"deck9.html", q:"Was ist kgV(8;12)?",
+ a:["96","4","24","20"],r:2,
+ why:"8=2·2·2, 12=2·2·3 — alle Faktoren mit max. Anzahl: 2·2·2·3 = 24."},
+{deck:"Teil 3 — Primfaktoren, ggT & kgV", link:"deck9.html", q:"Welche Aussage stimmt IMMER?",
+ a:["ggT(a;b) ist immer größer als kgV(a;b)","kgV(a;b) ist immer größer oder gleich beiden Zahlen a und b","ggT und kgV sind immer gleich groß","ggT(a;b) ist immer größer als a und b"],r:1,
+ why:"Das kgV ist ein Vielfaches beider Zahlen, also mindestens so groß wie die größere von beiden."},
+{deck:"Teil 3 — Primfaktoren, ggT & kgV", link:"deck9.html", q:"Zwei Zahnräder mit 12 und 18 Zähnen — nach wie vielen Zähnen zeigen beide Markierungen wieder gleichzeitig nach oben?",
+ a:["ggT(12;18) = 6 Zähne","kgV(12;18) = 36 Zähne","12 Zähne","216 Zähne"],r:1,
+ why:"Gesucht ist die kleinste gemeinsame Anzahl an Zähnen, nach der beide Räder wieder in Ausgangsstellung sind — das ist das kgV, hier 36."}
+];
+
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+let current=[];
+let deckStats={};
+
+function startQuiz(){
+  current = shuffle(POOL).slice(0,15);
+  deckStats={};
+  document.getElementById('startScreen').style.display='none';
+  document.getElementById('result').classList.remove('show');
+  const area=document.getElementById('quizArea');
+  area.innerHTML='';
+  let answered=0, score=0;
+  current.forEach((item,qi)=>{
+    if(!deckStats[item.deck]) deckStats[item.deck]={right:0,total:0,link:item.link};
+    deckStats[item.deck].total++;
+    const box=document.createElement('div'); box.className='quizq';
+    const tag=document.createElement('span'); tag.className='deckTag'; tag.textContent=item.deck; box.appendChild(tag);
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        answered++;
+        if(oi===item.r){ score++; deckStats[item.deck].right++; }
+        if(answered===current.length) showResult(score);
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    area.appendChild(box);
+  });
+}
+
+function showResult(score){
+  const res=document.getElementById('result');
+  res.classList.add('show');
+  document.getElementById('scoreBig').textContent='Ergebnis: '+score+' / '+current.length+' — '+
+    (score>=current.length*0.8?'stark! 💪':(score>=current.length*0.5?'solide, ein paar Themen nochmal ansehen':'lohnt sich, mehrere Teile zu wiederholen'));
+  const bd=document.getElementById('deckBreakdown');
+  bd.innerHTML='';
+  Object.keys(deckStats).sort().forEach(deck=>{
+    const s=deckStats[deck];
+    const row=document.createElement('div');
+    const pct=s.right/s.total;
+    row.className='deckRow '+(pct<0.5?'weak':(pct===1?'strong':''));
+    row.innerHTML='<span>'+deck+': '+s.right+' / '+s.total+' richtig'+(pct<0.6?' — nochmal ansehen empfohlen':'')+'</span><a href="'+s.link+'">Teil öffnen →</a>';
+    bd.appendChild(row);
+  });
+  res.scrollIntoView({behavior:'smooth'});
+}
+
+document.getElementById('startBtn').onclick=startQuiz;
+document.getElementById('againBtn').onclick=startQuiz;
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

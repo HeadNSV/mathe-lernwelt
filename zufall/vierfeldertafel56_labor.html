@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Vierfeldertafel-Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:16px 22px 40px;max-width:900px;margin:0 auto;}
+  h2{margin:0 0 4px;font-size:22px;}
+  .lead{color:var(--muted);font-size:15px;margin:0 0 14px;}
+  .panel{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:14px;}
+  table{border-collapse:collapse;width:100%;margin:12px 0;}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:center;font-size:15px;}
+  th{background:#1b222c;color:var(--accent);}
+  input.cell{width:64px;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px;text-align:center;font-size:15px;}
+  input.cell.ok{border-color:#4caf50;background:#1c3d24;}
+  input.cell.bad{border-color:#c0392b;background:#3d1c1c;}
+  .fixed{color:var(--muted);font-weight:700;}
+  .mission{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:10px 16px;margin-top:10px;font-size:15px;}
+  .mission.solved{background:#1c3d24;border-left-color:#4caf50;}
+  .row{display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap;}
+  button.act{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 16px;font-size:15px;cursor:pointer;}
+  button.act:hover{background:#283041;}
+  button.act.primary{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  .qbox{margin-top:6px;}
+  .qopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:15px;cursor:pointer;}
+  .qopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .qopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h2>🧪 Vierfeldertafel-Labor</h2>
+  <p class="lead">Unter 50 Azubis tragen S=30 eine Schutzbrille, G=35 einen Gehörschutz, S∩G=22 tragen BEIDES. Fülle die fehlenden Felder aus den Rändern her.</p>
+
+  <div class="panel">
+    <table>
+      <tr><th>Ω=50</th><th>G</th><th>Ḡ</th><th>Σ</th></tr>
+      <tr><td><b>S</b></td><td class="fixed">22</td><td><input class="cell" id="cSGb" type="number"></td><td class="fixed">30</td></tr>
+      <tr><td><b>S̄</b></td><td><input class="cell" id="cSbG" type="number"></td><td><input class="cell" id="cSbGb" type="number"></td><td><input class="cell" id="cSbSum" type="number"></td></tr>
+      <tr><td><b>Σ</b></td><td class="fixed">35</td><td><input class="cell" id="cGbSum" type="number"></td><td class="fixed">50</td></tr>
+    </table>
+    <div class="mission" id="missionA">🎯 Mission 1: Fülle alle 5 fehlenden Felder korrekt aus.</div>
+    <div class="row">
+      <button class="act primary" id="btnCheck">Prüfen</button>
+    </div>
+  </div>
+
+  <div class="panel" id="quizPanel" style="display:none;">
+    <p style="font-size:15px;margin:0 0 8px;">Wie viel Prozent der Azubis tragen WEDER Schutzbrille NOCH Gehörschutz?</p>
+    <div class="qbox" id="qbox"></div>
+    <div class="mission" id="missionB">🎯 Mission 2: Beantworte die Frage richtig.</div>
+  </div>
+</div>
+
+<script>
+const targets={cSGb:8, cSbG:13, cSbGb:7, cSbSum:20, cGbSum:15};
+let missionASolved=false, missionBSolved=false;
+
+function checkA(){
+  let allOk=true;
+  for(const id in targets){
+    const el=document.getElementById(id);
+    const val=parseFloat(el.value);
+    const ok = val===targets[id];
+    el.classList.toggle('ok', ok);
+    el.classList.toggle('bad', el.value!=='' && !ok);
+    if(!ok) allOk=false;
+  }
+  const box=document.getElementById('missionA');
+  if(allOk){
+    missionASolved=true;
+    box.classList.add('solved');
+    box.textContent='✅ Alle Felder korrekt! Die Vierfeldertafel ist vollständig.';
+    document.getElementById('quizPanel').style.display='block';
+  } else if(missionASolved){
+    box.classList.add('solved');
+    box.textContent='✅ Mission 1 bereits erfüllt (Felder seither evtl. verändert).';
+    document.getElementById('quizPanel').style.display='block';
+  } else {
+    box.classList.remove('solved');
+    box.textContent='🎯 Mission 1: Fülle alle 5 fehlenden Felder korrekt aus. (noch nicht alle richtig)';
+  }
+}
+document.getElementById('btnCheck').onclick=checkA;
+
+const QOPTS=[
+  {t:"14%", r:true},
+  {t:"7%", r:false},
+  {t:"20%", r:false},
+  {t:"35%", r:false}
+];
+(function(){
+  const host=document.getElementById('qbox');
+  QOPTS.forEach(o=>{
+    const b=document.createElement('button');
+    b.className='qopt';
+    b.textContent=o.t;
+    b.onclick=()=>{
+      host.querySelectorAll('.qopt').forEach(x=>x.disabled=true);
+      if(o.r){ b.classList.add('correct'); missionBSolved=true; }
+      else b.classList.add('wrong');
+      const box=document.getElementById('missionB');
+      if(missionBSolved){
+        box.classList.add('solved');
+        box.textContent='✅ Richtig: S̄∩Ḡ/50 = 7/50 = 14%.';
+      } else {
+        box.textContent='🎯 Mission 2: das war nicht richtig — S̄∩Ḡ (7) durch Ω (50) rechnen.';
+      }
+    };
+    host.appendChild(b);
+  });
+})();
+
+window.LAB={
+  state(){
+    const cells={};
+    for(const id in targets) cells[id]=document.getElementById(id).value;
+    return { cells, missionASolved, missionBSolved };
+  },
+  setCell(id, val){ document.getElementById(id).value=val; },
+  check(){ checkA(); },
+  fillCorrect(){ for(const id in targets) document.getElementById(id).value=targets[id]; checkA(); }
+};
+</script>
+</body>
+</html>

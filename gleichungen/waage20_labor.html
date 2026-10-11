@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Gleichungs-Waage — Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{max-width:760px;margin:0 auto;padding:18px 20px 40px;}
+  h3{margin:0 0 6px;}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  .modebar{display:flex;gap:8px;margin-bottom:14px;}
+  .modebar button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;}
+  .modebar button.on{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  .part{display:none;}
+  .part.show{display:block;}
+  #eqBox{font-size:22px;color:var(--accent);text-align:center;font-weight:700;margin:10px 0;}
+  #svgHost{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:14px;margin:10px 0;text-align:center;}
+  #stepRow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:10px;}
+  #stepRow button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 14px;font-size:14px;cursor:pointer;}
+  #stepRow button.wrong{border-color:#c0392b;opacity:0.6;}
+  #feedback{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:14.5px;text-align:center;min-height:24px;}
+  #feedback.ok{border-color:#4caf50;background:#173d28;}
+  #progress{font-size:14px;color:var(--muted);text-align:center;margin-top:10px;}
+  #missionDone{display:none;background:#173d28;border:1px solid #4caf50;border-radius:8px;padding:14px 18px;font-size:15px;color:#dff3df;text-align:center;margin-top:10px;}
+  #missionDone.show{display:block;}
+  button.resetbtn{display:block;margin:14px auto 0;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 16px;font-size:13.5px;cursor:pointer;}
+  #puzzleWrap .quest{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:14px 18px;font-size:15px;margin-bottom:10px;}
+  #puzzleOpts{display:flex;flex-direction:column;gap:8px;}
+  #puzzleOpts button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer;text-align:left;}
+  #puzzleFeedback{margin-top:10px;font-size:14px;min-height:20px;}
+  #puzzleFeedback.ok{color:#4caf50;}
+  #puzzleFeedback.bad{color:#e05a5a;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="modebar">
+    <button id="modeMission" class="on">🎯 Gleichungs-Waage</button>
+    <button id="modePuzzle">🕵️ Kippt die Waage?</button>
+  </div>
+
+  <div class="part show" id="partMission">
+    <h3>🧪 Löse 3x+4 = 5x−1 in minimalen Schritten</h3>
+    <p class="hint">Klick den nächsten sinnvollen Umformungsschritt — die Waage bleibt nur im Gleichgewicht, wenn du auf BEIDEN Seiten dasselbe tust.</p>
+    <div id="eqBox"></div>
+    <div id="svgHost"></div>
+    <div id="stepRow"></div>
+    <div id="feedback">Wähle den ersten Schritt.</div>
+    <div id="progress"></div>
+    <div id="missionDone"></div>
+    <button class="resetbtn" id="resetBtn">↺ Neu starten</button>
+  </div>
+
+  <div class="part" id="partPuzzle">
+    <h3>🕵️ Kippt die Waage bei diesem Schritt?</h3>
+    <div id="puzzleWrap"></div>
+  </div>
+</div>
+<script>
+// === Gleichungs-Waage: 3x+4 = 5x-1, minimale Schritte ===
+// Zustand: {left:[coeffX, const], right:[coeffX, const]}
+let state = {left:[3,4], right:[5,-1]};
+let stepsUsed = 0, solved = false;
+
+function eqText(st){
+  function side(c,k){
+    let s='';
+    if(c!==0) s+= (c===1?'x':(c===-1?'−x':fmt(c)+'x'));
+    if(k!==0){ s+= (k>0? (s?' + ':'')+fmt(k) : ' − '+fmt(Math.abs(k))); }
+    if(!s) s='0';
+    return s;
+  }
+  return side(st.left[0],st.left[1])+' = '+side(st.right[0],st.right[1]);
+}
+function renderSVG(st){
+  const leftLabel=eqText({left:st.left,right:[0,0]}).split(' = ')[0];
+  const rightLabel=eqText({left:[0,0],right:st.right}).split(' = ')[1];
+  const cx=170, beamY=30, panY=70, arm=70, panW=64, panH=22;
+  let s='<svg viewBox="0 0 340 150" style="width:100%;max-width:340px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="'+(cx-arm)+'" y1="'+beamY+'" x2="'+(cx+arm)+'" y2="'+beamY+'" stroke="#9aa4b2" stroke-width="3"/>';
+  s+='<polygon points="'+(cx-6)+',34 '+(cx+6)+',34 '+cx+',20" fill="#9aa4b2"/>';
+  s+='<line x1="'+cx+'" y1="20" x2="'+cx+'" y2="34" stroke="#9aa4b2" stroke-width="3"/>';
+  s+='<rect x="'+(cx-6)+'" y="90" width="12" height="30" fill="#4a5568"/>';
+  const lx=cx-arm;
+  s+='<line x1="'+lx+'" y1="'+beamY+'" x2="'+(lx-panW/2)+'" y2="'+panY+'" stroke="#9aa4b2" stroke-width="1.5"/><line x1="'+lx+'" y1="'+beamY+'" x2="'+(lx+panW/2)+'" y2="'+panY+'" stroke="#9aa4b2" stroke-width="1.5"/>';
+  s+='<rect x="'+(lx-panW/2)+'" y="'+panY+'" width="'+panW+'" height="'+panH+'" rx="4" fill="rgba(242,166,60,0.22)" stroke="#f2a63c" stroke-width="1.5"/>';
+  s+='<text x="'+lx+'" y="'+(panY+15)+'" text-anchor="middle" font-size="13" font-weight="700" fill="#f2a63c">'+leftLabel+'</text>';
+  const rx=cx+arm;
+  s+='<line x1="'+rx+'" y1="'+beamY+'" x2="'+(rx-panW/2)+'" y2="'+panY+'" stroke="#9aa4b2" stroke-width="1.5"/><line x1="'+rx+'" y1="'+beamY+'" x2="'+(rx+panW/2)+'" y2="'+panY+'" stroke="#9aa4b2" stroke-width="1.5"/>';
+  s+='<rect x="'+(rx-panW/2)+'" y="'+panY+'" width="'+panW+'" height="'+panH+'" rx="4" fill="rgba(95,208,199,0.22)" stroke="#5fd0c7" stroke-width="1.5"/>';
+  s+='<text x="'+rx+'" y="'+(panY+15)+'" text-anchor="middle" font-size="13" font-weight="700" fill="#5fd0c7">'+rightLabel+'</text>';
+  s+='</svg>';
+  return s;
+}
+function fmt(n){
+  n = Math.round(n*100)/100;
+  return String(n).replace('.', ',');
+}
+function applyStep(st, op){
+  // op: {type:'sub_x', amt} entfernt amt*x von beiden Seiten; {type:'sub_c', amt} entfernt amt (Konstante) von beiden Seiten;
+  // {type:'div', amt} teilt beide Seiten komplett durch amt (letzter Schritt zur Isolierung)
+  const ns={left:[st.left[0],st.left[1]], right:[st.right[0],st.right[1]]};
+  if(op.type==='sub_x'){ ns.left[0]-=op.amt; ns.right[0]-=op.amt; }
+  if(op.type==='sub_c'){ ns.left[1]-=op.amt; ns.right[1]-=op.amt; }
+  if(op.type==='div'){ ns.left[0]/=op.amt; ns.left[1]/=op.amt; ns.right[0]/=op.amt; ns.right[1]/=op.amt; }
+  return ns;
+}
+function isIsolated(st){
+  return (st.left[0]===1 && st.left[1]===0 && st.right[0]===0) || (st.right[0]===1 && st.right[1]===0 && st.left[0]===0);
+}
+function buildOptions(){
+  // Optionen folgen der Lösungsstrategie aus deck20 Folie 8: ERST x-Terme auf eine Seite bringen
+  // (nur solange BEIDE Seiten noch einen x-Term tragen), DANN die Konstante der Seite wegräumen,
+  // die noch den x-Term trägt — NIE die der bereits reinen Zahlenseite anfassen. Sonst wandert
+  // eine Konstante/ein x-Term nur zwischen den Seiten hin und her, ohne dass sich je etwas löst
+  // (Pingpong-Falle: durch exhaustives Testen gefunden, jede vorherige Fassung konnte sich
+  // endlos im Kreis drehen). Erst wenn "cx = Zahl" erreicht ist, wird geteilt.
+  const opts=[];
+  const bothHaveX = state.left[0]!==0 && state.right[0]!==0;
+  if(bothHaveX){
+    opts.push({type:'sub_x', amt:state.left[0], label:'|−'+fmt(state.left[0])+'x'});
+    if(state.right[0]!==state.left[0]) opts.push({type:'sub_x', amt:state.right[0], label:'|−'+fmt(state.right[0])+'x'});
+  } else {
+    if(state.left[0]!==0 && state.left[1]!==0) opts.push({type:'sub_c', amt:state.left[1], label:'|'+(state.left[1]>0?'−':'+')+fmt(Math.abs(state.left[1]))});
+    if(state.right[0]!==0 && state.right[1]!==0) opts.push({type:'sub_c', amt:state.right[1], label:'|'+(state.right[1]>0?'−':'+')+fmt(Math.abs(state.right[1]))});
+  }
+  if(state.left[0]!==0 && state.left[0]!==1 && state.left[0]!==-1 && state.left[1]===0 && state.right[0]===0){
+    opts.push({type:'div', amt:state.left[0], label:'|:'+fmt(state.left[0])});
+  }
+  if(state.right[0]!==0 && state.right[0]!==1 && state.right[0]!==-1 && state.right[1]===0 && state.left[0]===0){
+    opts.push({type:'div', amt:state.right[0], label:'|:'+fmt(state.right[0])});
+  }
+  // Distraktor: falscher Schritt (nur einseitig, illegal) als Kontrast-Option
+  opts.push({type:'illegal', label:'|−'+fmt(state.left[0]||state.right[0]||1)+'x NUR links'});
+  return opts;
+}
+function render(){
+  document.getElementById('eqBox').textContent = eqText(state);
+  document.getElementById('svgHost').innerHTML = renderSVG(state);
+  const row=document.getElementById('stepRow');
+  row.innerHTML='';
+  if(solved){ row.style.display='none'; return; }
+  row.style.display='flex';
+  buildOptions().forEach(op=>{
+    const b=document.createElement('button');
+    b.textContent=op.label;
+    b.onclick=()=>pickStep(op,b);
+    row.appendChild(b);
+  });
+  document.getElementById('progress').textContent='Schritte bisher: '+stepsUsed;
+}
+function pickStep(op, btn){
+  const fb=document.getElementById('feedback');
+  if(op.type==='illegal'){
+    btn.classList.add('wrong');
+    fb.className='';
+    fb.textContent='❌ Die Waage kippt! Ein Schritt muss IMMER auf beiden Seiten gleichzeitig passieren.';
+    return;
+  }
+  state = applyStep(state, op);
+  stepsUsed++;
+  fb.className='ok';
+  fb.textContent='✅ '+op.label+' angewendet: '+eqText(state);
+  if(isIsolated(state)){
+    solved=true;
+    setTimeout(()=>{
+      document.getElementById('missionDone').classList.add('show');
+      document.getElementById('missionDone').textContent='🎉 Gelöst in '+stepsUsed+' Schritten! Die Gleichung 3x+4=5x−1 hat die Lösung x='+solveXValue()+'.';
+      window.lwAward && window.lwAward('mission');
+    }, 500);
+  }
+  render();
+}
+function solveXValue(){
+  if(state.left[0]===1 && state.left[1]===0) return fmt(state.right[1]);
+  if(state.right[0]===1 && state.right[1]===0) return fmt(state.left[1]);
+  return '?';
+}
+document.getElementById('resetBtn').onclick=()=>{
+  state = {left:[3,4], right:[5,-1]};
+  stepsUsed=0; solved=false;
+  document.getElementById('missionDone').classList.remove('show');
+  render();
+};
+render();
+
+// === Raetselmodus: Kippt die Waage? ===
+const SCENARIOS=[
+  {desc:"Gleichung: 2x+3=x+7. Schritt: |−x auf BEIDEN Seiten.", tips:true, why:"Richtig — beide Seiten werden gleich behandelt, die Waage bleibt im Gleichgewicht."},
+  {desc:"Gleichung: 2x+3=x+7. Schritt: |−x NUR auf der linken Seite.", tips:false, why:"Die Waage kippt! Nur eine Seite zu verändern zerstört das Gleichgewicht — das ist keine Äquivalenzumformung."},
+  {desc:"Gleichung: 5=6 (eine falsche Aussage). Schritt: |·0 auf beiden Seiten.", tips:false, why:"Die Waage kippt (im übertragenen Sinn) — Multiplikation mit 0 verwandelt JEDE Gleichung in 0=0 und ist deshalb verboten."},
+  {desc:"Gleichung: 4x=12. Schritt: |:4 auf BEIDEN Seiten.", tips:true, why:"Richtig — Division durch dieselbe Zahl ungleich 0 auf beiden Seiten ist eine erlaubte Äquivalenzumformung."}
+];
+(function(){
+  const wrap=document.getElementById('puzzleWrap');
+  let si=0;
+  function loadScenario(){
+    wrap.innerHTML='';
+    if(si>=SCENARIOS.length){
+      wrap.innerHTML='<div class="quest">🎉 Alle Szenarien durchgespielt! Starte von vorn, indem du die Seite neu lädst.</div>';
+      return;
+    }
+    const sc=SCENARIOS[si];
+    const q=document.createElement('div'); q.className='quest'; q.textContent=sc.desc;
+    wrap.appendChild(q);
+    const opts=document.createElement('div'); opts.id='puzzleOpts';
+    const fb=document.createElement('div'); fb.id='puzzleFeedback';
+    ['⚖️ Bleibt im Gleichgewicht','⚡ Waage kippt'].forEach((label,oi)=>{
+      const b=document.createElement('button');
+      b.textContent=label;
+      b.onclick=()=>{
+        const said=(oi===0);
+        if(said===sc.tips){ fb.className='ok'; fb.textContent='✅ '+sc.why; }
+        else { fb.className='bad'; fb.textContent='❌ '+sc.why; }
+        setTimeout(()=>{ si++; loadScenario(); }, 1600);
+      };
+      opts.appendChild(b);
+    });
+    wrap.appendChild(opts);
+    wrap.appendChild(fb);
+  }
+  loadScenario();
+})();
+
+// mode switch
+const modeMission=document.getElementById('modeMission'), modePuzzle=document.getElementById('modePuzzle');
+const partMission=document.getElementById('partMission'), partPuzzle=document.getElementById('partPuzzle');
+modeMission.onclick=()=>{ modeMission.classList.add('on'); modePuzzle.classList.remove('on'); partMission.classList.add('show'); partPuzzle.classList.remove('show'); };
+modePuzzle.onclick=()=>{ modePuzzle.classList.add('on'); modeMission.classList.remove('on'); partPuzzle.classList.add('show'); partMission.classList.remove('show'); };
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Faktorisieren &amp; Bruchgleichungen · Kapitel-Mischquiz</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  .wrap{max-width:820px;margin:0 auto;padding:24px 18px 60px;}
+  h1{font-size:min(6vw,30px);margin:0 0 6px;}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 20px;}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0 20px;}
+  button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 16px;font-size:14px;cursor:pointer;}
+  button:hover{background:#283041;}
+  button.primary{background:var(--accent);color:#12100a;font-weight:700;border:0;}
+  .quizq{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq .deckTag{display:inline-block;background:#1b222c;color:var(--accent);font-size:11.5px;font-weight:600;border-radius:999px;padding:3px 10px;margin-bottom:8px;}
+  .quizq p.qtext{font-size:min(2.3vw,19px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2vw,16px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(1.8vw,14.5px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #result{display:none;}
+  #result.show{display:block;}
+  .scoreBig{font-size:min(6vw,36px);color:var(--accent);text-align:center;margin:10px 0;}
+  .deckRow{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 16px;margin:6px 0;font-size:14.5px;}
+  .deckRow a{color:var(--accent);text-decoration:none;font-size:13px;}
+  .deckRow a:hover{text-decoration:underline;}
+  .weak{border-left:4px solid #e05a5a;}
+  .strong{border-left:4px solid #3dbb7a;}
+  #startScreen .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:16px 20px;font-size:15px;color:#f6e7cf;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔀 Kapitel-Mischquiz — Faktorisieren &amp; Bruchgleichungen</h1>
+  <p class="sub">16 zufällig gemischte Fragen aus allen drei Teilen — Interleaving statt Blockübung.</p>
+
+  <div id="startScreen">
+    <div class="defbox">Dieses Quiz zieht bei jedem Start 16 Fragen zufällig aus dem gesamten Kapitel — quer durch Ausklammern/Binome, Satz von Vieta und Bruchgleichungen. Am Ende siehst du, bei welchem Teil du nochmal reinschauen solltest.</div>
+    <div class="bar">
+      <button class="primary" id="startBtn">▶ Quiz starten (16 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+
+  <div id="quizArea"></div>
+  <div id="result">
+    <div class="scoreBig" id="scoreBig"></div>
+    <h2 style="font-size:18px;">Auswertung pro Teil</h2>
+    <div id="deckBreakdown"></div>
+    <div class="bar">
+      <button class="primary" id="againBtn">🔁 Nochmal (neue 16 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;align-self:center;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+</div>
+<script>
+// === Fragenpool: kopiert aus den QUIZ-Arrays der drei Teile + eigene Transferfragen ===
+const POOL = [
+// --- deck28.html: Ausklammern & Binome rückwärts ---
+{deck:"Teil 1 — Ausklammern & Binome", link:"deck28.html", q:"Kann x²+9 mit einer Binomischen Formel faktorisiert werden?",
+ a:["Ja, zu (x+3)(x−3)","Nein — es ist eine Summe zweier Quadrate, keine Differenz","Ja, zu (x+3)²","Ja, zu (x−3)²"],r:1,
+ why:"Nur die DIFFERENZ zweier Quadrate (a²−b²) faktorisiert sich zu (a+b)(a−b). Eine Summe wie x²+9 hat keine passende Binomische Formel."},
+{deck:"Teil 1 — Ausklammern & Binome", link:"deck28.html", q:"Welches Verfahren passt am besten zu 4x²+12x (kein konstantes Glied)?",
+ a:["Ausklammern","1. Binomische Formel","3. Binomische Formel","Lösungsformel ist der einzige Weg"],r:0,
+ why:"Fehlt das konstante Glied, enthält jeder Summand x — Ausklammern ist der direkte Weg: 4x(x+3)."},
+{deck:"Teil 1 — Ausklammern & Binome", link:"deck28.html", q:"x²−12x+36 wird faktorisiert. Welche Binomische Formel passt?",
+ a:["1. Binom: (x+6)²","2. Binom: (x−6)²","3. Binom: (x+6)(x−6)","Keine passt"],r:1,
+ why:"Zwei Quadrate (x², 6²=36) mit MINUS beim mittleren Term (−12x=−2·x·6) → 2. Binom: (x−6)²."},
+{deck:"Teil 1 — Ausklammern & Binome", link:"deck28.html", q:"Was ist die faktorisierte Form eines quadratischen Terms mit Nullstellen x₁=−2 und x₂=7 und Leitfaktor a=1?",
+ a:["(x−2)(x+7)","(x+2)(x−7)","(x−(−2))(x−7) = (x+2)(x−7)","1·(x−(−2))·(x−7)"],r:3,
+ why:"Die faktorisierte Form ist a·(x−x₁)·(x−x₂) — hier 1·(x−(−2))·(x−7), was sich zu (x+2)(x−7) vereinfacht."},
+{deck:"Teil 1 — Ausklammern & Binome", link:"deck28.html", q:"Beim Ausklammern von 3x aus 3x²−3x bleibt im zweiten Faktor stehen:",
+ a:["x−1","x","0","x−3"],r:0,
+ why:"3x²−3x = 3x·(x−1), NICHT 3x·(x−0) oder 3x·x — der zweite Summand −3x geteilt durch 3x ergibt −1, nicht 0."},
+
+// --- deck29.html: Satz von Vieta ---
+{deck:"Teil 2 — Satz von Vieta", link:"deck29.html", q:"Für x²+px+q=0 gilt nach Vieta:",
+ a:["x₁+x₂=p und x₁·x₂=q","x₁+x₂=−p und x₁·x₂=q","x₁+x₂=−p und x₁·x₂=−q","x₁+x₂=p und x₁·x₂=−q"],r:1,
+ why:"Die Summe ist MINUS p, das Produkt ist PLUS q — das Vorzeichen bei der Summe ist die häufigste Fehlerquelle."},
+{deck:"Teil 2 — Satz von Vieta", link:"deck29.html", q:"x²+x−12=0 — welches Zahlenpaar löst die Gleichung über Vieta?",
+ a:["3 und −4","4 und −3","−3 und −4","3 und 4"],r:0,
+ why:"Gesucht: Summe=−p=−1, Produkt=q=−12 → 3 und −4 passen: 3+(−4)=−1 und 3·(−4)=−12."},
+{deck:"Teil 2 — Satz von Vieta", link:"deck29.html", q:"Wann ist die Lösungsformel dem Satz von Vieta vorzuziehen?",
+ a:["Immer, Vieta ist unnötig","Wenn kein ganzzahliges Zahlenpaar zu finden ist","Nur bei negativen q","Nie, Vieta reicht immer"],r:1,
+ why:"Findet man nach kurzem Probieren kein passendes ganzzahliges Paar, ist die Lösungsformel der zuverlässigere und oft schnellere Weg."},
+{deck:"Teil 2 — Satz von Vieta", link:"deck29.html", q:"(x²−25)/(x−5) wird mithilfe des Faktorisierens gekürzt zu:",
+ a:["x−5, für x≠5","x+5, für x≠5","x²−5","x−5, ohne Einschränkung"],r:1,
+ why:"x²−25=(x−5)(x+5) (3. Binom), gekürzt bleibt x+5 — die Einschränkung x≠5 bleibt aber weiterhin Pflicht."},
+{deck:"Teil 2 — Satz von Vieta", link:"deck29.html", q:"Vieta und die Nullproduktregel führen bei derselben Gleichung zu:",
+ a:["oft unterschiedlichen Lösungen","immer denselben Lösungen","nur zufällig gleichen Lösungen","unvergleichbaren Ergebnissen"],r:1,
+ why:"Beide Wege beschreiben dieselbe Faktorisierung — sie MÜSSEN zwangsläufig zu denselben Lösungen führen."},
+
+// --- deck30.html: Bruchgleichungen ---
+{deck:"Teil 3 — Bruchgleichungen", link:"deck30.html", q:"Wann wird die Definitionsmenge D einer Bruchgleichung bestimmt?",
+ a:["Am Ende, zur Kontrolle","Ganz zu Anfang, vor dem Rechnen","Nur wenn ein Fehler vermutet wird","Gar nicht, ist bei Gleichungen unnötig"],r:1,
+ why:"D wird IMMER zuerst bestimmt — nur so weiß man am Ende, ob eine gefundene Lösung überhaupt gültig ist."},
+{deck:"Teil 3 — Bruchgleichungen", link:"deck30.html", q:"(x+5)/(x−3) = 8/(x−3) — welche rechnerische Lösung ergibt sich, und ist sie gültig?",
+ a:["x=3, gültig","x=3, Scheinlösung, L={}","x=8, gültig","x=5, Scheinlösung"],r:1,
+ why:"x−3=0 → x=3 ist verboten, D=ℝ\\{3}. Rechnung: x+5=8 → x=3. Genau die verbotene Stelle → Scheinlösung → L={}."},
+{deck:"Teil 3 — Bruchgleichungen", link:"deck30.html", q:"Ist (x+4)/4 = x eine gültige Umformung durch Kürzen?",
+ a:["Ja, die 4 kürzt sich einfach weg","Nein — man darf nur Faktoren kürzen, keinen Summanden aus einer Summe","Ja, aber nur für x>0","Nein, weil x im Zähler steht"],r:1,
+ why:"(x+4)/4 ist eine Summe geteilt durch 4, kein Produkt — die 4 lässt sich nicht 'wegkürzen'. Kürzen funktioniert nur bei gemeinsamen FAKTOREN."},
+{deck:"Teil 3 — Bruchgleichungen", link:"deck30.html", q:"L = { } als Ergebnis einer Bruchgleichung bedeutet:",
+ a:["Ein Rechenfehler ist passiert","Die Gleichung hat keine Lösung — ein gültiges, vollständiges Ergebnis","Die Definitionsmenge wurde falsch bestimmt","Man muss die Aufgabe nochmal von vorne lösen"],r:1,
+ why:"Die leere Menge ist eine ganz normale, gültige Menge — sie sagt korrekt: es gibt keine Lösung innerhalb der Definitionsmenge."},
+{deck:"Teil 3 — Bruchgleichungen", link:"deck30.html", q:"Bei einer Anwendungsaufgabe (z.B. Arbeitszeit) liefert die Rechnung x=−2 als zweite Lösung. Was gilt?",
+ a:["x=−2 ist automatisch eine Scheinlösung, weil sie negativ ist","x=−2 kann durchaus in D liegen, wird aber durch den Sachzusammenhang (z.B. Zeit>0) verworfen","x=−2 ist immer die richtige Antwort","Negative Lösungen gibt es bei Bruchgleichungen nie"],r:1,
+ why:"Eine Scheinlösung liegt NICHT in D. x=−2 kann rechnerisch durchaus in D liegen — verworfen wird sie hier aus inhaltlichen Gründen, nicht wegen der Definitionsmenge."},
+
+// --- Eigene Transferfragen (kapitelübergreifend, eigene Werte) ---
+{deck:"Teil 2 — Satz von Vieta", link:"deck29.html", q:"Löse x²−5x+6=0 mit dem Satz von Vieta.",
+ a:["L={2; 3}","L={−2; −3}","L={2; −3}","L={6}"],r:0,
+ why:"Gesucht: Summe=5, Produkt=6 → 2 und 3 passen (2+3=5, 2·3=6) → L={2; 3}."},
+{deck:"Teil 3 — Bruchgleichungen", link:"deck30.html", q:"(x²−9)/(x−3) = 6 — bestimme L (Achtung: erst D bestimmen!).",
+ a:["L={3}","L={6}","L={ }","L={9}"],r:2,
+ why:"D=ℝ\\{3}. Faktorisiert: (x−3)(x+3)/(x−3)=x+3=6 → x=3 — aber 3∉D → Scheinlösung → L={ }."},
+{deck:"Teil 1 — Ausklammern & Binome", link:"deck28.html", q:"5x²−20x wird faktorisiert zu:",
+ a:["5x(x−4)","5x(x+4)","5(x²−4x)","x(5x−20)"],r:0,
+ why:"Gemeinsamer Faktor 5x ausklammern: 5x²−20x = 5x·(x−4)."}
+];
+
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+let current=[];
+let deckStats={};
+
+function startQuiz(){
+  current = shuffle(POOL).slice(0,16);
+  deckStats={};
+  document.getElementById('startScreen').style.display='none';
+  document.getElementById('result').classList.remove('show');
+  const area=document.getElementById('quizArea');
+  area.innerHTML='';
+  let answered=0, score=0;
+  current.forEach((item,qi)=>{
+    if(!deckStats[item.deck]) deckStats[item.deck]={right:0,total:0,link:item.link};
+    deckStats[item.deck].total++;
+    const box=document.createElement('div'); box.className='quizq';
+    const tag=document.createElement('span'); tag.className='deckTag'; tag.textContent=item.deck; box.appendChild(tag);
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        answered++;
+        if(oi===item.r){ score++; deckStats[item.deck].right++; }
+        if(answered===current.length) showResult(score);
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    area.appendChild(box);
+  });
+}
+
+function showResult(score){
+  const res=document.getElementById('result');
+  res.classList.add('show');
+  document.getElementById('scoreBig').textContent='Ergebnis: '+score+' / '+current.length+' — '+
+    (score>=current.length*0.8?'stark! 💪':(score>=current.length*0.5?'solide, ein paar Themen nochmal ansehen':'lohnt sich, mehrere Teile zu wiederholen'));
+  const bd=document.getElementById('deckBreakdown');
+  bd.innerHTML='';
+  Object.keys(deckStats).sort().forEach(deck=>{
+    const s=deckStats[deck];
+    const row=document.createElement('div');
+    const pct=s.right/s.total;
+    row.className='deckRow '+(pct<0.5?'weak':(pct===1?'strong':''));
+    row.innerHTML='<span>'+deck+': '+s.right+' / '+s.total+' richtig'+(pct<0.6?' — nochmal ansehen empfohlen':'')+'</span><a href="'+s.link+'">Teil öffnen →</a>';
+    bd.appendChild(row);
+  });
+  res.scrollIntoView({behavior:'smooth'});
+}
+
+document.getElementById('startBtn').onclick=startQuiz;
+document.getElementById('againBtn').onclick=startQuiz;
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

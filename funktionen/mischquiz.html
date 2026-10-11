@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Funktionen · Kapitel-Mischquiz</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  .wrap{max-width:820px;margin:0 auto;padding:24px 18px 60px;}
+  h1{font-size:min(6vw,30px);margin:0 0 6px;}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 20px;}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0 20px;}
+  button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 16px;font-size:14px;cursor:pointer;}
+  button:hover{background:#283041;}
+  button.primary{background:var(--accent);color:#12100a;font-weight:700;border:0;}
+  .quizq{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq .deckTag{display:inline-block;background:#1b222c;color:var(--accent);font-size:11.5px;font-weight:600;border-radius:999px;padding:3px 10px;margin-bottom:8px;}
+  .quizq p.qtext{font-size:min(2.3vw,19px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2vw,16px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(1.8vw,14.5px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #result{display:none;}
+  #result.show{display:block;}
+  .scoreBig{font-size:min(6vw,36px);color:var(--accent);text-align:center;margin:10px 0;}
+  .deckRow{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 16px;margin:6px 0;font-size:14.5px;}
+  .deckRow a{color:var(--accent);text-decoration:none;font-size:13px;}
+  .deckRow a:hover{text-decoration:underline;}
+  .weak{border-left:4px solid #e05a5a;}
+  .strong{border-left:4px solid #3dbb7a;}
+  #startScreen .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:16px 20px;font-size:15px;color:#f6e7cf;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔀 Kapitel-Mischquiz — Funktionen</h1>
+  <p class="sub">20 zufällig gemischte Fragen aus allen fünf Teilen — Interleaving statt Blockübung.</p>
+
+  <div id="startScreen">
+    <div class="defbox">Dieses Quiz zieht bei jedem Start 20 Fragen zufällig aus dem gesamten Kapitel — quer durch Funktionsbegriff, lineare Funktionen zeichnen, Geraden aufstellen, Geraden im Duett und Anwendungsaufgaben. Am Ende siehst du, bei welchem Teil du nochmal reinschauen solltest.</div>
+    <div class="bar">
+      <button class="primary" id="startBtn">▶ Quiz starten (20 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+
+  <div id="quizArea"></div>
+  <div id="result">
+    <div class="scoreBig" id="scoreBig"></div>
+    <h2 style="font-size:18px;">Auswertung pro Teil</h2>
+    <div id="deckBreakdown"></div>
+    <div class="bar">
+      <button class="primary" id="againBtn">🔁 Nochmal (neue 20 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;align-self:center;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+</div>
+<script>
+// === Fragenpool: kopiert aus den QUIZ-Arrays der fünf Teile + eigene Transferfragen ===
+const POOL = [
+// --- deck31.html: Was ist eine Funktion? ---
+{deck:"Teil 1 — Was ist eine Funktion?", link:"deck31.html", q:"Wann ist eine Zuordnung eine Funktion?",
+ a:["Wenn jedem x mindestens ein y zugeordnet ist","Wenn jedem x genau ein y zugeordnet ist","Wenn D unendlich groß ist","Wenn der Graph eine Gerade ist"],r:1,
+ why:"Eindeutigkeit ist der Kern: jedem x-Wert genau EIN y-Wert."},
+{deck:"Teil 1 — Was ist eine Funktion?", link:"deck31.html", q:"Gegeben ist f(x)=3x−5. Was ist f(2)?",
+ a:["1","−1","6","11"],r:0,
+ why:"f(2)=3·2−5=1."},
+{deck:"Teil 1 — Was ist eine Funktion?", link:"deck31.html", q:"Was ist die Nullstelle von g(x)=5x+10?",
+ a:["x=−2","x=2","x=10","x=−10"],r:0,
+ why:"5x+10=0 ⟺ x=−2."},
+{deck:"Teil 1 — Was ist eine Funktion?", link:"deck31.html", q:"Die Definitionsmenge einer Funktion ist D={1;2;3}. Was bedeutet das?",
+ a:["Es gibt genau 3 mögliche Funktionswerte","Es dürfen nur die x-Werte 1, 2 und 3 eingesetzt werden","Der Graph hat 3 Achsen","Die Funktion hat 3 Nullstellen"],r:1,
+ why:"D ist die Menge der ERLAUBTEN x-Werte."},
+{deck:"Teil 1 — Was ist eine Funktion?", link:"deck31.html", q:"Welche Aussage zur Wertemenge W ist richtig?",
+ a:["W enthält immer alle reellen Zahlen","W enthält alle tatsächlich vorkommenden Funktionswerte","W ist immer gleich groß wie D","W enthält die x-Werte"],r:1,
+ why:"W = die Menge aller y-Werte, die tatsächlich als Funktionswert auftreten."},
+
+// --- deck32.html: Lineare Funktion & Geraden zeichnen ---
+{deck:"Teil 2 — Lineare Funktion & zeichnen", link:"deck32.html", q:"f(x)=−3x+7 — welche Steigung m und welcher y-Achsenabschnitt t liegen vor?",
+ a:["m=7, t=−3","m=−3, t=7","m=3, t=7","m=−3, t=−7"],r:1,
+ why:"In f(x)=mx+t ist m der Koeffizient vor x, t die Konstante."},
+{deck:"Teil 2 — Lineare Funktion & zeichnen", link:"deck32.html", q:"Welche Aussage über das Steigungsdreieck stimmt?",
+ a:["Jedes Steigungsdreieck einer Geraden liefert einen anderen Wert für m","Der Quotient Δy/Δx ist unabhängig vom gewählten Dreieck immer gleich","Steigungsdreiecke funktionieren nur bei positiver Steigung","Δx muss immer 1 sein"],r:1,
+ why:"Egal welche zwei Punkte man wählt — der Quotient bleibt für dieselbe Gerade immer gleich."},
+{deck:"Teil 2 — Lineare Funktion & zeichnen", link:"deck32.html", q:"Eine Gerade hat t=−2 und m=3. Welcher Punkt liegt sicher auf ihr?",
+ a:["(0|3)","(0|−2)","(−2|0)","(3|0)"],r:1,
+ why:"t ist der y-Achsenabschnitt — die Gerade schneidet die y-Achse bei T(0|t)."},
+{deck:"Teil 2 — Lineare Funktion & zeichnen", link:"deck32.html", q:"Warum braucht man beim Zeichnen mit negativer Steigung besondere Vorsicht?",
+ a:["Negative Steigungen gibt es nicht wirklich","Beim Anlegen des Steigungsdreiecks muss man nach UNTEN statt nach oben gehen","Der y-Achsenabschnitt wird dadurch automatisch negativ","Negative Steigungen haben keinen y-Achsenabschnitt"],r:1,
+ why:"Bei m<0 muss man vom Startpunkt aus nach unten gehen, wenn man nach rechts geht."},
+
+// --- deck33.html: Geraden aufstellen & Nullstellen ---
+{deck:"Teil 3 — Geraden aufstellen & Nullstellen", link:"deck33.html", q:"Eine Gerade verläuft durch A(1|2) und B(3|8). Wie groß ist die Steigung m?",
+ a:["m=2","m=3","m=6","m=1/3"],r:1,
+ why:"m=(8−2)/(3−1)=6/2=3."},
+{deck:"Teil 3 — Geraden aufstellen & Nullstellen", link:"deck33.html", q:"Wie berechnet man die Nullstelle einer linearen Funktion f(x)=mx+t?",
+ a:["x=0 setzen und f(0) berechnen","f(x)=0 setzen und nach x auflösen","t=0 setzen","m=0 setzen"],r:1,
+ why:"Die Nullstelle ist der x-Wert, für den der Funktionswert 0 ist."},
+{deck:"Teil 3 — Geraden aufstellen & Nullstellen", link:"deck33.html", q:"Liegt der Punkt F(3|1) auf der Geraden g(x)=2x−4?",
+ a:["Ja, g(3)=2 passt zu y=1","Nein, g(3)=2, aber der Punkt hat y=1 — das passt nicht","Ja, weil x=3 eingesetzt werden darf","Das lässt sich ohne Zeichnung nicht sagen"],r:1,
+ why:"g(3)=2·3−4=2. Der Punkt hat aber y=1 — F liegt NICHT auf der Geraden."},
+{deck:"Teil 3 — Geraden aufstellen & Nullstellen", link:"deck33.html", q:"Vertauscht man bei der Steigungsformel die Punkte A und B in Zähler UND Nenner, was passiert?",
+ a:["Das Ergebnis ändert sich","Das Ergebnis bleibt exakt gleich","Man erhält immer 0","Man erhält den Kehrwert"],r:1,
+ why:"Konsequentes Vertauschen kürzt die entstehenden Minuszeichen weg — das Ergebnis bleibt gleich."},
+
+// --- deck34.html: Geraden im Duett & Sonderfälle ---
+{deck:"Teil 4 — Geraden im Duett", link:"deck34.html", q:"f(x)=4x−1 und g(x)=4x+5 — welche Lagebeziehung liegt vor?",
+ a:["Schneidend","Echt parallel","Identisch","Senkrecht"],r:1,
+ why:"Gleiche Steigung, unterschiedlicher y-Achsenabschnitt → echt parallel."},
+{deck:"Teil 4 — Geraden im Duett", link:"deck34.html", q:"Beim Gleichsetzen zweier Geraden entsteht die Aussage 0=0. Was bedeutet das?",
+ a:["Die Geraden schneiden sich bei x=0","Die Geraden sind identisch","Die Geraden sind echt parallel","Ein Rechenfehler ist passiert"],r:1,
+ why:"Eine immer wahre Aussage bedeutet: unendlich viele gemeinsame Punkte, also identisch."},
+{deck:"Teil 4 — Geraden im Duett", link:"deck34.html", q:"Welche der folgenden Gleichungen beschreibt KEINE Funktion?",
+ a:["y=5", "x=5", "y=5x", "y=5x+5"],r:1,
+ why:"x=5 ist eine Parallele zur y-Achse — nicht eindeutig, keine Funktion."},
+{deck:"Teil 4 — Geraden im Duett", link:"deck34.html", q:"g1(x)=−3x+2 und g2(x)=⅓x−1 — stehen diese Geraden senkrecht aufeinander?",
+ a:["Ja, weil m1·m2=(−3)·(⅓)=−1","Nein, weil die y-Achsenabschnitte unterschiedlich sind","Nein, weil beide Steigungen unterschiedliches Vorzeichen haben","Das lässt sich ohne Zeichnung nicht sagen"],r:0,
+ why:"m1·m2=−1 — die Bedingung für senkrechte Geraden ist erfüllt."},
+
+// --- deck35.html: Lineare Funktionen im Einsatz ---
+{deck:"Teil 5 — Funktionen im Einsatz", link:"deck35.html", q:"Zwei Fitnessstudios: E kostet 25 €/Monat pauschal, F kostet 5 € Grundgebühr + 4 € pro Besuch. Ab wie vielen Besuchen im Monat lohnt sich E?",
+ a:["4 Besuche","5 Besuche","20 Besuche","25 Besuche"],r:1,
+ why:"25=5+4x → 20=4x → x=5."},
+{deck:"Teil 5 — Funktionen im Einsatz", link:"deck35.html", q:"Warum gehört eine Einheit zwingend in den Antwortsatz einer Anwendungsaufgabe?",
+ a:["Weil sonst die Rechnung falsch ist","Weil die reine Zahl ohne Einheit im Sachzusammenhang bedeutungslos ist","Nur bei Geldbeträgen nötig","Einheiten sind bei linearen Funktionen nicht relevant"],r:1,
+ why:"Eine Zahl ohne Einheit ist im Sachzusammenhang nicht verständlich."},
+{deck:"Teil 5 — Funktionen im Einsatz", link:"deck35.html", q:"Warum wird bei einer Kostenfunktion oft eine eingeschränkte Definitionsmenge angegeben?",
+ a:["Damit die Formel kürzer wird","Weil im Sachzusammenhang oft eine Mindest- oder Höchstmenge gilt","Rein aus mathematischer Tradition","Definitionsmengen sind bei Kostenfunktionen immer ℝ"],r:1,
+ why:"Reale Bestellungen haben oft eine Mindest- und eine Höchstmenge."},
+
+// --- Eigene Transferfragen (kapitelübergreifend, eigene Werte) ---
+{deck:"Teil 2 — Lineare Funktion & zeichnen", link:"deck32.html", q:"Warum ist f(x)=x² KEINE lineare Funktion?",
+ a:["Weil x negativ werden kann","Weil die Variable x in zweiter Potenz vorkommt","Weil sie keine Nullstelle hat","Weil ihr Graph durch den Ursprung geht"],r:1,
+ why:"In einer linearen Funktion darf x nur in erster Potenz vorkommen — x² macht den Graphen zu einer Parabel, keiner Geraden."},
+{deck:"Teil 4 — Geraden im Duett", link:"deck34.html", q:"f(x)=0,2x+5 und g(x)=0,2x+8 — welche Lagebeziehung liegt vor?",
+ a:["Schneidend","Echt parallel","Identisch","Das lässt sich nicht bestimmen"],r:1,
+ why:"Gleiche Steigung (0,2), unterschiedlicher y-Achsenabschnitt (5≠8) → echt parallel."},
+{deck:"Teil 3 — Geraden aufstellen & Nullstellen", link:"deck33.html", q:"Eine Gerade verläuft durch A(0|6) und ist parallel zur Winkelhalbierenden des II./IV. Quadranten. Wie lautet ihre Funktionsgleichung?",
+ a:["f(x)=x+6","f(x)=−x+6","f(x)=6x","f(x)=−6x+1"],r:1,
+ why:"Die Winkelhalbierende des II./IV. Quadranten hat m=−1. Parallel dazu bedeutet gleiche Steigung: m=−1. A(0|6) liegt auf der y-Achse, also t=6 → f(x)=−x+6."}
+];
+
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+let current=[];
+let deckStats={};
+
+function startQuiz(){
+  current = shuffle(POOL).slice(0,20);
+  deckStats={};
+  document.getElementById('startScreen').style.display='none';
+  document.getElementById('result').classList.remove('show');
+  const area=document.getElementById('quizArea');
+  area.innerHTML='';
+  let answered=0, score=0;
+  current.forEach((item,qi)=>{
+    if(!deckStats[item.deck]) deckStats[item.deck]={right:0,total:0,link:item.link};
+    deckStats[item.deck].total++;
+    const box=document.createElement('div'); box.className='quizq';
+    const tag=document.createElement('span'); tag.className='deckTag'; tag.textContent=item.deck; box.appendChild(tag);
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        answered++;
+        if(oi===item.r){ score++; deckStats[item.deck].right++; }
+        if(answered===current.length) showResult(score);
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    area.appendChild(box);
+  });
+}
+
+function showResult(score){
+  const res=document.getElementById('result');
+  res.classList.add('show');
+  document.getElementById('scoreBig').textContent='Ergebnis: '+score+' / '+current.length+' — '+
+    (score>=current.length*0.8?'stark! 💪':(score>=current.length*0.5?'solide, ein paar Themen nochmal ansehen':'lohnt sich, mehrere Teile zu wiederholen'));
+  const bd=document.getElementById('deckBreakdown');
+  bd.innerHTML='';
+  Object.keys(deckStats).sort().forEach(deck=>{
+    const s=deckStats[deck];
+    const row=document.createElement('div');
+    const pct=s.right/s.total;
+    row.className='deckRow '+(pct<0.5?'weak':(pct===1?'strong':''));
+    row.innerHTML='<span>'+deck+': '+s.right+' / '+s.total+' richtig'+(pct<0.6?' — nochmal ansehen empfohlen':'')+'</span><a href="'+s.link+'">Teil öffnen →</a>';
+    bd.appendChild(row);
+  });
+  res.scrollIntoView({behavior:'smooth'});
+}
+
+document.getElementById('startBtn').onclick=startQuiz;
+document.getElementById('againBtn').onclick=startQuiz;
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

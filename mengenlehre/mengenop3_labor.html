@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Venn-Labor — Mengen filtern &amp; verknüpfen</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:14px 18px;height:100%;overflow-y:auto;}
+  h3{margin:0 0 8px;font-size:18px;color:var(--accent);}
+  .modebar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+  .modebar button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 16px;font-size:13.5px;cursor:pointer;}
+  .modebar button.on{background:var(--accent);color:#12100a;font-weight:700;}
+  .part{display:none;}
+  .part.show{display:block;}
+  .hint{font-size:12.5px;color:var(--muted);margin:4px 0 10px;}
+  .chiprow{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px;}
+  .numcard{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:6px 8px;text-align:center;min-width:52px;}
+  .numcard .n{font-weight:700;font-size:15px;margin-bottom:4px;}
+  .memberbtn{display:block;width:100%;border:1px solid var(--line);border-radius:5px;padding:2px 0;font-size:11px;margin-top:3px;cursor:pointer;background:#1f2630;color:var(--muted);}
+  .memberbtn.a.on{background:#f2a63c;color:#12100a;border-color:#f2a63c;font-weight:700;}
+  .memberbtn.b.on{background:#5fd0c7;color:#12100a;border-color:#5fd0c7;font-weight:700;}
+  .opbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;}
+  .opbtn{background:#1f2630;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:8px 16px;font-size:15px;cursor:pointer;}
+  .opbtn.on{background:var(--accent);color:#12100a;font-weight:700;}
+  .presetbtn{background:#1f2630;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:6px 12px;font-size:12.5px;cursor:pointer;}
+  #svgHost{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:10px;margin:10px 0;}
+  #resultLine{font-size:19px;color:var(--accent);text-align:center;margin:6px 0;}
+  #missionBox{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin-top:10px;font-size:14.5px;}
+  #missionBox.ok{border-color:#4caf50;background:#173d28;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="modebar">
+    <button id="modeExplore" class="on">🔍 Erkunden</button>
+    <button id="modeMission">🎯 Mission</button>
+  </div>
+
+  <div class="part show" id="partExplore">
+    <h3>Venn-Labor — Mengen filtern &amp; verknüpfen</h3>
+    <p class="hint">Grundmenge G = {1;...;9}. Weise jede Zahl per Klick der Menge A und/oder B zu (Buchstaben leuchten), dann wähle unten eine Operation.</p>
+    <div class="chiprow" id="chipRow"></div>
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <button class="presetbtn" id="presetOps">Beispiel: A∩B / A∪B / A\\B</button>
+      <button class="presetbtn" id="presetComp">Beispiel: Ergänzungsmenge A̅</button>
+    </div>
+    <div class="opbar">
+      <button class="opbtn on" id="opInter">A ∩ B</button>
+      <button class="opbtn" id="opUnion">A ∪ B</button>
+      <button class="opbtn" id="opDiffAB">A \ B</button>
+      <button class="opbtn" id="opDiffBA">B \ A</button>
+      <button class="opbtn" id="opComp">A̅</button>
+    </div>
+    <div id="svgHost"></div>
+    <div id="resultLine"></div>
+  </div>
+
+  <div class="part" id="partMission">
+    <h3>🎯 Mission: Region-Klick</h3>
+    <p class="hint">Grundmenge G = {1;...;9}, A = {1;2;3;4;5}, B = {4;5;6;7} (fest eingestellt für diese Mission). Klick GENAU die Region an, die A∩B̅ entspricht (in A, aber NICHT in B).</p>
+    <div id="svgHostMission"></div>
+    <div id="missionBox">Noch nicht geklickt.</div>
+  </div>
+</div>
+<script>
+const ALLNUMS=[1,2,3,4,5,6,7,8,9];
+let inA=new Set([1,2,3,4,5]);
+let inB=new Set([4,5,6,7]);
+let currentOp='inter';
+
+function renderChips(){
+  const row=document.getElementById('chipRow');
+  row.innerHTML='';
+  ALLNUMS.forEach(n=>{
+    const card=document.createElement('div'); card.className='numcard';
+    card.innerHTML='<div class="n">'+n+'</div>';
+    const bA=document.createElement('button'); bA.className='memberbtn a'+(inA.has(n)?' on':''); bA.textContent='A';
+    bA.onclick=()=>{ if(inA.has(n)) inA.delete(n); else inA.add(n); renderChips(); renderAll(); };
+    const bB=document.createElement('button'); bB.className='memberbtn b'+(inB.has(n)?' on':''); bB.textContent='B';
+    bB.onclick=()=>{ if(inB.has(n)) inB.delete(n); else inB.add(n); renderChips(); renderAll(); };
+    card.appendChild(bA); card.appendChild(bB);
+    row.appendChild(card);
+  });
+}
+
+function buildVennSVG(uid, mode, A, B, opts){
+  opts=opts||{};
+  const W=opts.W||340, H=opts.H||200;
+  const r=opts.r||64;
+  const cAx=opts.cAx!=null?opts.cAx:130, cAy=opts.cAy!=null?opts.cAy:100;
+  const cBx=opts.cBx!=null?opts.cBx:210, cBy=opts.cBy!=null?opts.cBy:100;
+  const accent="#f2a63c";
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:460px;height:auto;display:block;margin:0 auto;">';
+  s+='<defs>'
+   +'<clipPath id="clipA_'+uid+'"><circle cx="'+cAx+'" cy="'+cAy+'" r="'+r+'"/></clipPath>'
+   +'<clipPath id="clipB_'+uid+'"><circle cx="'+cBx+'" cy="'+cBy+'" r="'+r+'"/></clipPath>'
+   +'<mask id="maskNotB_'+uid+'"><rect x="0" y="0" width="'+W+'" height="'+H+'" fill="white"/><circle cx="'+cBx+'" cy="'+cBy+'" r="'+r+'" fill="black"/></mask>'
+   +'<mask id="maskNotA_'+uid+'"><rect x="0" y="0" width="'+W+'" height="'+H+'" fill="white"/><circle cx="'+cAx+'" cy="'+cAy+'" r="'+r+'" fill="black"/></mask>'
+   +'</defs>';
+  s+='<rect x="8" y="8" width="'+(W-16)+'" height="'+(H-16)+'" fill="none" stroke="#4a5568" stroke-width="2"/><text x="'+(W-22)+'" y="24" font-size="15" fill="#9aa4b2">G</text>';
+  s+='<circle cx="'+cAx+'" cy="'+cAy+'" r="'+r+'" fill="rgba(242,166,60,0.10)" stroke="'+accent+'" stroke-width="2"/>';
+  s+='<circle cx="'+cBx+'" cy="'+cBy+'" r="'+r+'" fill="rgba(95,208,199,0.12)" stroke="#5fd0c7" stroke-width="2"/>';
+  if(mode==='inter'){
+    s+='<g clip-path="url(#clipA_'+uid+')"><g clip-path="url(#clipB_'+uid+')"><rect x="0" y="0" width="'+W+'" height="'+H+'" fill="'+accent+'" opacity="0.55"/></g></g>';
+  } else if(mode==='union'){
+    s+='<path d="M'+(cAx+r)+','+cAy+' a'+r+','+r+' 0 1,0 -'+(2*r)+',0 a'+r+','+r+' 0 1,0 '+(2*r)+',0 Z M'+(cBx+r)+','+cBy+' a'+r+','+r+' 0 1,0 -'+(2*r)+',0 a'+r+','+r+' 0 1,0 '+(2*r)+',0 Z" fill="'+accent+'" opacity="0.45" fill-rule="nonzero"/>';
+  } else if(mode==='diffAB'){
+    s+='<circle cx="'+cAx+'" cy="'+cAy+'" r="'+r+'" fill="'+accent+'" opacity="0.55" mask="url(#maskNotB_'+uid+')"/>';
+  } else if(mode==='diffBA'){
+    s+='<circle cx="'+cBx+'" cy="'+cBy+'" r="'+r+'" fill="'+accent+'" opacity="0.55" mask="url(#maskNotA_'+uid+')"/>';
+  } else if(mode==='comp'){
+    s+='<rect x="8" y="8" width="'+(W-16)+'" height="'+(H-16)+'" fill="'+accent+'" opacity="0.45" mask="url(#maskNotA_'+uid+')"/>';
+  }
+  s+='<circle cx="'+cAx+'" cy="'+cAy+'" r="'+r+'" fill="none" stroke="'+accent+'" stroke-width="2"/>';
+  s+='<circle cx="'+cBx+'" cy="'+cBy+'" r="'+r+'" fill="none" stroke="#5fd0c7" stroke-width="2"/>';
+  // place numbers by region
+  const onlyA=[...A].filter(x=>!B.has(x)).sort((a,b)=>a-b);
+  const both=[...A].filter(x=>B.has(x)).sort((a,b)=>a-b);
+  const onlyB=[...B].filter(x=>!A.has(x)).sort((a,b)=>a-b);
+  const outside=ALLNUMS.filter(x=>!A.has(x)&&!B.has(x)).sort((a,b)=>a-b);
+  function place(arr,cx,cy,spread){
+    arr.forEach((v,i)=>{
+      const y=cy+(i-(arr.length-1)/2)*22;
+      s+='<text x="'+cx+'" y="'+(y+5)+'" text-anchor="middle" font-size="15" fill="#e6edf3">'+v+'</text>';
+    });
+  }
+  place(onlyA, cAx-32, cAy, 22);
+  place(both, (cAx+cBx)/2, cAy, 22);
+  place(onlyB, cBx+32, cBy, 22);
+  outside.forEach((v,i)=>{
+    const corners=[[26,H-18],[W-26,H-18],[26,26],[W-40,26]];
+    const [x,y]=corners[i%4];
+    s+='<text x="'+x+'" y="'+y+'" text-anchor="middle" font-size="13" fill="#9aa4b2">'+v+'</text>';
+  });
+  s+='</svg>';
+  return s;
+}
+
+const OP_LABEL={inter:'A ∩ B', union:'A ∪ B', diffAB:'A \\ B', diffBA:'B \\ A', comp:'A̅'};
+function computeResult(op){
+  if(op==='inter') return [...inA].filter(x=>inB.has(x)).sort((a,b)=>a-b);
+  if(op==='union') return [...new Set([...inA,...inB])].sort((a,b)=>a-b);
+  if(op==='diffAB') return [...inA].filter(x=>!inB.has(x)).sort((a,b)=>a-b);
+  if(op==='diffBA') return [...inB].filter(x=>!inA.has(x)).sort((a,b)=>a-b);
+  if(op==='comp') return ALLNUMS.filter(x=>!inA.has(x)).sort((a,b)=>a-b);
+  return [];
+}
+function renderAll(){
+  document.getElementById('svgHost').innerHTML=buildVennSVG('ex',currentOp,inA,inB);
+  const res=computeResult(currentOp);
+  const setStr = res.length? '{'+res.join('; ')+'}' : '{ }';
+  document.getElementById('resultLine').textContent=OP_LABEL[currentOp]+' = '+setStr;
+}
+document.getElementById('opInter').onclick=()=>setOp('inter');
+document.getElementById('opUnion').onclick=()=>setOp('union');
+document.getElementById('opDiffAB').onclick=()=>setOp('diffAB');
+document.getElementById('opDiffBA').onclick=()=>setOp('diffBA');
+document.getElementById('opComp').onclick=()=>setOp('comp');
+function setOp(op){
+  currentOp=op;
+  document.querySelectorAll('.opbtn').forEach(b=>b.classList.remove('on'));
+  ({inter:'opInter',union:'opUnion',diffAB:'opDiffAB',diffBA:'opDiffBA',comp:'opComp'});
+  document.getElementById({inter:'opInter',union:'opUnion',diffAB:'opDiffAB',diffBA:'opDiffBA',comp:'opComp'}[op]).classList.add('on');
+  renderAll();
+}
+document.getElementById('presetOps').onclick=()=>{ inA=new Set([1,2,3,4,5]); inB=new Set([4,5,6,7]); renderChips(); renderAll(); };
+document.getElementById('presetComp').onclick=()=>{ inA=new Set([2,4,6,8]); inB=new Set(); setOp('comp'); renderChips(); };
+
+renderChips();
+renderAll();
+
+// === Mission: Region-Klick ===
+const missionA=new Set([1,2,3,4,5]);
+const missionB=new Set([4,5,6,7]);
+const missionOpts={r:64,cAx:130,cAy:100,cBx:210,cBy:100,W:340,H:200};
+document.getElementById('svgHostMission').innerHTML=buildVennSVG('mi','none',missionA,missionB,missionOpts);
+const svgMissionHost=document.getElementById('svgHostMission');
+svgMissionHost.addEventListener('click', (e)=>{
+  const svgEl=svgMissionHost.querySelector('svg');
+  const rect=svgEl.getBoundingClientRect();
+  const vb=missionOpts;
+  const scaleX=vb.W/rect.width, scaleY=vb.H/rect.height;
+  const x=(e.clientX-rect.left)*scaleX, y=(e.clientY-rect.top)*scaleY;
+  const dA=Math.hypot(x-vb.cAx,y-vb.cAy), dB=Math.hypot(x-vb.cBx,y-vb.cBy);
+  const box=document.getElementById('missionBox');
+  let region;
+  if(dA<=vb.r && dB<=vb.r) region='both';
+  else if(dA<=vb.r) region='onlyA';
+  else if(dB<=vb.r) region='onlyB';
+  else region='outside';
+  if(region==='onlyA'){
+    box.className='ok';
+    box.textContent='🎉 Richtig! Das ist genau A∩B̅ = {1;2;3} — in A, aber nicht in B.';
+    window.lwAward && window.lwAward('mission');
+  } else {
+    box.className='';
+    box.textContent='Noch nicht ganz — du hast die Region „'+region+'“ getroffen. Gesucht ist: in A, aber NICHT in B.';
+  }
+});
+
+// mode switch
+const modeExplore=document.getElementById('modeExplore'), modeMission=document.getElementById('modeMission');
+const partExplore=document.getElementById('partExplore'), partMission=document.getElementById('partMission');
+modeExplore.onclick=()=>{ modeExplore.classList.add('on'); modeMission.classList.remove('on'); partExplore.classList.add('show'); partMission.classList.remove('show'); };
+modeMission.onclick=()=>{ modeMission.classList.add('on'); modeExplore.classList.remove('on'); partMission.classList.add('show'); partExplore.classList.remove('show'); };
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

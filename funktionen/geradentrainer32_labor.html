@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Geraden-Trainer — Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{max-width:640px;margin:0 auto;padding:18px 20px 40px;}
+  h3{margin:0 0 6px;}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  #progress{font-size:13px;color:var(--muted);margin-bottom:8px;}
+  #missionText{font-size:15px;color:var(--accent);text-align:center;font-weight:700;margin-bottom:10px;}
+  .controls{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin-bottom:12px;}
+  .row{display:flex;align-items:center;gap:12px;margin:8px 0;}
+  .row label{font-size:14px;color:var(--muted);min-width:22px;}
+  input[type=range]{flex:1;}
+  .valbox{background:#1f2630;border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:14px;font-weight:700;color:var(--accent);min-width:40px;text-align:center;}
+  #svgHost{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;}
+  #eqLabel{text-align:center;font-size:16px;color:var(--fg);margin:8px 0;}
+  #feedback{text-align:center;font-size:14px;min-height:20px;margin-top:6px;color:#5fd0c7;}
+  #nextBtn{display:none;margin:10px auto 0;background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:9px 18px;font-size:14px;cursor:pointer;}
+  #doneBox{text-align:center;font-size:16px;color:var(--accent);font-weight:700;margin-top:16px;display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h3>📐 Geraden-Trainer</h3>
+  <p class="hint">Stelle m und t so ein, dass die Gerade genau durch beide markierten Zielpunkte verläuft.</p>
+  <div id="progress">Mission 1 / 4</div>
+  <div id="missionText"></div>
+  <div class="controls">
+    <div class="row"><label for="mSlider">m</label><input type="range" id="mSlider" min="-3" max="3" step="0.5" value="1"/><span class="valbox" id="mVal">1</span></div>
+    <div class="row"><label for="tSlider">t</label><input type="range" id="tSlider" min="-4" max="4" step="1" value="1"/><span class="valbox" id="tVal">1</span></div>
+  </div>
+  <div id="eqLabel"></div>
+  <div id="svgHost"></div>
+  <div id="feedback"></div>
+  <button id="nextBtn">Nächste Mission ▸</button>
+  <div id="doneBox">✅ Alle vier Missionen getroffen — du beherrschst m und t!</div>
+</div>
+<script>
+const MISSIONS=[
+  {p1:[0,2], p2:[2,6], m:2, t:2},
+  {p1:[0,-1], p2:[4,1], m:0.5, t:-1},
+  {p1:[0,3], p2:[3,-3], m:-2, t:3},
+  {p1:[0,0], p2:[1,-1], m:-1, t:0}
+];
+let mi=0, m=1, t=1, missionSolved=[false,false,false,false];
+
+function toX(x){ return 150+x*22; }
+function toY(y){ return 150-y*22; }
+
+function buildSVG(mVal, tVal, target){
+  let s='<svg viewBox="0 0 300 300" style="width:100%;max-width:320px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="0" y1="150" x2="300" y2="150" stroke="#9aa4b2" stroke-width="1"/>';
+  s+='<line x1="150" y1="0" x2="150" y2="300" stroke="#9aa4b2" stroke-width="1"/>';
+  const x1=-6, x2=6;
+  const y1=mVal*x1+tVal, y2=mVal*x2+tVal;
+  s+='<line x1="'+toX(x1)+'" y1="'+toY(y1)+'" x2="'+toX(x2)+'" y2="'+toY(y2)+'" stroke="#5fd0c7" stroke-width="2.5"/>';
+  // Zielpunkte
+  [target.p1, target.p2].forEach(p=>{
+    s+='<circle cx="'+toX(p[0])+'" cy="'+toY(p[1])+'" r="6" fill="none" stroke="#f2a63c" stroke-width="2"/>';
+    s+='<text x="'+(toX(p[0])+9)+'" y="'+(toY(p[1])-9)+'" font-size="11" fill="#f2a63c">('+p[0]+'|'+p[1]+')</text>';
+  });
+  s+='</svg>';
+  return s;
+}
+function render(){
+  const target=MISSIONS[mi];
+  document.getElementById('progress').textContent='Mission '+(mi+1)+' / '+MISSIONS.length;
+  document.getElementById('missionText').textContent='Triff die Punkte ('+target.p1[0]+'|'+target.p1[1]+') und ('+target.p2[0]+'|'+target.p2[1]+')';
+  document.getElementById('feedback').textContent='';
+  document.getElementById('nextBtn').style.display='none';
+  updateDisplay();
+}
+function updateDisplay(){
+  document.getElementById('mVal').textContent=m;
+  document.getElementById('tVal').textContent=t;
+  document.getElementById('eqLabel').textContent='f(x) = '+m+'x '+(t>=0?'+ '+t:'− '+Math.abs(t));
+  document.getElementById('svgHost').innerHTML=buildSVG(m, t, MISSIONS[mi]);
+  checkHit();
+}
+function checkHit(){
+  if(missionSolved[mi]) return;
+  const target=MISSIONS[mi];
+  if(Math.abs(m-target.m)<0.01 && Math.abs(t-target.t)<0.01){
+    missionSolved[mi]=true;
+    document.getElementById('feedback').textContent='✅ Getroffen! m='+target.m+', t='+target.t+' passt genau.';
+    window.lwAward && window.lwAward('mission', 'mission'+(mi+1));
+    document.getElementById('nextBtn').style.display = (mi<MISSIONS.length-1) ? 'block' : 'none';
+    checkAllDone();
+  }
+}
+document.getElementById('mSlider').addEventListener('input', e=>{ m=parseFloat(e.target.value); updateDisplay(); });
+document.getElementById('tSlider').addEventListener('input', e=>{ t=parseFloat(e.target.value); updateDisplay(); });
+document.getElementById('nextBtn').onclick=()=>{
+  if(mi<MISSIONS.length-1){ mi++; m=1; t=1; document.getElementById('mSlider').value=1; document.getElementById('tSlider').value=1; render(); }
+};
+function checkAllDone(){
+  if(missionSolved.every(Boolean)){
+    document.getElementById('doneBox').style.display='block';
+    window.lwAward && window.lwAward('mission', 'geradentrainer_komplett');
+  }
+}
+render();
+
+// Test-Hook fuer Playwright-Verifikation
+window.LAB = {
+  state: () => ({ mission: mi, m: m, t: t, missionSolved: missionSolved.slice() }),
+  setM: (nm) => { m=nm; document.getElementById('mSlider').value=nm; updateDisplay(); },
+  setT: (nt) => { t=nt; document.getElementById('tSlider').value=nt; updateDisplay(); },
+  nextMission: () => document.getElementById('nextBtn').click()
+};
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

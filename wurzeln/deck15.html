@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Reelle Zahlen &amp; Wurzeln · Teil 1 — Die Quadratwurzel</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>REELLE ZAHLEN &amp; WURZELN <span class="accent">· Teil 1</span></h1>
+    <h2>Die Quadratwurzel</h2>
+    <div class="hook" style="max-width:70ch;">Ein quadratisches Baugrundstück hat genau 50 m² Fläche. Wie lang ist eine Seite? Die Grundrechenarten allein reichen hier nicht mehr — es braucht eine neue Rechenoperation: das Wurzelziehen.</div>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 5.1</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Begriff Quadratwurzel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Was ist eine Quadratwurzel?</h2>
+      <div class="svgbox"><div id="svgS2"></div><div class="svgcaption">Ein Quadrat mit Fläche a hat die Seitenlänge √a</div></div>
+      <div class="defbox">Die Quadratwurzel √a (a ∈ ℝ₀⁺) ist diejenige nicht-negative Zahl, die quadriert die Zahl a ergibt.</div>
+      <ul class="bul">
+        <li>Die Gleichung x² = a hat für a &gt; 0 zwei Lösungen: x = √a und x = −√a. Die Quadratwurzel selbst bezeichnet nur die positive Lösung.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 3 Warum nur a >= 0 -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Warum nur für a ≥ 0?</h2>
+      <div class="defbox">Multipliziert man zwei Zahlen mit gleichem Vorzeichen, erhält man immer eine positive Zahl — egal ob beide Faktoren positiv oder beide negativ sind. Es gibt daher KEINE Zahl, die quadriert eine negative Zahl ergibt.</div>
+      <ul class="bul">
+        <li>x² = 4 hat die Lösungen x = 2 und x = −2, denn (−2)² = 4 und 2² = 4.</li>
+        <li>x² = −1 hat dagegen KEINE Lösung — die Quadratwurzel √a ist deshalb nur für a ∈ ℝ₀⁺ definiert.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 4 sqrt2 irrational -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>√2 — die Zahl, die alles veränderte</h2>
+      <div class="defbox">Die Gleichung x² = 2 hat eine Lösung, die sich mit keinem Bruch exakt hinschreiben lässt: √2 = 1,41421356… Ein Widerspruchsbeweis zeigt: Wäre √2 = a/b ein vollständig gekürzter Bruch, müssten a UND b gerade sein — das widerspricht der Kürzung. Also ist √2 irrational.</div>
+      <ul class="bul">
+        <li>Viele Quadratwurzeln sind irrational: √2, √3, √5 — nur Wurzeln aus Quadratzahlen (√4=2, √9=3, …) sind rational.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 5 Bruecke Zwiebel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🌉 Brücke</span> Wo lebt √2 in der Zahlen-Zwiebel?</h2>
+      <div class="svgbox"><div id="svgS5"></div><div class="svgcaption">√2 liegt NUR in ℝ — außerhalb von ℚ</div></div>
+      <div class="defbox">Erinnerst du dich an die Zahlen-Zwiebel ℕ ⊂ ℤ ⊂ ℚ ⊂ ℝ aus Kapitel 1.2b? √2 ist der Grund, warum ℝ überhaupt größer ist als ℚ — es ist eine der irrationalen Zahlen, die nur in der äußersten Schale ℝ liegen.</div>
+    </div>
+  </section>
+
+  <!-- 6 Potenzschreibweise -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Wurzeln in Potenzschreibweise</h2>
+      <div class="defbox">Eine Potenz mit einer Bruchzahl als Exponent lässt sich als Wurzelausdruck umschreiben: a^(m/n) = ⁿ√(aᵐ) — mit a ∈ ℝ₀⁺, n,m ∈ ℕ.</div>
+      <ul class="bul">
+        <li>Speziell für m=1: a^(1/2) = √a. Die Quadratwurzel ist also nichts anderes als „hoch ein Halb".</li>
+        <li>5^(1/2) = √5 · x^(4/5) = ⁵√(x⁴) · ⁿ√(a^m) = a^(m/n)</li>
+      </ul>
+      <div class="alltagbox">🌉 Brücke zu Kapitel 4.4: Die Potenzgesetze (Basis·Basis, Potenz-von-Potenz) gelten für Bruch-Exponenten GENAUSO wie für ganzzahlige — Wurzeln sind einfach Potenzen mit anderer Schreibweise.</div>
+    </div>
+  </section>
+
+  <!-- 7 Fachbegriffe / n-te Wurzel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Fachbegriffe beim Radizieren</h2>
+      <div class="defbox">ⁿ√a (a ∈ ℝ₀⁺): a heißt Radikand, n heißt Wurzelexponent. Bei der zweiten Wurzel (Quadratwurzel) wird der Wurzelexponent 2 weggelassen: √a statt ²√a. Das Ergebnis der Rechenoperation heißt Wurzelwert.</div>
+      <ul class="bul">
+        <li>Die dritte Wurzel ³√a ist die Lösung von x³ = a, die vierte Wurzel ⁴√a die Lösung von x⁴ = a (a ≥ 0), usw.</li>
+        <li>²√64 = 8 (denn 8²=64) · ³√64 = 4 (denn 4³=64) · ⁴√16 = 2 (denn 2⁴=16)</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 8 Schritt-fuer-Schritt Umschreiben -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> a^(4/5) als Wurzel schreiben</h2>
+      <div class="defbox">Aufgabe: Schreibe a^(4/5) (a ∈ ℝ₀⁺) als Wurzelausdruck.</div>
+      <div class="step" id="s8_1"><b class="lbl">Formel anwenden:</b> a^(m/n) = ⁿ√(aᵐ) — hier ist m=4, n=5.</div>
+      <div class="step" id="s8_2"><b class="lbl">Einsetzen:</b> a^(4/5) = ⁵√(a⁴).</div>
+      <div class="step" id="s8_3"><b class="lbl">Antwortsatz:</b> a^(4/5) = ⁵√(a⁴) — der Zähler des Bruchs (4) wird zum Exponenten UNTER der Wurzel, der Nenner (5) zum Wurzelexponenten.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="8" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 9 Eselsbruecke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Der Wurzelexponent wandert nach unten (in den Nenner), der Potenz-Exponent bleibt oben (im Zähler)": a^(m/n) = ⁿ√(aᵐ) — merk dir die Bruchform des Exponenten als Bauanleitung für die Wurzel.</div>
+    </div>
+  </section>
+
+  <!-- 10 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Baugrundstück</h2>
+      <div class="defbox">Ein quadratisches Baugrundstück hat 50 m² Fläche. Die Seitenlänge berechnet sich als √50 ≈ 7,07 m — ohne Wurzelziehen könnte kein Bauplan gezeichnet werden.</div>
+      <ul class="bul">
+        <li>Architekten und Handwerker nutzen Quadratwurzeln ständig: Kantenlängen aus Flächen, Bildschirmdiagonalen-Flächenanteile, Materialbedarf.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 11 Intuitions-Regler -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Schätz mal: √7</h2>
+      <div class="defbox">Bevor das Labor gleich √7 exakt einschachtelt: wie groß, glaubst du, ist √7 ungefähr?</div>
+      <div id="estWurzel7"></div>
+    </div>
+  </section>
+
+  <!-- 12 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>√a</td><td>„Quadratwurzel aus a"</td><td>Die nicht-negative Zahl, die quadriert a ergibt</td></tr>
+        <tr><td>ⁿ√a</td><td>„n-te Wurzel aus a"</td><td>a heißt Radikand, n Wurzelexponent</td></tr>
+        <tr><td>a^(1/2)</td><td>„a hoch ein Halb"</td><td>= √a — Potenzschreibweise der Wurzel</td></tr>
+        <tr><td>a^(m/n)</td><td>„a hoch m durch n"</td><td>= ⁿ√(aᵐ)</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 13 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Wurzel-Schätzer</span><span class="sub">Intervallschachtelung — fang √7!</span></div>
+    <iframe allow="autoplay" data-src="wurzelschaetzen15_labor.html"></iframe>
+  </section>
+
+  <!-- 14 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Begriff</th><th>Kernaussage</th></tr>
+      <tr><td>Quadratwurzel</td><td>√a ist die nicht-negative Zahl, die quadriert a ergibt (a ≥ 0)</td></tr>
+      <tr><td>Potenzschreibweise</td><td>a^(m/n) = ⁿ√(aᵐ)</td></tr>
+      <tr><td>√2 irrational</td><td>Widerspruchsbeweis — liegt nur in ℝ, nicht in ℚ</td></tr>
+      <tr><td>Fachbegriffe</td><td>Radikand (unter der Wurzel), Wurzelexponent (an der Wurzel)</td></tr>
+    </table>
+  </section>
+
+  <!-- 15 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Schreibe 10^(1/2) als Wurzelausdruck.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>10^(1/2) = √10</details>
+        </li>
+        <li style="margin-top:10px;">Schreibe x^(3/4) (x ∈ ℝ₀⁺) als Wurzelausdruck.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>x^(3/4) = ⁴√(x³)</details>
+        </li>
+        <li style="margin-top:10px;">Welche Zahl a &lt; 0 hat eine Quadratwurzel? Begründe.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>Keine — Quadrate sind nie negativ, deshalb ist √a für a&lt;0 nicht definiert.</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 16 Pruefungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Wissen, wofür √a steht</b> und warum a ≥ 0 sein muss.</li>
+        <li><b>Zwischen Potenz- und Wurzelschreibweise wechseln</b> können: a^(m/n) ↔ ⁿ√(aᵐ).</li>
+        <li><b>Radikand und Wurzelexponent benennen</b> können.</li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">Kapitel-Brücke — Transferaufgabe mit Potenzgesetzen: <i>„Schreibe 2^(3/5) als Wurzel und wende dann die Potenzgesetze aus Kapitel 4.4 an, um (2^(3/5))² zu vereinfachen."</i> → 2^(3/5) = ⁵√(2³); (2^(3/5))² = 2^(6/5) = ⁵√(2⁶). Potenzgesetze und Wurzelgesetze sind zwei Schreibweisen derselben Sache!</div>
+    </div>
+  </section>
+
+  <!-- 17 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+// === SVG: Quadrat Flaeche a -> Seite sqrt(a) ===
+function buildSquareRootSVG(){
+  const x0=40,y0=20,side=140;
+  const W=x0+side+50, H=y0+side+40;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:260px;height:auto;display:block;margin:0 auto;">';
+  s+='<rect x="'+x0+'" y="'+y0+'" width="'+side+'" height="'+side+'" fill="rgba(242,166,60,0.22)" stroke="#f2a63c" stroke-width="1.5"/>';
+  s+='<text x="'+(x0+side/2)+'" y="'+(y0+side/2+6)+'" text-anchor="middle" font-size="17" font-weight="700" fill="#f2a63c">a</text>';
+  s+='<text x="'+(x0+side/2)+'" y="'+(y0+side+22)+'" text-anchor="middle" font-size="13" fill="#5fd0c7">√a</text>';
+  s+='<text x="'+(x0-14)+'" y="'+(y0+side/2+4)+'" text-anchor="middle" font-size="13" fill="#5fd0c7">√a</text>';
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgS2').innerHTML=buildSquareRootSVG();
+
+// === SVG: Zahlen-Zwiebel mit sqrt2 markiert ===
+function buildOnionSqrt2SVG(){
+  const cx=140, cy=110;
+  const layers=[
+    {r:96, label:'ℝ', color:'#d18cff'},
+    {r:74, label:'ℚ', color:'#6fcf6f'},
+    {r:50, label:'ℤ', color:'#5fd0c7'},
+    {r:28, label:'ℕ', color:'#f2a63c'}
+  ];
+  let s='<svg viewBox="0 0 280 220" style="width:100%;max-width:280px;height:auto;display:block;margin:0 auto;">';
+  layers.forEach(l=>{
+    s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+l.r+'" fill="none" stroke="'+l.color+'" stroke-width="2"/>';
+  });
+  s+='<text x="'+(cx)+'" y="'+(cy-layers[0].r-8)+'" text-anchor="middle" font-size="14" font-weight="700" fill="#d18cff">ℝ</text>';
+  s+='<text x="'+(cx)+'" y="'+(cy-layers[1].r-6)+'" text-anchor="middle" font-size="13" font-weight="700" fill="#6fcf6f">ℚ</text>';
+  s+='<text x="'+(cx)+'" y="'+(cy-layers[2].r-6)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#5fd0c7">ℤ</text>';
+  s+='<text x="'+(cx)+'" y="'+(cy-layers[3].r-6)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#f2a63c">ℕ</text>';
+  s+='<circle cx="'+(cx+55)+'" cy="'+(cy+40)+'" r="4" fill="#ff6b6b"/>';
+  s+='<text x="'+(cx+65)+'" y="'+(cy+44)+'" font-size="13" font-weight="700" fill="#ff6b6b">√2</text>';
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgS5').innerHTML=buildOnionSqrt2SVG();
+
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Was ist eine Quadratwurzel?", "Warum nur für a ≥ 0?", "√2 — die Zahl, die alles veränderte", "🌉 Brücke: Wo lebt √2?", "Wurzeln in Potenzschreibweise", "Fachbegriffe beim Radizieren", "📐 Schritt für Schritt: a^(4/5) als Wurzel", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Baugrundstück", "Schätz mal: √7", "Symbol-Legende", "🧪 Wurzel-Schätzer", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=17;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck15_s1_Charon.mp3",txt:"Reelle Zahlen und Wurzeln, Teil eins. Ein quadratisches Baugrundstück hat genau fünfzig Quadratmeter Fläche. Wie lang ist eine Seite? Die Grundrechenarten allein reichen hier nicht mehr - es braucht eine neue Rechenoperation: das Wurzelziehen."},
+ 2:{wav:"narration_deck15_s2_Charon.mp3",txt:"Die Quadratwurzel aus a ist diejenige nicht-negative Zahl, die quadriert die Zahl a ergibt. Ein Quadrat mit der Fläche a hat also die Seitenlänge Wurzel a."},
+ 3:{wav:"narration_deck15_s3_Charon.mp3",txt:"Warum funktioniert das nur für Zahlen ab Null? Weil zwei Zahlen mit gleichem Vorzeichen multipliziert immer ein positives Ergebnis liefern - es gibt keine Zahl, die quadriert eine negative Zahl ergibt."},
+ 4:{wav:"narration_deck15_s4_Charon.mp3",txt:"Wurzel aus zwei ist eine besondere Zahl: sie lässt sich mit keinem Bruch exakt hinschreiben. Ein Widerspruchsbeweis zeigt das ganz elegant - deshalb nennt man solche Zahlen irrational."},
+ 5:{wav:"narration_deck15_s5_Charon.mp3",txt:"Erinnerst du dich an die Zahlen-Zwiebel aus einem früheren Kapitel? Wurzel aus zwei ist genau der Grund, warum die reellen Zahlen größer sind als die rationalen Zahlen - sie liegt nur in der äußersten Schale."},
+ 6:{wav:"narration_deck15_s6_Charon.mp3",txt:"Wurzeln lassen sich auch als Potenz mit einem Bruch als Exponent schreiben. Die Quadratwurzel ist nichts anderes als hoch ein Halb."},
+ 7:{wav:"narration_deck15_s7_Charon.mp3",txt:"Bei einer Wurzel gibt es zwei feste Fachbegriffe: die Zahl unter dem Wurzelzeichen heißt Radikand, die Zahl am Wurzelzeichen heißt Wurzelexponent."},
+ 8:{wav:"narration_deck15_s8_Charon.mp3",txt:"Jetzt üben wir das Umschreiben Schritt für Schritt: aus einer Potenz mit Bruch-Exponent wird ein Wurzelausdruck."},
+ 9:{wav:"narration_deck15_s9_Charon.mp3",txt:"Merk dir: der Wurzelexponent wandert nach unten in den Nenner, der Potenz-Exponent bleibt oben im Zähler."},
+ 10:{wav:"narration_deck15_s10_Charon.mp3",txt:"Ein quadratisches Baugrundstück mit fünfzig Quadratmetern Fläche braucht eine Seitenlänge von Wurzel fünfzig, also ungefähr sieben Komma null sieben Metern - ohne Wurzelziehen ließe sich kein Bauplan zeichnen."},
+ 11:{wav:"narration_deck15_s11_Charon.mp3",txt:"Bevor du gleich im Labor Wurzel sieben ganz genau einschachtelst: schätz doch mal, wie groß Wurzel sieben ungefähr ist."},
+ 12:{wav:"narration_deck15_s12_Charon.mp3",txt:"Hier noch mal alle Fachbegriffe rund ums Radizieren im Überblick, bevor du selbst im Labor experimentierst."},
+ 13:{wav:"narration_deck15_s13_Charon.mp3",txt:"Jetzt bist du dran: schachtel Wurzel sieben mit dem Slider Schritt für Schritt ein, bis du zwei Nachkommastellen sicher triffst."},
+ 14:{wav:"narration_deck15_s14_Charon.mp3",txt:"Fassen wir zusammen: die Quadratwurzel, ihre Potenzschreibweise, der Beweis für die Irrationalität von Wurzel zwei, und die beiden Fachbegriffe Radikand und Wurzelexponent."},
+ 15:{wav:"narration_deck15_s15_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben rund um die Quadratwurzel."},
+ 16:{wav:"narration_deck15_s16_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst - inklusive einer Transferaufgabe, die Wurzeln mit den Potenzgesetzen aus einem früheren Kapitel kombiniert."},
+ 17:{wav:"narration_deck15_s17_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"Was ist √a?",
+  a:["Die Zahl, die a mit sich selbst addiert","Die nicht-negative Zahl, die quadriert a ergibt","a geteilt durch 2","a mal 2"],r:1,
+  why:"√a ist per Definition die nicht-negative Zahl, die quadriert a ergibt."},
+ {q:"Warum ist √(−4) nicht definiert?",
+  a:["Weil −4 zu klein ist","Weil es keine Zahl gibt, die quadriert −4 ergibt","Weil man nicht durch −4 teilen darf","Weil −4 keine ganze Zahl ist"],r:1,
+  why:"Quadrate sind nie negativ — deshalb hat x²=−4 keine Lösung."},
+ {q:"Wie schreibt man a^(3/4) als Wurzel (a∈ℝ₀⁺)?",
+  a:["⁴√(a³)","³√(a⁴)","a·3/4","⁴√a · 3"],r:0,
+  why:"a^(m/n) = ⁿ√(aᵐ): Zähler 3 bleibt Exponent unter der Wurzel, Nenner 4 wird Wurzelexponent."},
+ {q:"Ist √2 rational oder irrational?",
+  a:["Rational, denn 1,41 ist ein Bruch","Irrational — lässt sich mit keinem Bruch exakt darstellen","Rational, weil es eine reelle Zahl ist","Weder noch"],r:1,
+  why:"Der Widerspruchsbeweis zeigt: √2 kann kein vollständig gekürzter Bruch sein — √2 ist irrational."},
+ {q:"Was bezeichnet man beim Ausdruck ⁵√32 als Radikand?",
+  a:["Die 5","Die 32","Das Wurzelzeichen selbst","Das Ergebnis 2"],r:1,
+  why:"Der Radikand ist die Zahl UNTER der Wurzel — hier die 32. Die 5 ist der Wurzelexponent."},
+ {q:"Welcher Fehler steckt in „√(x²) ist immer x”?",
+  a:["Kein Fehler","√(x²) ist der Betrag |x|, nicht einfach x — bei negativem x wäre das Ergebnis sonst negativ","√(x²) ist immer 0","Es müsste x² heißen"],r:1,
+  why:"Die Quadratwurzel ist per Definition nicht-negativ — √(x²)=|x| gilt auch für negatives x (z.B. √((−3)²)=3, nicht −3)."}
+];
+const DECK_ID="wurzeln/deck15";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), oi===item.r);
+        answered++; if(oi===item.r) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estWurzel7', {
+    frage: 'Wie groß ist √7 ungefähr? (Regler zeigt Zehntel — 26 bedeutet 2,6)',
+    min: 10, max: 40, korrekt: 26, toleranz: 2,
+    begruendung: '√7 ≈ 2,6458 — zwischen √4=2 und √9=3, näher an 3.'
+  });
+});
+</script>
+</body>
+</html>

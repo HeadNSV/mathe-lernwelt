@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Zahlen-Sortierer — Zwiebel-Diagramm</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{display:flex;height:100%;padding:14px 18px;gap:20px;}
+  #left{flex:0 0 min(46vw,480px);display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  #right{flex:1;display:flex;flex-direction:column;gap:12px;padding-top:6px;overflow-y:auto;}
+  h3{margin:0 0 6px;font-size:18px;color:var(--accent);}
+  .modebar{display:flex;gap:8px;margin-bottom:10px;}
+  .modebar button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 14px;font-size:13.5px;cursor:pointer;}
+  .modebar button.on{background:var(--accent);color:#12100a;font-weight:700;}
+  #ring{position:relative;width:min(42vw,420px);height:min(42vw,420px);margin-top:56px;}
+  .ring{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;border:2px solid var(--line);}
+  .ring.R{width:100%;height:100%;background:rgba(95,208,199,0.06);}
+  .ring.Q{width:74%;height:74%;background:rgba(242,166,60,0.08);}
+  .ring.Z{width:48%;height:48%;background:rgba(76,175,80,0.10);}
+  .ring.N{width:24%;height:24%;background:rgba(200,120,255,0.14);}
+  .ringlabel{position:absolute;font-size:13px;color:var(--muted);font-weight:700;}
+  .lbl-R{top:4px;left:50%;transform:translateX(-50%);color:#5fd0c7;}
+  .lbl-Q{top:16%;left:50%;transform:translateX(-50%);color:var(--accent);}
+  .lbl-Z{top:29%;left:50%;transform:translateX(-50%);color:#6fcf6f;}
+  .lbl-N{top:42%;left:50%;transform:translateX(-50%);color:#d18cff;}
+  #chip{position:absolute;left:50%;top:-46px;transform:translateX(-50%);background:#151b24;border:1px solid var(--accent);border-radius:10px;padding:8px 16px;font-size:20px;white-space:nowrap;}
+  .ov{text-decoration:overline;}
+  #feedback{min-height:70px;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:14.5px;}
+  #feedback.ok{border-color:#4caf50;}
+  #feedback.bad{border-color:#c0392b;}
+  #progress{font-size:14px;color:var(--muted);}
+  #missionDone{display:none;background:#173d28;border:1px solid #4caf50;border-radius:8px;padding:14px 18px;font-size:16px;color:#dff3df;}
+  #missionDone.show{display:block;}
+  #puzzleBox{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:16px 20px;}
+  #puzzleBox.show{display:block;}
+  #puzzleBox button{background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:8px 16px;font-size:14.5px;cursor:pointer;margin-top:10px;}
+  #puzzleReveal{display:none;margin-top:10px;font-size:14.5px;color:#dff3df;}
+  #puzzleReveal.show{display:block;}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:8px;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="left">
+    <div class="modebar">
+      <button id="modeMission" class="on">🎯 Missions-Modus</button>
+      <button id="modePuzzle">🕵️ Rätsel-Modus</button>
+    </div>
+    <div id="ring">
+      <div class="ring R"></div>
+      <div class="ring Q"></div>
+      <div class="ring Z"></div>
+      <div class="ring N"></div>
+      <div class="ringlabel lbl-R">ℝ</div>
+      <div class="ringlabel lbl-Q">ℚ</div>
+      <div class="ringlabel lbl-Z">ℤ</div>
+      <div class="ringlabel lbl-N">ℕ</div>
+      <div id="chip">?</div>
+    </div>
+    <div class="hint">Klick in die Schale, in die die Zahl deiner Meinung nach gehört (die INNERSTE passende).</div>
+  </div>
+  <div id="right">
+    <h3>🧪 Zahlen-Sortierer</h3>
+    <div id="progress">Missions-Modus: sortiere alle Zahlen in ihre innerste passende Schale.</div>
+    <div id="feedback">Klick auf eine Schale, um die angezeigte Zahl einzusortieren.</div>
+    <div id="missionDone">🎉 Mission erfüllt! Alle Zahlen richtig einsortiert.</div>
+    <div id="puzzleBox">
+      <p>🕵️ Diese Zahl behauptet: <b>„Ich bin irrational!"</b></p>
+      <p style="font-size:22px;color:var(--accent);">4/2</p>
+      <button id="revealBtn">Enttarnen ▸</button>
+      <div id="puzzleReveal">❌ Gelogen! 4/2 = 2 ist eine ganze Zahl (sogar eine natürliche) — ein klassischer Scheinbruch, kein irrationaler Wert. Irrational bedeutet: unendlich viele Nachkommastellen OHNE Periode — das trifft auf 2 nicht zu.</div>
+    </div>
+  </div>
+</div>
+<script>
+// Missionsmodus: Zahlen nacheinander einsortieren (Konzept-Referenzwerte, ohne 0)
+const QUEUE=[
+  {disp:"0", band:"N", why:"0 ist laut DIN eine natürliche Zahl (dieser Konvention folgt die Lernwelt) — innerste passende Schale: ℕ."},
+  {disp:"−7", band:"Z", why:"−7 ist eine ganze Zahl (keine Bruchzahl, keine Dezimalzahl) — innerste passende Schale: ℤ."},
+  {disp:"4/2", band:"N", why:"4/2 = 2 ist ein Scheinbruch, der sich zu einer ganzen, sogar natürlichen Zahl kürzen lässt — innerste Schale: ℕ."},
+  {disp:"π", band:"R", why:"π hat unendlich viele Nachkommastellen OHNE Periode — irrational, liegt nur in ℝ, außerhalb von ℚ."},
+  {disp:"1,͇63", band:"Q", why:"1,63 mit Periode 63 ist periodisch — jede periodische Dezimalzahl ist rational: Schale ℚ.", html:'1,<span class="ov">63</span>'},
+  {disp:"−18/5", band:"Q", why:"−18/5 ist eine echte Bruchzahl (kein Vielfaches im Zähler) — Schale ℚ."},
+  {disp:"√2", band:"R", why:"√2 lässt sich nicht als Bruch darstellen — irrational, liegt nur in ℝ."},
+  {disp:"5", band:"N", why:"5 ist eine natürliche Zahl — innerste Schale: ℕ."},
+  {disp:"−3/4", band:"Q", why:"−3/4 ist eine echte Bruchzahl — Schale ℚ."}
+];
+let qi=0, correctCount=0;
+const chip=document.getElementById('chip'), feedback=document.getElementById('feedback'),
+      progress=document.getElementById('progress'), missionDone=document.getElementById('missionDone'),
+      ringEl=document.getElementById('ring');
+
+function renderChip(){
+  if(qi>=QUEUE.length){
+    chip.style.display='none';
+    missionDone.classList.add('show');
+    progress.textContent='Mission abgeschlossen: '+correctCount+' / '+QUEUE.length+' beim ersten Versuch richtig.';
+    window.lwAward && window.lwAward('mission');
+    return;
+  }
+  const item=QUEUE[qi];
+  chip.innerHTML = item.html || item.disp;
+  progress.textContent='Zahl '+(qi+1)+' / '+QUEUE.length+' · bisher '+correctCount+' beim ersten Versuch richtig';
+}
+renderChip();
+
+function bandAt(clientX, clientY){
+  const rect=ringEl.getBoundingClientRect();
+  const cx=rect.left+rect.width/2, cy=rect.top+rect.height/2;
+  const dx=clientX-cx, dy=clientY-cy;
+  const dist=Math.sqrt(dx*dx+dy*dy);
+  const rN=rect.width*0.12, rZ=rect.width*0.24, rQ=rect.width*0.37, rR=rect.width*0.5;
+  if(dist<=rN) return 'N';
+  if(dist<=rZ) return 'Z';
+  if(dist<=rQ) return 'Q';
+  if(dist<=rR) return 'R';
+  return null;
+}
+let attemptedThisItem=false;
+ringEl.addEventListener('click', (e)=>{
+  if(qi>=QUEUE.length) return;
+  const band=bandAt(e.clientX, e.clientY);
+  if(!band){ feedback.className=''; feedback.textContent='Das liegt außerhalb der Zwiebel — klick in eine der Ringe.'; return; }
+  const item=QUEUE[qi];
+  if(band===item.band){
+    feedback.className='ok';
+    feedback.textContent='✅ Richtig! '+item.why;
+    if(!attemptedThisItem) correctCount++;
+    qi++; attemptedThisItem=false;
+    setTimeout(renderChip, 50);
+  } else {
+    feedback.className='bad';
+    feedback.textContent='❌ Noch nicht — versuch\'s nochmal. Tipp: '+item.why;
+    attemptedThisItem=true;
+  }
+});
+
+// Rätselmodus
+const modeMission=document.getElementById('modeMission'), modePuzzle=document.getElementById('modePuzzle');
+const puzzleBox=document.getElementById('puzzleBox'), puzzleReveal=document.getElementById('puzzleReveal');
+modeMission.onclick=()=>{
+  modeMission.classList.add('on'); modePuzzle.classList.remove('on');
+  puzzleBox.classList.remove('show');
+  ringEl.style.display='block';
+  document.getElementById('feedback').style.display='block';
+};
+modePuzzle.onclick=()=>{
+  modePuzzle.classList.add('on'); modeMission.classList.remove('on');
+  puzzleBox.classList.add('show');
+};
+document.getElementById('revealBtn').onclick=()=>{ puzzleReveal.classList.add('show'); };
+
+// postMessage-Empfang vom Deck (Start/Stop, additiv, kein Zwang)
+window.addEventListener('message', (e)=>{
+  if(e.data==='deck-stop'){ /* Labor braucht keinen eigenen Ton, no-op */ }
+});
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

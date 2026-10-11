@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Funktionenscharen · Kapitel-Mischquiz</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  .wrap{max-width:820px;margin:0 auto;padding:24px 18px 60px;}
+  h1{font-size:min(6vw,30px);margin:0 0 6px;}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 20px;}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0 20px;}
+  button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 16px;font-size:14px;cursor:pointer;}
+  button:hover{background:#283041;}
+  button.primary{background:var(--accent);color:#12100a;font-weight:700;border:0;}
+  .quizq{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq .deckTag{display:inline-block;background:#1b222c;color:var(--accent);font-size:11.5px;font-weight:600;border-radius:999px;padding:3px 10px;margin-bottom:8px;}
+  .quizq p.qtext{font-size:min(2.3vw,19px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2vw,16px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(1.8vw,14.5px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #result{display:none;}
+  #result.show{display:block;}
+  .scoreBig{font-size:min(6vw,36px);color:var(--accent);text-align:center;margin:10px 0;}
+  .deckRow{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 16px;margin:6px 0;font-size:14.5px;}
+  .deckRow a{color:var(--accent);text-decoration:none;font-size:13px;}
+  .deckRow a:hover{text-decoration:underline;}
+  .weak{border-left:4px solid #e05a5a;}
+  .strong{border-left:4px solid #3dbb7a;}
+  #startScreen .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:16px 20px;font-size:15px;color:#f6e7cf;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔀 Kapitel-Mischquiz — Funktionenscharen</h1>
+  <p class="sub">12 zufällig gemischte Fragen aus beiden Teilen — Interleaving statt Blockübung.</p>
+
+  <div id="startScreen">
+    <div class="defbox">Dieses Quiz zieht bei jedem Start 12 Fragen zufällig aus dem gesamten Kapitel — quer durch Funktionenschar-Grundlagen und Fallunterscheidung/Büschelpunkte. Am Ende siehst du, bei welchem Teil du nochmal reinschauen solltest.</div>
+    <div class="bar">
+      <button class="primary" id="startBtn">▶ Quiz starten (12 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+
+  <div id="quizArea"></div>
+  <div id="result">
+    <div class="scoreBig" id="scoreBig"></div>
+    <h2 style="font-size:18px;">Auswertung pro Teil</h2>
+    <div id="deckBreakdown"></div>
+    <div class="bar">
+      <button class="primary" id="againBtn">🔁 Nochmal (neue 12 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;align-self:center;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+</div>
+<script>
+// === Fragenpool: kopiert aus den QUIZ-Arrays der zwei Teile + eigene Transferfragen ===
+const POOL = [
+// --- deck36.html: Was ist eine Funktionenschar? ---
+{deck:"Teil 1 — Funktionenschar-Grundlagen", link:"deck36.html", q:"Was beschreibt der Parameter k in einer Funktionenschar f_k(x)?",
+ a:["Er läuft stetig entlang einer einzelnen Geraden","Er wählt aus, welche einzelne Gerade der Schar betrachtet wird","Er ist immer der y-Achsenabschnitt","Er hat keine Bedeutung"],r:1,
+ why:"k wählt eine bestimmte Gerade aus der Schar aus — x ist die laufende Variable innerhalb dieser gewählten Geraden."},
+{deck:"Teil 1 — Funktionenschar-Grundlagen", link:"deck36.html", q:"f_k(x)=4x+k mit k∈{−1;0;1} — wie viele parallele Geraden beschreibt diese Schar?",
+ a:["1","2","3","unendlich viele"],r:2,
+ why:"Da k hier nur 3 Werte annehmen darf, beschreibt die Schar genau 3 konkrete Geraden."},
+{deck:"Teil 1 — Funktionenschar-Grundlagen", link:"deck36.html", q:"Alle Geraden aus g_k(x)=(k+5)x−2 haben denselben konstanten Anteil −2. Was folgt daraus?",
+ a:["Alle Geraden sind identisch","Alle Geraden gehen durch den Punkt T(0|−2) — ein Büschelpunkt","Es gibt keine gemeinsamen Punkte","Die Schar hat keine Nullstellen"],r:1,
+ why:"Ist der konstante Anteil unabhängig vom Parameter, gehen ALLE Geraden der Schar durch denselben Punkt auf der y-Achse."},
+{deck:"Teil 1 — Funktionenschar-Grundlagen", link:"deck36.html", q:"Wann ist eine Funktionenschar eine Parallelenschar?",
+ a:["Wenn alle Geraden durch den Ursprung gehen","Wenn alle Geraden dieselbe Steigung haben","Wenn der Parameter im y-Achsenabschnitt UND in der Steigung steckt","Wenn D=ℝ gilt"],r:1,
+ why:"Parallelenschar bedeutet: gleiche Steigung bei allen Geraden, nur der y-Achsenabschnitt unterscheidet sich."},
+{deck:"Teil 1 — Funktionenschar-Grundlagen", link:"deck36.html", q:"h_k(x)=2x+3k — welche Funktion entsteht für k=−2?",
+ a:["h_-2(x)=2x−6","h_-2(x)=2x+6","h_-2(x)=−2x−6","h_-2(x)=2x−2"],r:0,
+ why:"h_-2(x)=2x+3·(−2)=2x−6."},
+
+// --- deck37.html: Fallunterscheidung & Schnittpunkte ---
+{deck:"Teil 2 — Fallunterscheidung & Schnittpunkte", link:"deck37.html", q:"Bei der Nullstellenberechnung von f_k(x)=(k+3)x−6 muss ein Wert für k ausgeschlossen werden. Welcher?",
+ a:["k=6","k=−3","k=3","k=0"],r:1,
+ why:"Der x-Koeffizient (k+3) darf nicht 0 werden — das passiert bei k=−3."},
+{deck:"Teil 2 — Fallunterscheidung & Schnittpunkte", link:"deck37.html", q:"Im Sonderfall wird eine Funktionenschar zu f_2(x)=0 (der Term verschwindet komplett). Was folgt daraus?",
+ a:["Keine Nullstelle","Genau eine Nullstelle bei x=2","Unendlich viele Nullstellen","Die Funktion ist undefiniert"],r:2,
+ why:"f(x)=0 für ALLE x bedeutet: der Graph IST die x-Achse — jeder x-Wert ist eine Nullstelle."},
+{deck:"Teil 2 — Fallunterscheidung & Schnittpunkte", link:"deck37.html", q:"g_k(x)=k(x−4)+7 — wo liegt der Büschelpunkt dieser Schar?",
+ a:["(4|7)","(7|4)","(0|7)","(−4|7)"],r:0,
+ why:"Bei x=4 wird die Klammer 0, also g_k(4)=7 für JEDES k — Büschelpunkt (4|7)."},
+{deck:"Teil 2 — Fallunterscheidung & Schnittpunkte", link:"deck37.html", q:"Schar s_k(x)=kx−5 und feste Gerade g(x)=3x+2 werden gleichgesetzt. Für welchen k-Wert muss der Sonderfall separat betrachtet werden?",
+ a:["k=5","k=−2","k=3","k=0"],r:2,
+ why:"Beim Gleichsetzen entsteht (k−3)x=7 — für k=3 wird der x-Koeffizient 0, dieser Fall muss separat geprüft werden."},
+{deck:"Teil 2 — Fallunterscheidung & Schnittpunkte", link:"deck37.html", q:"Warum ist die Fallunterscheidung bei Funktionenscharen dieselbe Regel wie bei Gleichungen mit Formvariable?",
+ a:["Ist Zufall, hat nichts miteinander zu tun","Beide Male darf nicht durch einen möglicherweise 0 werdenden Term geteilt werden, ohne diesen Fall auszuschließen","Formvariablen und Parameter sind komplett verschiedene Konzepte","Nur bei Funktionenscharen ist eine Fallunterscheidung nötig"],r:1,
+ why:"Es ist dieselbe mathematische Regel: ein Term mit Variablen-Charakter darf nicht ungeprüft im Nenner stehen."},
+
+// --- Eigene Transferfragen (kapitelübergreifend, eigene Werte) ---
+{deck:"Teil 2 — Fallunterscheidung & Schnittpunkte", link:"deck37.html", q:"Die Schar f_k(x)=(k−5)x+3 — für welches k muss bei der Nullstellenberechnung eine Fallunterscheidung durchgeführt werden?",
+ a:["k=5","k=−5","k=3","k=0"],r:0,
+ why:"Der x-Koeffizient (k−5) darf nicht 0 werden — das passiert bei k=5."},
+{deck:"Teil 2 — Fallunterscheidung & Schnittpunkte", link:"deck37.html", q:"Alle Geraden aus g_k(x)=k(x−3)−2 haben denselben Büschelpunkt. Wie lautet er?",
+ a:["(3|−2)","(−2|3)","(0|−2)","(3|2)"],r:0,
+ why:"Bei x=3 wird die Klammer 0, also g_k(3)=−2 für jedes k — Büschelpunkt (3|−2)."},
+{deck:"Teil 1 — Funktionenschar-Grundlagen", link:"deck36.html", q:"Für welchen k-Wert ist die Gerade aus der Schar h_k(x)=kx+1 echt parallel zur festen Geraden p(x)=4x−3?",
+ a:["k=−3","k=1","k=4","k=0"],r:2,
+ why:"Echt parallel bedeutet gleiche Steigung, unterschiedlicher y-Achsenabschnitt: k=4 gibt h_4(x)=4x+1 — dieselbe Steigung wie p, aber t=1≠−3."}
+];
+
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+let current=[];
+let deckStats={};
+
+function startQuiz(){
+  current = shuffle(POOL).slice(0,12);
+  deckStats={};
+  document.getElementById('startScreen').style.display='none';
+  document.getElementById('result').classList.remove('show');
+  const area=document.getElementById('quizArea');
+  area.innerHTML='';
+  let answered=0, score=0;
+  current.forEach((item,qi)=>{
+    if(!deckStats[item.deck]) deckStats[item.deck]={right:0,total:0,link:item.link};
+    deckStats[item.deck].total++;
+    const box=document.createElement('div'); box.className='quizq';
+    const tag=document.createElement('span'); tag.className='deckTag'; tag.textContent=item.deck; box.appendChild(tag);
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        answered++;
+        if(oi===item.r){ score++; deckStats[item.deck].right++; }
+        if(answered===current.length) showResult(score);
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    area.appendChild(box);
+  });
+}
+
+function showResult(score){
+  const res=document.getElementById('result');
+  res.classList.add('show');
+  document.getElementById('scoreBig').textContent='Ergebnis: '+score+' / '+current.length+' — '+
+    (score>=current.length*0.8?'stark! 💪':(score>=current.length*0.5?'solide, ein paar Themen nochmal ansehen':'lohnt sich, mehrere Teile zu wiederholen'));
+  const bd=document.getElementById('deckBreakdown');
+  bd.innerHTML='';
+  Object.keys(deckStats).sort().forEach(deck=>{
+    const s=deckStats[deck];
+    const row=document.createElement('div');
+    const pct=s.right/s.total;
+    row.className='deckRow '+(pct<0.5?'weak':(pct===1?'strong':''));
+    row.innerHTML='<span>'+deck+': '+s.right+' / '+s.total+' richtig'+(pct<0.6?' — nochmal ansehen empfohlen':'')+'</span><a href="'+s.link+'">Teil öffnen →</a>';
+    bd.appendChild(row);
+  });
+  res.scrollIntoView({behavior:'smooth'});
+}
+
+document.getElementById('startBtn').onclick=startQuiz;
+document.getElementById('againBtn').onclick=startQuiz;
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

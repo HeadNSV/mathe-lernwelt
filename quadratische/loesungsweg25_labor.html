@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Lösungsweg-Navigator — Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{max-width:760px;margin:0 auto;padding:18px 20px 40px;}
+  h3{margin:0 0 6px;}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  .modebar{display:flex;gap:8px;margin-bottom:14px;}
+  .modebar button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;}
+  .modebar button.on{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  .part{display:none;}
+  .part.show{display:block;}
+  .missionbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .missionbar button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;}
+  .missionbar button.on{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  .missionbar button.done{border-color:#4caf50;}
+  #eqBox{font-size:24px;color:var(--accent);text-align:center;font-weight:700;margin:14px 0;}
+  #phase1{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:14px;}
+  #phase1 p{font-size:14px;color:var(--muted);margin:0 0 10px;}
+  #methodRow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+  #methodRow button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px 16px;font-size:14.5px;cursor:pointer;}
+  #methodRow button.wrong{border-color:#c0392b;opacity:0.7;}
+  #stepRow{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:10px 0;}
+  #stepRow button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px 16px;font-size:14.5px;cursor:pointer;}
+  #stepRow button.wrong{border-color:#c0392b;opacity:0.7;}
+  #feedback{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:14.5px;text-align:center;min-height:24px;}
+  #feedback.ok{border-color:#4caf50;background:#173d28;}
+  #feedback.bad{border-color:#c0392b;background:#3d1c1c;}
+  #progress{font-size:14px;color:var(--muted);text-align:center;margin-top:10px;}
+  #missionDone{display:none;background:#173d28;border:1px solid #4caf50;border-radius:8px;padding:14px 18px;font-size:15px;color:#dff3df;text-align:center;margin-top:10px;}
+  #missionDone.show{display:block;}
+  button.resetbtn{display:block;margin:14px auto 0;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 16px;font-size:13.5px;cursor:pointer;}
+  #puzzleWrap .quest{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:14px 18px;font-size:15px;margin-bottom:10px;}
+  #puzzleOpts{display:flex;flex-direction:column;gap:8px;}
+  #puzzleOpts button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer;text-align:left;}
+  #puzzleFeedback{margin-top:10px;font-size:14px;min-height:20px;}
+  #puzzleFeedback.ok{color:#4caf50;}
+  #puzzleFeedback.bad{color:#e05a5a;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="modebar">
+    <button id="modeMission" class="on">🎯 Lösungsweg-Navigator</button>
+    <button id="modePuzzle">🕵️ Finde den Weg-Fehler</button>
+  </div>
+
+  <div class="part show" id="partMission">
+    <h3>🎯 Erkenne den Typ, wähle den Weg, löse Schritt für Schritt</h3>
+    <p class="hint">Erst den passenden Lösungsweg wählen, dann die Umformungsschritte in der richtigen Reihenfolge anwenden.</p>
+    <div class="missionbar" id="missionbar"></div>
+    <div id="eqBox"></div>
+    <div id="phase1">
+      <p>Welcher Lösungsweg passt zu dieser Gleichung?</p>
+      <div id="methodRow"></div>
+    </div>
+    <div id="stepRow"></div>
+    <div id="feedback">Wähle zuerst den passenden Lösungsweg.</div>
+    <div id="progress"></div>
+    <div id="missionDone"></div>
+    <button class="resetbtn" id="resetBtn">↺ Aufgabe neu starten</button>
+  </div>
+
+  <div class="part" id="partPuzzle">
+    <h3>🕵️ Ist dieser Lösungsweg korrekt?</h3>
+    <div id="puzzleWrap"></div>
+  </div>
+</div>
+<script>
+// === Missionsmodus: 3 kuratierte Gleichungen, je Methodenwahl + 2-3 Schritte ===
+const MISSIONS=[
+  {
+    id:'a', chip:'Aufgabe A', eq:'⅓x²−3 = 0', method:'wurzel',
+    steps:[
+      {correct:'|+3  (beide Seiten)', trap:'|−3  (beide Seiten)', after:'⅓x² = 3', trapWhy:'Die −3 muss durch ADDIEREN von 3 aufgehoben werden, nicht durch nochmaliges Subtrahieren.'},
+      {correct:'|·3  (beide Seiten)', trap:'|:3  (beide Seiten)', after:'x² = 9', trapWhy:'Um ⅓ loszuwerden, muss mit 3 MULTIPLIZIERT werden, nicht durch 3 geteilt.'},
+      {correct:'±√ ziehen', trap:'nur √ ziehen (ohne −)', after:'x₁=3, x₂=−3 → L={−3;3}', trapWhy:'Ohne das Minuszeichen geht die zweite Lösung x₂=−3 verloren!'}
+    ]
+  },
+  {
+    id:'b', chip:'Aufgabe B', eq:'2x²−8x = 0', method:'ausklammern',
+    steps:[
+      {correct:'x ausklammern', trap:'durch x teilen', after:'x·(2x−8) = 0', trapWhy:'Division durch x ist verboten (x könnte 0 sein) — und genau x=0 ist hier eine Lösung! Ausklammern verliert sie nicht.'},
+      {correct:'Nullproduktregel anwenden', trap:'beide Faktoren gleichsetzen', after:'x=0 ∨ 2x−8=0', trapWhy:'Die Nullproduktregel prüft, wann JEDER Faktor einzeln 0 ist — nicht, wann beide Faktoren gleich sind.'},
+      {correct:'zweite Gleichung lösen: x=4', trap:'x=8 (falsch gerechnet)', after:'L={0;4}', trapWhy:'2x−8=0 |+8 ⇔ 2x=8 |:2 ⇔ x=4, nicht 8.'}
+    ]
+  },
+  {
+    id:'c', chip:'Aufgabe C', eq:'x²+2x−8 = 0', method:'formel',
+    steps:[
+      {correct:'a=1, b=2, c=−8 ablesen', trap:'a=1, b=2, c=8 ablesen', after:'x₁,₂ = (−2 ± √(2²−4·1·(−8))) / 2', trapWhy:'Das Vorzeichen von c gehört zur Zahl dazu — hier steht „−8“, also ist c=−8, nicht c=8.'},
+      {correct:'Diskriminante berechnen: 4+32=36', trap:'Diskriminante berechnen: 4−32=−28', after:'x₁,₂ = (−2 ± 6) / 2', trapWhy:'b²−4ac = 4−4·1·(−8) = 4−(−32) = 4+32 = 36. Minus mal Minus ergibt Plus!'},
+      {correct:'beide Lösungen: x₁=2, x₂=−4', trap:'nur x₁=2 (zweite vergessen)', after:'L={−4;2}', trapWhy:'Das ± liefert IMMER zwei Werte: (−2+6)/2=2 UND (−2−6)/2=−4.'}
+    ]
+  }
+];
+let curIdx=0, methodChosen=false, stepIdx=0, doneSet=new Set();
+
+function renderBar(){
+  const bar=document.getElementById('missionbar');
+  bar.innerHTML='';
+  MISSIONS.forEach((m,i)=>{
+    const b=document.createElement('button');
+    b.textContent=m.chip;
+    if(i===curIdx) b.classList.add('on');
+    if(doneSet.has(m.id)) b.classList.add('done');
+    b.onclick=()=>{ curIdx=i; methodChosen=false; stepIdx=0; render(); };
+    bar.appendChild(b);
+  });
+}
+function render(){
+  renderBar();
+  const m=MISSIONS[curIdx];
+  document.getElementById('eqBox').textContent = stepIdx===0 ? m.eq : (stepIdx<=m.steps.length ? m.steps[stepIdx-1].after : m.steps[m.steps.length-1].after);
+  const phase1=document.getElementById('phase1');
+  const stepRow=document.getElementById('stepRow');
+  if(!methodChosen){
+    phase1.style.display='block';
+    stepRow.style.display='none';
+    const methodRow=document.getElementById('methodRow');
+    methodRow.innerHTML='';
+    const METHODS=[{k:'wurzel',label:'±√ direkt'},{k:'ausklammern',label:'Ausklammern'},{k:'formel',label:'Lösungsformel'}];
+    METHODS.forEach(meth=>{
+      const b=document.createElement('button');
+      b.textContent=meth.label;
+      b.onclick=()=>pickMethod(meth.k, b, m);
+      methodRow.appendChild(b);
+    });
+    document.getElementById('progress').textContent='Methodenwahl';
+    return;
+  }
+  phase1.style.display='none';
+  stepRow.style.display='flex';
+  stepRow.innerHTML='';
+  if(stepIdx>=m.steps.length){
+    stepRow.style.display='none';
+    document.getElementById('progress').textContent='Gleichung gelöst ✓';
+    return;
+  }
+  const step=m.steps[stepIdx];
+  const opts = Math.random()<0.5 ? [{label:step.correct,ok:true},{label:step.trap,ok:false}] : [{label:step.trap,ok:false},{label:step.correct,ok:true}];
+  opts.forEach(opt=>{
+    const b=document.createElement('button');
+    b.textContent=opt.label;
+    b.onclick=()=>pickStep(opt,b,step);
+    stepRow.appendChild(b);
+  });
+  document.getElementById('progress').textContent='Schritt '+(stepIdx+1)+' / '+m.steps.length;
+}
+function pickMethod(k, btn, m){
+  const fb=document.getElementById('feedback');
+  if(k!==m.method){
+    btn.classList.add('wrong');
+    fb.className='bad';
+    fb.textContent='❌ Das ist nicht der schnellste Weg für diese Gleichung — schau dir an, ob ein lineares oder konstantes Glied fehlt.';
+    return;
+  }
+  methodChosen=true;
+  fb.className='ok';
+  fb.textContent='✅ Richtig gewählt!';
+  render();
+}
+function pickStep(opt,btn,step){
+  const fb=document.getElementById('feedback');
+  if(!opt.ok){
+    btn.classList.add('wrong');
+    fb.className='bad';
+    fb.textContent='❌ '+step.trapWhy;
+    return;
+  }
+  fb.className='ok';
+  fb.textContent='✅ '+opt.label+' angewendet.';
+  stepIdx++;
+  const m=MISSIONS[curIdx];
+  if(stepIdx>=m.steps.length){
+    doneSet.add(m.id);
+    if(doneSet.size===MISSIONS.length){
+      document.getElementById('missionDone').classList.add('show');
+      document.getElementById('missionDone').textContent='🎉 Alle 3 Gleichungen mit dem richtigen Weg gelöst!';
+      window.lwAward && window.lwAward('mission');
+    }
+  }
+  render();
+}
+document.getElementById('resetBtn').onclick=()=>{
+  methodChosen=false; stepIdx=0;
+  document.getElementById('feedback').className='';
+  document.getElementById('feedback').textContent='Wähle zuerst den passenden Lösungsweg.';
+  render();
+};
+render();
+
+// === Raetselmodus: Weg-Fehler finden ===
+const SCENARIOS=[
+  {desc:'x²−4x=0 wird gelöst, indem beide Seiten durch x geteilt werden: x−4=0 → x=4.', ok:false, why:"Falsch — Division durch x ist nur erlaubt, wenn x sicher nicht 0 ist. Hier verschwindet dabei die gültige Lösung x=0. Richtig: ausklammern x(x−4)=0 → x=0 ∨ x=4."},
+  {desc:'x²−4x=0 wird gelöst, indem x ausgeklammert wird: x(x−4)=0 → x=0 ∨ x=4.', ok:true, why:"Richtig — die Nullproduktregel liefert BEIDE Lösungen, ohne dass eine verloren geht."},
+  {desc:'x²=16 wird gelöst als x=√16=4, ohne die negative Lösung.', ok:false, why:"Falsch — x²=16 hat ZWEI Lösungen: x=4 UND x=−4. Ohne das ± geht die Hälfte der Lösungsmenge verloren."},
+  {desc:'x²+3x−4=0 wird direkt mit ±√ gelöst: x=±√4=±2.', ok:false, why:"Falsch — ±√ funktioniert nur bei reinquadratischen Gleichungen (b=0). Hier ist ein lineares Glied (3x) vorhanden, also muss die Lösungsformel verwendet werden."},
+  {desc:'x²+3x−4=0 wird mit der Lösungsformel gelöst: a=1, b=3, c=−4.', ok:true, why:"Richtig — bei einer vollständigen quadratischen Gleichung mit b≠0 und c≠0 ist die Lösungsformel der passende Weg."},
+  {desc:'5x²−20=0 wird gelöst, indem zuerst x ausgeklammert wird.', ok:false, why:"Falsch — diese Gleichung hat KEIN lineares Glied (b=0), also ist Ausklammern hier unnötig kompliziert. Richtig: x² isolieren und ±√ ziehen."}
+];
+(function(){
+  const wrap=document.getElementById('puzzleWrap');
+  let si=0;
+  function loadScenario(){
+    wrap.innerHTML='';
+    if(si>=SCENARIOS.length){
+      wrap.innerHTML='<div class="quest">🎉 Alle Szenarien durchgespielt! Starte von vorn, indem du die Seite neu lädst.</div>';
+      return;
+    }
+    const sc=SCENARIOS[si];
+    const q=document.createElement('div'); q.className='quest'; q.textContent=sc.desc;
+    wrap.appendChild(q);
+    const opts=document.createElement('div'); opts.id='puzzleOpts';
+    const fb=document.createElement('div'); fb.id='puzzleFeedback';
+    ['✅ Korrekter Weg','❌ Fehlerhafter Weg'].forEach((label,oi)=>{
+      const b=document.createElement('button');
+      b.textContent=label;
+      b.onclick=()=>{
+        const said=(oi===0);
+        if(said===sc.ok){ fb.className='ok'; fb.textContent='✅ '+sc.why; }
+        else { fb.className='bad'; fb.textContent='❌ '+sc.why; }
+        setTimeout(()=>{ si++; loadScenario(); }, 1900);
+      };
+      opts.appendChild(b);
+    });
+    wrap.appendChild(opts);
+    wrap.appendChild(fb);
+  }
+  loadScenario();
+})();
+
+// mode switch
+const modeMission=document.getElementById('modeMission'), modePuzzle=document.getElementById('modePuzzle');
+const partMission=document.getElementById('partMission'), partPuzzle=document.getElementById('partPuzzle');
+modeMission.onclick=()=>{ modeMission.classList.add('on'); modePuzzle.classList.remove('on'); partMission.classList.add('show'); partPuzzle.classList.remove('show'); };
+modePuzzle.onclick=()=>{ modePuzzle.classList.add('on'); modeMission.classList.remove('on'); partPuzzle.classList.add('show'); partMission.classList.remove('show'); };
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

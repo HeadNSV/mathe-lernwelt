@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Lineare Gleichungssysteme · 3 Variablen, Gauß-Verfahren &amp; Anwendungen</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .warnbox{background:#3d1c1c;border-left:5px solid #c0392b;border-radius:8px;padding:10px 16px;font-size:min(1.9vw,16px);color:#ffd9d0;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+  .threebox{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>LINEARE GLEICHUNGSSYSTEME</h1>
+    <h2>Kapitel 15 · Teil 3 — 3 Variablen, Gauß-Verfahren &amp; Anwendungen</h2>
+    <div class="hook" style="max-width:70ch;">Drei Unbekannte statt zwei? Kein Problem — C. F. Gauß hat dafür ein System entwickelt, das jede Zeile Schritt für Schritt vereinfacht, bis die Lösung einfach dasteht.</div>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 15.3</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 LGS mit 3 Variablen -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Lineare Gleichungssysteme mit 3 Variablen</h2>
+      <div class="defbox">Ein LGS ist nur dann eindeutig lösbar, wenn es aus mindestens so vielen Gleichungen besteht wie Variablen darin vorkommen. Für 3 Variablen (x, y, z) braucht man mindestens <b>3 Gleichungen</b>.</div>
+      <div class="defbox">Grundidee: eine Gleichung nach einer Variablen auflösen und in die übrigen einsetzen — dadurch entsteht ein System mit einer Gleichung und einer Variablen weniger. Diesen Schritt wiederholt man, bis nur noch zwei Gleichungen mit zwei Variablen übrig sind.</div>
+    </div>
+  </section>
+
+  <!-- 3 Beispielaufgabe 3 Variablen Setup -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Beispielaufgabe: 3 Variablen mit dem Einsetzverfahren</h2>
+      <div class="defbox">Gegeben ist das LGS (G=ℝ):<br>(I) x + y + z = 6<br>(II) x − y + 2z = 5<br>(III) x + 2y − z = 2</div>
+    </div>
+  </section>
+
+  <!-- 4 Steps 3 Variablen -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Einsetzverfahren mit 3 Variablen</h2>
+      <div class="step" id="s4_1"><b class="lbl">Schritt 1 — (I) nach x auflösen:</b> x = 6−y−z.</div>
+      <div class="step" id="s4_2"><b class="lbl">Schritt 2 — in (II) und (III) einsetzen:</b> (II): (6−y−z)−y+2z=5 ⟺ −2y+z=−1 (IV). (III): (6−y−z)+2y−z=2 ⟺ y−2z=−4 (V).</div>
+      <div class="step" id="s4_3"><b class="lbl">Schritt 3 — (IV) und (V) lösen:</b> aus (IV): z=2y−1. In (V): y−2(2y−1)=−4 ⟺ −3y=−6 ⟺ y=2.</div>
+      <div class="step" id="s4_4"><b class="lbl">Schritt 4 — rückwärts einsetzen:</b> z=2·2−1=3. x=6−2−3=1. Probe (II): 1−2+6=5 ✓ ⟹ L={(1|2|3)}.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="4" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 5 Gauss Einfuehrung -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Das Gauß-Verfahren</h2>
+      <div class="defbox">Bei mehr als zwei Gleichungen wird das Einsetzverfahren schnell unübersichtlich. Das <b>Gauß-Verfahren</b> (C. F. Gauß, 1777–1855) packt nur die Koeffizienten in eine <b>Matrix</b> und formt sie gezielt um, bis eine <b>Dreiecksform</b> entsteht — unterhalb der Hauptdiagonalen stehen dann nur noch Nullen.</div>
+      <div class="defbox">Erlaubte Zeilen-Operationen (ändern die Lösungsmenge NICHT): eine Zeile mit einer Zahl ≠0 multiplizieren · das Vielfache einer Zeile zu einer anderen addieren · Zeilen vertauschen.</div>
+    </div>
+  </section>
+
+  <!-- 6 Grafik Dreiecksmatrix -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Dreiecksmatrix &amp; Hauptdiagonale</h2>
+      <div class="svgbox"><div id="svgMatrix"></div><div class="svgcaption">Ziel: unterhalb der Hauptdiagonalen (gestrichelt) stehen nur Nullen</div></div>
+    </div>
+  </section>
+
+  <!-- 7 Steps Gauss Dreiecksform -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Gauß-Verfahren — Dreiecksform aufbauen</h2>
+      <div class="defbox">Dasselbe LGS wie eben, als Matrix: [1 1 1 | 6] / [1 −1 2 | 5] / [1 2 −1 | 2].</div>
+      <div class="step" id="s7_1"><b class="lbl">Schritt 1 — R2 := R2 − R1:</b> [1 1 1 | 6] / [0 −2 1 | −1] / [1 2 −1 | 2].</div>
+      <div class="step" id="s7_2"><b class="lbl">Schritt 2 — R3 := R3 − R1:</b> [1 1 1 | 6] / [0 −2 1 | −1] / [0 1 −2 | −4].</div>
+      <div class="step" id="s7_3"><b class="lbl">Schritt 3 — R3 := 2·R3 + R2:</b> [1 1 1 | 6] / [0 −2 1 | −1] / [0 0 −3 | −9].</div>
+      <div class="step" id="s7_4"><b class="lbl">Dreiecksform erreicht!</b> Unterhalb der Hauptdiagonalen stehen nur noch Nullen — jetzt kann rückwärts eingesetzt werden.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="7" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 8 Steps Rueckwaertseinsetzen -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Rückwärtseinsetzen</h2>
+      <div class="step" id="s8_1"><b class="lbl">Aus Zeile 3:</b> −3z=−9 ⟺ z=3.</div>
+      <div class="step" id="s8_2"><b class="lbl">z=3 in Zeile 2:</b> −2y+3=−1 ⟺ −2y=−4 ⟺ y=2.</div>
+      <div class="step" id="s8_3"><b class="lbl">y=2, z=3 in Zeile 1:</b> x+2+3=6 ⟺ x=1.</div>
+      <div class="step" id="s8_4"><b class="lbl">Ergebnis:</b> L={(1|2|3)} — dieselbe Lösung wie mit dem Einsetzverfahren, nur systematischer erreicht.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="8" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 9 7-Schritt-Strategie -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Strategie bei Anwendungsaufgaben</h2>
+      <div class="defbox" style="font-size:min(1.9vw,16px);">
+        1. Welche Größen sind vorgegeben?<br>
+        2. Welche Größen sind gesucht?<br>
+        3. Wie stehen die Größen miteinander in Beziehung?<br>
+        4. Die Beziehung als Gleichung(en) formulieren.<br>
+        5. Welche Zahlenmenge liegt zugrunde?<br>
+        6. Mit welchem Verfahren lösen?<br>
+        7. Lösung mit der Probe überprüfen.
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 Anwendungsaufgabe Steps -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Anwendungsaufgabe: Kiosk-Einkauf</h2>
+      <div class="defbox">An einem Kiosk kosten 3 Wasserflaschen + 2 Müsliriegel zusammen 9 €, 1 Wasserflasche + 4 Müsliriegel zusammen 8 €. Was kostet eine Wasserflasche, was ein Müsliriegel?</div>
+      <div class="step" id="s10_1"><b class="lbl">Schritt 1+2 — Größen:</b> gesucht: W=Preis Wasser, R=Preis Riegel.</div>
+      <div class="step" id="s10_2"><b class="lbl">Schritt 3+4 — Gleichungen:</b> (I) 3W+2R=9 &nbsp; (II) W+4R=8.</div>
+      <div class="step" id="s10_3"><b class="lbl">Schritt 5+6 — lösen (Einsetzverfahren):</b> aus (II): W=8−4R. In (I): 3(8−4R)+2R=9 ⟺ 24−10R=9 ⟺ R=1,5.</div>
+      <div class="step" id="s10_4"><b class="lbl">Schritt 7 — Probe:</b> W=8−4·1,5=2. (I): 3·2+2·1,5=6+3=9 ✓. Antwort: Wasser kostet 2 €, ein Riegel 1,50 €.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="10" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 11 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Gauß-Stufen</span><span class="sub">3×3-System per Klick auf Dreiecksform bringen</span></div>
+    <iframe allow="autoplay" data-src="gaussstufen48_labor.html"></iframe>
+  </section>
+
+  <!-- 12 Eselsbruecke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Gauß räumt von links nach rechts auf: erst Spalte 1 unter der Diagonalen leer räumen, dann Spalte 2 — am Ende steht die letzte Zeile ganz allein da und verrät sofort eine Variable."</div>
+    </div>
+  </section>
+
+  <!-- 13 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Rezepte hochrechnen</h2>
+      <div class="defbox">Ein Café möchte aus drei Zutaten (mit je eigenem Preis pro Kilo) verschiedene Kaffeemischungen anbieten. Aus mehreren Preis- und Mengenvorgaben entsteht ein LGS mit drei Variablen — das Gauß-Verfahren liefert systematisch, wie viel von jeder Zutat gemischt werden muss.</div>
+    </div>
+  </section>
+
+  <!-- 14 Intuitions-Regler -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Schätz mal: wie viele Gleichungen?</h2>
+      <div class="defbox">Ein LGS soll eindeutig lösbar sein und hat 4 Variablen. Wie viele Gleichungen braucht man MINDESTENS?</div>
+      <div id="estLGS48"></div>
+    </div>
+  </section>
+
+  <!-- 15 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>[1 1 1 | 6]</td><td>„Koeffizientenmatrix"</td><td>eine Zeile einer Gleichung ohne Variablen-Namen</td></tr>
+        <tr><td>R2:=R2−R1</td><td>„Zeile 2 wird ersetzt durch Zeile 2 minus Zeile 1"</td><td>eine Zeilen-Operation des Gauß-Verfahrens</td></tr>
+        <tr><td>L={(x|y|z)}</td><td>—</td><td>Lösung als Zahlentripel bei 3 Variablen</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 16 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Situation</th><th>Empfohlenes Vorgehen</th></tr>
+      <tr><td>2 Gleichungen, 2 Variablen</td><td>Einsetzen, Gleichsetzen oder Addieren</td></tr>
+      <tr><td>3+ Gleichungen, 3+ Variablen</td><td>Gauß-Verfahren — Matrix auf Dreiecksform bringen, rückwärts einsetzen</td></tr>
+      <tr><td>Sachaufgabe mit Unbekannten</td><td>7-Schritt-Strategie: Größen klären → Gleichungen aufstellen → lösen → Probe</td></tr>
+    </table>
+  </section>
+
+  <!-- 17 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Wie viele Gleichungen braucht ein eindeutig lösbares LGS mit 3 Variablen mindestens?
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>3 Gleichungen</details>
+        </li>
+        <li style="margin-top:10px;">Matrix [1 0 | 3] / [0 1 | −2] — lies die Lösungsmenge direkt ab.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>L={(3|−2)}</details>
+        </li>
+        <li style="margin-top:10px;">Zwei Geschenktüten kosten zusammen 8 €, drei gleiche Tüten kosten zusammen 12 €. Was kostet eine Tüte? (Stelle eine passende Gleichung auf.)
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>2p=8 und 3p=12 → beide ergeben p=4 € — konsistent, eine Tüte kostet 4 €</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 18 Pruefungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>LGS mit 3 Variablen per Einsetzverfahren SCHRITTWEISE auf 2 Variablen reduzieren.</b></li>
+        <li><b>Das Gauß-Verfahren mit Matrix-Schreibweise anwenden: Dreiecksform erzeugen, rückwärts einsetzen.</b></li>
+        <li><b>Anwendungsaufgaben mit der 7-Schritt-Strategie systematisch als LGS aufstellen und lösen.</b></li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">🏁 Damit ist der gesamte Themenbereich „Lineare Gleichungssysteme" vollständig durchgearbeitet. Als Nächstes folgt ein ganz anderes Themenfeld: die Dreieckslehre.</div>
+    </div>
+  </section>
+
+  <!-- 19 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+(function(){
+  const w=320, h=210;
+  let s='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;max-width:340px;height:auto;display:block;margin:0 auto;">';
+  const rows=[["1","1","1","6"],["0","-2","1","-1"],["0","0","-3","-9"]];
+  const cellW=60, cellH=44, ox=40, oy=20;
+  s+='<line x1="'+ox+'" y1="'+oy+'" x2="'+ox+'" y2="'+(oy+3*cellH)+'" stroke="#9aa4b2" stroke-width="2"/>';
+  s+='<line x1="'+(ox+3*cellW)+'" y1="'+oy+'" x2="'+(ox+3*cellW)+'" y2="'+(oy+3*cellH)+'" stroke="#9aa4b2" stroke-width="2"/>';
+  rows.forEach((row,ri)=>{
+    row.forEach((val,ci)=>{
+      const cx=ox+ci*cellW+cellW/2, cy=oy+ri*cellH+cellH/2;
+      const isDiag = (ci===ri);
+      const isBelowDiag = (ci<ri && ci<3);
+      s+='<text x="'+cx+'" y="'+(cy+6)+'" text-anchor="middle" font-size="20" fill="'+(isDiag?'#f2a63c':(isBelowDiag?'#6fcf6f':'#e6edf3'))+'" font-weight="'+(isDiag?'700':'400')+'">'+val+'</text>';
+    });
+  });
+  // diagonal dashed line
+  s+='<line x1="'+(ox+cellW/2)+'" y1="'+(oy+cellH/2)+'" x2="'+(ox+2*cellW+cellW/2)+'" y2="'+(oy+2*cellH+cellH/2)+'" stroke="#f2a63c" stroke-width="1.5" stroke-dasharray="4,3"/>';
+  s+='</svg>';
+  document.getElementById('svgMatrix').innerHTML=s;
+})();
+
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Lineare Gleichungssysteme mit 3 Variablen", "Beispielaufgabe: 3 Variablen mit dem Einsetzverfahren", "📐 Schritt für Schritt: Einsetzverfahren mit 3 Variablen", "Das Gauß-Verfahren", "Dreiecksmatrix & Hauptdiagonale", "📐 Schritt für Schritt: Gauß-Verfahren — Dreiecksform aufbauen", "📐 Schritt für Schritt: Rückwärtseinsetzen", "Strategie bei Anwendungsaufgaben", "📐 Schritt für Schritt: Anwendungsaufgabe Kiosk-Einkauf", "🧪 Gauß-Stufen", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Rezepte hochrechnen", "Schätz mal: wie viele Gleichungen?", "Symbol-Legende", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=20;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck48_s1_Charon.mp3",txt:"Lineare Gleichungssysteme, Teil drei. Drei Unbekannte statt zwei? Kein Problem - C. F. Gauß hat dafür ein System entwickelt, das jede Zeile Schritt für Schritt vereinfacht, bis die Lösung einfach dasteht."},
+ 2:{wav:"narration_deck48_s2_Charon.mp3",txt:"Für drei Variablen braucht man mindestens drei Gleichungen, damit das System eindeutig lösbar ist."},
+ 3:{wav:"narration_deck48_s3_Charon.mp3",txt:"Schauen wir uns ein Beispiel mit drei Variablen an, das wir mit dem Einsetzverfahren lösen."},
+ 4:{wav:"narration_deck48_s4_Charon.mp3",txt:"Jetzt rechnen wir gemeinsam das Einsetzverfahren mit drei Variablen durch, Schritt für Schritt."},
+ 5:{wav:"narration_deck48_s5_Charon.mp3",txt:"Das Gauß-Verfahren packt nur die Koeffizienten in eine Matrix und formt sie gezielt um, bis eine Dreiecksform entsteht."},
+ 6:{wav:"narration_deck48_s6_Charon.mp3",txt:"Ziel ist es, dass unterhalb der Hauptdiagonalen nur noch Nullen stehen."},
+ 7:{wav:"narration_deck48_s7_Charon.mp3",txt:"Jetzt bauen wir gemeinsam die Dreiecksform mit dem Gauß-Verfahren auf, Schritt für Schritt."},
+ 8:{wav:"narration_deck48_s8_Charon.mp3",txt:"Jetzt setzen wir gemeinsam rückwärts ein, um alle drei Variablen zu bestimmen, Schritt für Schritt."},
+ 9:{wav:"narration_deck48_s9_Charon.mp3",txt:"Bei Anwendungsaufgaben hilft eine feste Strategie in sieben Schritten, den Sachverhalt in Gleichungen zu übersetzen."},
+ 10:{wav:"narration_deck48_s10_Charon.mp3",txt:"Jetzt wenden wir die Strategie gemeinsam auf eine Einkaufsaufgabe an, Schritt für Schritt."},
+ 11:{wav:"narration_deck48_s11_Charon.mp3",txt:"Jetzt bist du dran: bring das Gleichungssystem per Klick selbst auf Dreiecksform."},
+ 12:{wav:"narration_deck48_s12_Charon.mp3",txt:"Gauß räumt von links nach rechts auf: erst Spalte eins unter der Diagonalen leer räumen, dann Spalte zwei."},
+ 13:{wav:"narration_deck48_s13_Charon.mp3",txt:"Auch beim Hochrechnen von Rezepten mit mehreren Zutaten helfen lineare Gleichungssysteme mit drei Variablen."},
+ 14:{wav:"narration_deck48_s14_Charon.mp3",txt:"Bevor du ins Labor gehst: schätz doch mal, wie viele Gleichungen ein Gleichungssystem mit vier Variablen mindestens braucht."},
+ 15:{wav:"narration_deck48_s15_Charon.mp3",txt:"Hier noch mal alle Symbole rund um das Gauß-Verfahren im Überblick."},
+ 16:{wav:"narration_deck48_s16_Charon.mp3",txt:"Fassen wir zusammen, welches Vorgehen zu welcher Situation passt."},
+ 17:{wav:"narration_deck48_s17_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben rund um Gleichungssysteme mit mehreren Variablen."},
+ 18:{wav:"narration_deck48_s18_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst - damit ist das gesamte Kapitel über lineare Gleichungssysteme geschafft."},
+ 19:{wav:"narration_deck48_s19_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"Ein LGS hat 3 Variablen (x,y,z), aber nur 2 Gleichungen. Ist es eindeutig lösbar?",
+  a:["Ja, immer","Nein — es braucht mindestens so viele Gleichungen wie Variablen","Ja, wenn man rät","Das kommt auf die Koeffizienten an, aber meistens ja"],r:1,
+  why:"Für eine eindeutige Lösung braucht ein LGS mindestens so viele unabhängige Gleichungen wie Variablen."},
+ {q:"Beim Gauß-Verfahren ist die Dreiecksform erreicht. Was macht man als NÄCHSTES?",
+  a:["Man beginnt wieder von vorne","Rückwärtseinsetzen: von der untersten Zeile aus rückwärts jede Variable bestimmen","Man addiert alle Zeilen noch einmal","Man multipliziert die gesamte Matrix mit −1"],r:1,
+  why:"In Dreiecksform liefert die letzte Zeile direkt eine Variable — von dort arbeitet man sich rückwärts nach oben durch."},
+ {q:"Matrix-Zeile [0 0 −3 | −9] steht für welche Gleichung?",
+  a:["−3z=−9, also z=3","0=−9, also unlösbar","−3=−9, ein Widerspruch","x−3y=−9"],r:0,
+  why:"Die ersten beiden Spalten sind 0 — übrig bleibt nur der z-Term: −3z=−9 ⟺ z=3."},
+ {q:"Bei der Zeilen-Operation R2:=R2−R1 macht ein Schüler nur bei den ersten zwei Zahlen die Subtraktion und lässt den Wert nach dem Trennstrich unverändert. Was ist das Problem?",
+  a:["Nichts, der Wert nach dem Strich bleibt immer gleich","Die GESAMTE Zeile inklusive des Werts nach dem Trennstrich muss subtrahiert werden, sonst stimmt die Gleichung nicht mehr","Man darf Zeilen nie subtrahieren, nur addieren","Der Trennstrich hat gar keine Bedeutung"],r:1,
+  why:"Die Zahl nach dem Trennstrich gehört zur rechten Seite der Gleichung — sie muss bei jeder Zeilen-Operation genauso mitgerechnet werden wie die Koeffizienten."},
+ {q:"Warum lohnt sich bei einem LGS mit 4 oder mehr Gleichungen das Gauß-Verfahren besonders?",
+  a:["Weil es die einzige Methode ist, die überhaupt funktioniert","Weil es bei vielen Gleichungen und Variablen übersichtlicher und systematischer bleibt als Einsetzen oder Addieren","Weil es immer weniger Rechenschritte braucht als jedes andere Verfahren","Weil es keine Matrix benötigt"],r:1,
+  why:"Einsetz- und Gleichsetzverfahren werden bei vielen Gleichungen schnell unübersichtlich — das systematische Zeilenschema des Gauß-Verfahrens bleibt dagegen gut strukturiert."}
+];
+const DECK_ID="lgs/deck48";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), oi===item.r);
+        answered++; if(oi===item.r) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estLGS48', {
+    frage: 'Ein LGS soll eindeutig lösbar sein und hat 4 Variablen. Wie viele Gleichungen braucht man MINDESTENS?',
+    min: 1, max: 8, korrekt: 4, toleranz: 0,
+    begruendung: 'Ein LGS ist nur eindeutig lösbar, wenn es mindestens so viele (unabhängige) Gleichungen wie Variablen hat — bei 4 Variablen also mindestens 4 Gleichungen.'
+  });
+});
+</script>
+</body>
+</html>

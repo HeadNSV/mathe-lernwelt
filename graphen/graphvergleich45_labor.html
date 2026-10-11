@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Graph-Vergleich</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:16px 22px 40px;max-width:920px;margin:0 auto;}
+  h2{margin:0 0 4px;font-size:22px;}
+  .lead{color:var(--muted);font-size:15px;margin:0 0 14px;}
+  .panel{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:14px;}
+  .row{display:flex;align-items:center;gap:10px;margin:10px 0;flex-wrap:wrap;}
+  .row label{min-width:110px;font-size:15px;}
+  select{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:14px;}
+  .togglebar{display:flex;gap:6px;}
+  .togglebtn{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 14px;font-size:15px;cursor:pointer;}
+  .togglebtn.active{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  #svgHost{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;}
+  .info{font-size:15px;line-height:1.6;margin-top:10px;}
+  .mission{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:10px 16px;margin-top:10px;font-size:15px;}
+  .mission.solved{background:#1c3d24;border-left-color:#4caf50;}
+  .yn{display:flex;gap:8px;margin-top:10px;}
+  .ynbtn{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 16px;font-size:14px;cursor:pointer;}
+  .ynbtn.picked{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h2>🧪 Graph-Vergleich</h2>
+  <p class="lead">Wähle f und g (Gerade oder Parabel), stelle das Relationszeichen ein und lies den Lösungsbereich ab.</p>
+  <div class="panel">
+    <div class="row">
+      <label for="fSel">Funktion f</label>
+      <select id="fSel">
+        <option value="f1">f(x) = x² − x − 2 (Parabel)</option>
+        <option value="f2">f(x) = −0,5x² + 2 (Parabel)</option>
+        <option value="f3">f(x) = x + 1 (Gerade)</option>
+      </select>
+      <label for="gSel">Funktion g</label>
+      <select id="gSel">
+        <option value="g1">g(x) = x − 1 (Gerade)</option>
+        <option value="g2">g(x) = −0,3x + 1 (Gerade)</option>
+        <option value="g3">g(x) = 0,25x² − 1 (Parabel)</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Relation:</label>
+      <div class="togglebar">
+        <button class="togglebtn active" id="btnLt">f(x) &lt; g(x)</button>
+        <button class="togglebtn" id="btnLe">f(x) ≤ g(x)</button>
+      </div>
+    </div>
+    <div id="svgHost"></div>
+    <div class="info" id="info"></div>
+    <div class="mission" id="mission">🎯 Mission: Stelle f = x²−x−2 und g = x−1 ein, wähle das richtige Relationszeichen für „f(x) ≤ g(x)" — und entscheide dann, ob der Randpunkt zur Lösungsmenge gehört.</div>
+    <div class="yn" id="ynBox" style="display:none;">
+      <span style="align-self:center;font-size:14px;">Gehört der Randpunkt zur Lösungsmenge?</span>
+      <button class="ynbtn" id="ynYes">Ja</button>
+      <button class="ynbtn" id="ynNo">Nein</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const F_OPTIONS={
+  f1:{a:1,b:-1,c:-2,label:'x²−x−2'},
+  f2:{a:-0.5,b:0,c:2,label:'−0,5x²+2'},
+  f3:{a:0,b:1,c:1,label:'x+1'}
+};
+const G_OPTIONS={
+  g1:{a:0,b:1,c:-1,label:'x−1'},
+  g2:{a:0,b:-0.3,c:1,label:'−0,3x+1'},
+  g3:{a:0.25,b:0,c:-1,label:'0,25x²−1'}
+};
+function fnOf(coef){ return x=>coef.a*x*x+coef.b*x+coef.c; }
+const de2=(x)=>{ const r=Math.round(x*100)/100; return r.toString().replace('.',','); };
+
+let fKey='f2', gKey='g2', mode='lt';
+let boundaryAnswer=null;
+let missionSolved=false;
+
+function toX(x,ox,sx){ return ox+x*sx; }
+function toY(y,oy,sy){ return oy-y*sy; }
+function curvePts(fn, xr, ox, oy, sx, sy, w, h){
+  let pts=[];
+  for(let x=xr[0]; x<=xr[1]+0.001; x+=0.1){
+    const y=fn(x);
+    const py=toY(y,oy,sy);
+    if(py>-40 && py<h+40) pts.push(toX(x,ox,sx)+","+py);
+  }
+  return pts.join(" ");
+}
+
+function solveP(a,b,c){
+  // returns {kind:'quad'|'lin'|'const', roots:[...], signLeft: sign of p for very small x}
+  if(Math.abs(a)>1e-9){
+    const D=b*b-4*a*c;
+    if(D<-1e-9) return {kind:'quad0', a:a};
+    if(Math.abs(D)<1e-9){ const r=-b/(2*a); return {kind:'quad1', roots:[r], a:a}; }
+    const sq=Math.sqrt(D);
+    const r1=(-b-sq)/(2*a), r2=(-b+sq)/(2*a);
+    return {kind:'quad2', roots:[Math.min(r1,r2), Math.max(r1,r2)], a:a};
+  } else if(Math.abs(b)>1e-9){
+    const r=-b/b*(-c/b); // placeholder unused
+    const root=-c/b;
+    return {kind:'lin', roots:[root], b:b};
+  } else {
+    return {kind:'const', c:c};
+  }
+}
+
+function render(){
+  const fc=F_OPTIONS[fKey], gc=G_OPTIONS[gKey];
+  const f=fnOf(fc), g=fnOf(gc);
+  const pa=fc.a-gc.a, pb=fc.b-gc.b, pc=fc.c-gc.c;
+  const sol=solveP(pa,pb,pc);
+
+  const w=340,h=260,ox=70,oy=200,sx=22,sy=14;
+  let s='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;max-width:480px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="0" y1="'+oy+'" x2="'+w+'" y2="'+oy+'" stroke="#9aa4b2" stroke-width="1"/>';
+  s+='<line x1="'+ox+'" y1="0" x2="'+ox+'" y2="'+h+'" stroke="#9aa4b2" stroke-width="1"/>';
+  s+='<polyline points="'+curvePts(f,[-6,8],ox,oy,sx,sy,w,h)+'" fill="none" stroke="#5fd0c7" stroke-width="2.4"/>';
+  s+='<polyline points="'+curvePts(g,[-6,8],ox,oy,sx,sy,w,h)+'" fill="none" stroke="#e06fa0" stroke-width="2.4"/>';
+
+  // shade solution region along a bar below axis
+  const barY=oy+18;
+  let region='';
+  const wantNeg = true; // f<g or f<=g means p<0
+  let intervalTxt='';
+  if(sol.kind==='const'){
+    const holds = mode==='lt' ? sol.c<0 : sol.c<=0;
+    intervalTxt = holds ? 'für alle x ∈ ℝ' : 'für kein x ∈ ℝ';
+    if(holds){ s+='<line x1="0" y1="'+barY+'" x2="'+w+'" y2="'+barY+'" stroke="#4caf50" stroke-width="5"/>'; }
+  } else if(sol.kind==='lin'){
+    const r=sol.roots[0];
+    const px=toX(r,ox,sx);
+    // p(x) = b*(x-r); sign for x>r is sign(b)
+    const negIsRight = sol.b>0; // b>0: negative when x<r
+    const closed = mode==='le';
+    if(negIsRight){
+      s+='<line x1="0" y1="'+barY+'" x2="'+px+'" y2="'+barY+'" stroke="#4caf50" stroke-width="5"/>';
+      intervalTxt = (closed?']-∞;':']-∞;')+de2(r)+(closed?']':'[');
+    } else {
+      s+='<line x1="'+px+'" y1="'+barY+'" x2="'+w+'" y2="'+barY+'" stroke="#4caf50" stroke-width="5"/>';
+      intervalTxt = (closed?'[':']')+de2(r)+';∞[';
+    }
+    s+='<circle cx="'+px+'" cy="'+barY+'" r="'+(closed?4:3.5)+'" fill="'+(closed?'#4caf50':'#0e131b')+'" stroke="#4caf50" stroke-width="2"/>';
+  } else if(sol.kind==='quad0'){
+    const holds = sol.a<0; // always same sign as a (never zero)
+    const trueCond = mode==='lt' ? holds : holds; // <=0 also true when always negative
+    intervalTxt = holds ? 'für alle x ∈ ℝ' : 'für kein x ∈ ℝ';
+    if(holds){ s+='<line x1="0" y1="'+barY+'" x2="'+w+'" y2="'+barY+'" stroke="#4caf50" stroke-width="5"/>'; }
+  } else if(sol.kind==='quad1'){
+    const r=sol.roots[0];
+    const px=toX(r,ox,sx);
+    if(mode==='le'){
+      s+='<circle cx="'+px+'" cy="'+barY+'" r="4.5" fill="#4caf50"/>';
+      intervalTxt = '{'+de2(r)+'}';
+    } else {
+      intervalTxt = 'für kein x ∈ ℝ (Parabel berührt nur, wird nie kleiner)';
+    }
+  } else if(sol.kind==='quad2'){
+    const [r1,r2]=sol.roots;
+    const px1=toX(r1,ox,sx), px2=toX(r2,ox,sx);
+    const closed = mode==='le';
+    if(sol.a>0){
+      // negative between roots
+      s+='<line x1="'+px1+'" y1="'+barY+'" x2="'+px2+'" y2="'+barY+'" stroke="#4caf50" stroke-width="5"/>';
+      intervalTxt = (closed?'[':']')+de2(r1)+';'+de2(r2)+(closed?']':'[');
+    } else {
+      // negative outside roots
+      s+='<line x1="0" y1="'+barY+'" x2="'+px1+'" y2="'+barY+'" stroke="#4caf50" stroke-width="5"/>';
+      s+='<line x1="'+px2+'" y1="'+barY+'" x2="'+w+'" y2="'+barY+'" stroke="#4caf50" stroke-width="5"/>';
+      intervalTxt = (closed?']-∞;':']-∞;')+de2(r1)+(closed?']':'[')+' ∪ '+(closed?'[':']')+de2(r2)+';∞[';
+    }
+    s+='<circle cx="'+px1+'" cy="'+barY+'" r="'+(closed?4:3.5)+'" fill="'+(closed?'#4caf50':'#0e131b')+'" stroke="#4caf50" stroke-width="2"/>';
+    s+='<circle cx="'+px2+'" cy="'+barY+'" r="'+(closed?4:3.5)+'" fill="'+(closed?'#4caf50':'#0e131b')+'" stroke="#4caf50" stroke-width="2"/>';
+  }
+  s+='</svg>';
+  document.getElementById('svgHost').innerHTML=s;
+  document.getElementById('info').innerHTML='f(x) = '+fc.label+' &nbsp;(<span style="color:#5fd0c7;">teal</span>) &nbsp;·&nbsp; g(x) = '+gc.label+' &nbsp;(<span style="color:#e06fa0;">pink</span>)<br>'
+    +'Bedingung: f(x) '+(mode==='lt'?'&lt;':'≤')+' g(x) &nbsp;⟺&nbsp; p(x)=f(x)−g(x) '+(mode==='lt'?'&lt;':'≤')+' 0<br>'
+    +'<b>Lösungsmenge: L = '+intervalTxt+'</b>';
+
+  // mission check
+  const targetMatch = (fKey==='f1' && gKey==='g1' && mode==='le');
+  const ynBox=document.getElementById('ynBox');
+  ynBox.style.display = targetMatch ? 'flex' : 'none';
+  if(!targetMatch){ boundaryAnswer=null; document.querySelectorAll('.ynbtn').forEach(b=>b.classList.remove('picked')); }
+  updateMission();
+}
+function updateMission(){
+  const targetMatch = (fKey==='f1' && gKey==='g1' && mode==='le');
+  const box=document.getElementById('mission');
+  if(targetMatch && boundaryAnswer===true){
+    missionSolved=true;
+    box.classList.add('solved');
+    box.innerHTML='✅ Richtig! f(x)≤g(x) ergibt x²−2x−1≤0, Lösung L=[1−√2;1+√2] — GESCHLOSSEN, denn bei ≤ gehören die Randpunkte (die Schnittstellen der Graphen) zur Lösungsmenge dazu.';
+  } else {
+    missionSolved=false;
+    box.classList.remove('solved');
+    box.innerHTML='🎯 Mission: Stelle f = x²−x−2 und g = x−1 ein, wähle das richtige Relationszeichen für „f(x) ≤ g(x)" — und entscheide dann, ob der Randpunkt zur Lösungsmenge gehört.';
+  }
+}
+
+document.getElementById('fSel').addEventListener('change', e=>{ fKey=e.target.value; render(); });
+document.getElementById('gSel').addEventListener('change', e=>{ gKey=e.target.value; render(); });
+document.getElementById('btnLt').onclick=()=>{ mode='lt'; document.getElementById('btnLt').classList.add('active'); document.getElementById('btnLe').classList.remove('active'); render(); };
+document.getElementById('btnLe').onclick=()=>{ mode='le'; document.getElementById('btnLe').classList.add('active'); document.getElementById('btnLt').classList.remove('active'); render(); };
+document.getElementById('ynYes').onclick=()=>{ boundaryAnswer=true; document.getElementById('ynYes').classList.add('picked'); document.getElementById('ynNo').classList.remove('picked'); updateMission(); };
+document.getElementById('ynNo').onclick=()=>{ boundaryAnswer=false; document.getElementById('ynNo').classList.add('picked'); document.getElementById('ynYes').classList.remove('picked'); updateMission(); };
+
+render();
+
+window.LAB={
+  state(){
+    return { fKey:fKey, gKey:gKey, mode:mode, boundaryAnswer:boundaryAnswer, missionSolved:missionSolved };
+  },
+  setF(k){ fKey=k; document.getElementById('fSel').value=k; render(); },
+  setG(k){ gKey=k; document.getElementById('gSel').value=k; render(); },
+  setMode(m){ if(m==='lt') document.getElementById('btnLt').onclick(); else document.getElementById('btnLe').onclick(); },
+  answerBoundary(v){ if(v) document.getElementById('ynYes').onclick(); else document.getElementById('ynNo').onclick(); }
+};
+</script>
+</body>
+</html>

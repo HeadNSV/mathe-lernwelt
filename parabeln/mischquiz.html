@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Quadratische Funktionen · Kapitel-Mischquiz</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  .wrap{max-width:820px;margin:0 auto;padding:24px 18px 60px;}
+  h1{font-size:min(6vw,30px);margin:0 0 6px;}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 20px;}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0 20px;}
+  button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 16px;font-size:14px;cursor:pointer;}
+  button:hover{background:#283041;}
+  button.primary{background:var(--accent);color:#12100a;font-weight:700;border:0;}
+  .quizq{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq .deckTag{display:inline-block;background:#1b222c;color:var(--accent);font-size:11.5px;font-weight:600;border-radius:999px;padding:3px 10px;margin-bottom:8px;}
+  .quizq p.qtext{font-size:min(2.3vw,19px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2vw,16px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(1.8vw,14.5px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #result{display:none;}
+  #result.show{display:block;}
+  .scoreBig{font-size:min(6vw,36px);color:var(--accent);text-align:center;margin:10px 0;}
+  .deckRow{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 16px;margin:6px 0;font-size:14.5px;}
+  .deckRow a{color:var(--accent);text-decoration:none;font-size:13px;}
+  .deckRow a:hover{text-decoration:underline;}
+  .weak{border-left:4px solid #e05a5a;}
+  .strong{border-left:4px solid #3dbb7a;}
+  #startScreen .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:16px 20px;font-size:15px;color:#f6e7cf;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔀 Kapitel-Mischquiz — Quadratische Funktionen</h1>
+  <p class="sub">24 zufällig gemischte Fragen aus allen fünf Teilen — Interleaving statt Blockübung.</p>
+
+  <div id="startScreen">
+    <div class="defbox">Dieses Quiz zieht bei jedem Start 24 Fragen zufällig aus dem gesamten Kapitel — quer durch Normalparabel/Verschiebungen, Scheitelform/allgemeine Form, Nullstellen/Linearfaktoren, Parabel&amp;Gerade und Wertemenge/Anwendung. Am Ende siehst du, bei welchem Teil du nochmal reinschauen solltest.</div>
+    <div class="bar">
+      <button class="primary" id="startBtn">▶ Quiz starten (24 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+
+  <div id="quizArea"></div>
+  <div id="result">
+    <div class="scoreBig" id="scoreBig"></div>
+    <h2 style="font-size:18px;">Auswertung pro Teil</h2>
+    <div id="deckBreakdown"></div>
+    <div class="bar">
+      <button class="primary" id="againBtn">🔁 Nochmal (neue 24 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;align-self:center;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+</div>
+<script>
+// === Fragenpool: kopiert aus den QUIZ-Arrays der fünf Teile + eigene Transferfragen ===
+const POOL = [
+// --- deck38.html: Normalparabel & Verschiebungen ---
+{deck:"Teil 1 — Normalparabel & Verschiebungen", link:"deck38.html", q:"f(x)=ax²+bx+c — welche Bedingung muss a erfüllen, damit es sich um eine quadratische Funktion handelt?",
+ a:["a=0","a≠0","a=1","a muss negativ sein"],r:1,
+ why:"Wäre a=0, gäbe es kein x² mehr — dann wäre es eine lineare, keine quadratische Funktion."},
+{deck:"Teil 1 — Normalparabel & Verschiebungen", link:"deck38.html", q:"f(x)=(x−6)² — wohin ist die Normalparabel verschoben?",
+ a:["6 Einheiten nach links","6 Einheiten nach rechts","6 Einheiten nach oben","6 Einheiten nach unten"],r:1,
+ why:"x_s=6 ist positiv → Verschiebung nach RECHTS."},
+{deck:"Teil 1 — Normalparabel & Verschiebungen", link:"deck38.html", q:"g(x)=x²+9 — wo liegt der Scheitelpunkt?",
+ a:["S(9|0)","S(0|9)","S(−9|0)","S(0|−9)"],r:1,
+ why:"y_s=9 ist positiv → Verschiebung nach oben, Scheitelpunkt S(0|9)."},
+{deck:"Teil 1 — Normalparabel & Verschiebungen", link:"deck38.html", q:"Welche Aussage zur Normalparabel y=x² ist richtig?",
+ a:["Sie ist nach unten geöffnet","Ihr Scheitelpunkt liegt bei S(1|1)","Sie ist achsensymmetrisch zur y-Achse","Sie hat keinen Scheitelpunkt"],r:2,
+ why:"Die Normalparabel ist nach oben geöffnet, Scheitel S(0|0), achsensymmetrisch zur y-Achse."},
+{deck:"Teil 1 — Normalparabel & Verschiebungen", link:"deck38.html", q:"y=(x+5)²−2 — welcher Scheitelpunkt gehört zu dieser Parabel?",
+ a:["S(5|−2)","S(−5|−2)","S(−5|2)","S(5|2)"],r:1,
+ why:"(x+5)²=(x−(−5))² → x_s=−5, y_s=−2 → S(−5|−2)."},
+
+// --- deck39.html: Scheitelform & allgemeine Form ---
+{deck:"Teil 2 — Scheitelform & allgemeine Form", link:"deck39.html", q:"f(x)=a(x−x_s)²+y_s — was liest man aus dieser Form DIREKT ab?",
+ a:["Nur die Nullstellen","Den Scheitelpunkt und den Öffnungsfaktor","Nur den y-Achsenabschnitt","Gar nichts, man muss immer umrechnen"],r:1,
+ why:"Scheitelpunkt S(x_s|y_s) und Öffnungsfaktor a sind direkt aus der Scheitelpunktform ablesbar."},
+{deck:"Teil 2 — Scheitelform & allgemeine Form", link:"deck39.html", q:"g(x)=3(x−1)²+2 — wie lautet die allgemeine Darstellungsform?",
+ a:["g(x)=3x²−6x+5","g(x)=3x²+6x+5","g(x)=3x²−6x−5","g(x)=x²−6x+5"],r:0,
+ why:"3(x²−2x+1)+2 = 3x²−6x+3+2 = 3x²−6x+5."},
+{deck:"Teil 2 — Scheitelform & allgemeine Form", link:"deck39.html", q:"f(x)=x²+2x−3 — bei welchem x-Wert liegt der Scheitelpunkt?",
+ a:["x_s=1","x_s=−1","x_s=2","x_s=−2"],r:1,
+ why:"x_s=−b/(2a)=−2/(2·1)=−1."},
+{deck:"Teil 2 — Scheitelform & allgemeine Form", link:"deck39.html", q:"Warum ändert sich der Öffnungsfaktor a beim Umrechnen zwischen den beiden Formen nicht?",
+ a:["Weil beide Formen dieselbe Parabel mit derselben Streckung/Stauchung beschreiben","Weil a immer 1 ist","Zufall, es gibt keinen tieferen Grund","a ändert sich tatsächlich beim Umrechnen"],r:0,
+ why:"Beide Formen beschreiben exakt dieselbe Parabel — a ist eine Eigenschaft der Parabel selbst."},
+{deck:"Teil 2 — Scheitelform & allgemeine Form", link:"deck39.html", q:"Beim Zeichnen einer Parabel mit a=0,5 ohne Wertetabelle: was passiert mit den y-Abständen der Normalparabel-Schritte?",
+ a:["Sie werden verdoppelt","Sie werden halbiert","Sie bleiben unverändert","Sie werden quadriert"],r:1,
+ why:"Der Öffnungsfaktor a=0,5 halbiert die y-Abstände gegenüber der Normalparabel."},
+
+// --- deck40.html: Nullstellen & Linearfaktoren ---
+{deck:"Teil 3 — Nullstellen & Linearfaktoren", link:"deck40.html", q:"f(x)=x²−8x+16 — welche Art von Nullstelle liegt vor?",
+ a:["Zwei einfache Nullstellen","Eine doppelte Nullstelle bei x=4","Keine Nullstelle","Eine doppelte Nullstelle bei x=8"],r:1,
+ why:"x²−8x+16=(x−4)² — doppelte Nullstelle bei x=4."},
+{deck:"Teil 3 — Nullstellen & Linearfaktoren", link:"deck40.html", q:"g(x)=−(x−1)·(x+5) — welche Nullstellen liest man ab?",
+ a:["x₁=1, x₂=5","x₁=1, x₂=−5","x₁=−1, x₂=5","x₁=−1, x₂=−5"],r:1,
+ why:"Aus (x−1) folgt x₁=1, aus (x+5)=(x−(−5)) folgt x₂=−5."},
+{deck:"Teil 3 — Nullstellen & Linearfaktoren", link:"deck40.html", q:"Wie lautet die Formel für den x-Wert des Scheitelpunkts aus den Nullstellen x₁ und x₂?",
+ a:["x_s=x₁·x₂","x_s=(x₁+x₂)/2","x_s=x₁−x₂","x_s=x₁+x₂"],r:1,
+ why:"Da die Parabel symmetrisch ist, liegt x_s genau in der Mitte zwischen x₁ und x₂."},
+{deck:"Teil 3 — Nullstellen & Linearfaktoren", link:"deck40.html", q:"h(x)=2·x·(x−5) — bei welchen x-Werten liegen die Nullstellen?",
+ a:["x=0 und x=5","x=2 und x=5","x=0 und x=−5","x=5 nur"],r:0,
+ why:"Der Faktor x steht abkürzend für (x−0) — Nullstellen bei x=0 und x=5."},
+{deck:"Teil 3 — Nullstellen & Linearfaktoren", link:"deck40.html", q:"Warum kann man mit der Linearfaktordarstellung eine Punktprobe oft ohne Taschenrechner durchführen?",
+ a:["Weil man nur addieren statt multiplizieren muss","Weil einfache Faktoren im Kopf multipliziert werden können","Weil die Linearfaktordarstellung immer ganze Zahlen liefert","Das stimmt nicht, ein Taschenrechner ist immer nötig"],r:1,
+ why:"Die Linearfaktordarstellung besteht aus einfachen Faktoren, die sich oft im Kopf multiplizieren lassen."},
+
+// --- deck41.html: Parabel trifft Gerade & Funktionsgleichungen aufstellen ---
+{deck:"Teil 4 — Parabel & Gerade", link:"deck41.html", q:"Beim Gleichsetzen einer Parabel mit einer Geraden ergibt sich D=0. Wie nennt man die Gerade?",
+ a:["Sekante","Tangente","Passante","Normale"],r:1,
+ why:"D=0 bedeutet genau einen gemeinsamen Punkt — die Gerade berührt die Parabel, das ist eine Tangente."},
+{deck:"Teil 4 — Parabel & Gerade", link:"deck41.html", q:"Eine Parabel hat Scheitelpunkt S(2|1) und geht durch P(4|9). Wie lautet der Ansatz zum Aufstellen der Funktionsgleichung?",
+ a:["y=a(x−4)(x−9)","y=a(x−2)²+1","y=ax²+2x+1","y=a·x·(x−2)"],r:1,
+ why:"Bei bekanntem Scheitelpunkt wird die Scheitelpunktform y=a(x−x_s)²+y_s angesetzt."},
+{deck:"Teil 4 — Parabel & Gerade", link:"deck41.html", q:"Eine Parabel hat die Nullstellen x₁=−1 und x₂=3. Welcher Ansatz eignet sich, um a aus einem weiteren Punkt zu bestimmen?",
+ a:["y=a(x+1)(x−3)","y=a(x−1)(x+3)","y=a(x−2)²","y=ax²−1"],r:0,
+ why:"Bei bekannten Nullstellen wird die Linearfaktordarstellung y=a(x−x₁)(x−x₂) angesetzt."},
+{deck:"Teil 4 — Parabel & Gerade", link:"deck41.html", q:"Welche Aussage zur Passante ist richtig?",
+ a:["Sie berührt die Parabel in genau einem Punkt","Sie schneidet die Parabel in zwei Punkten","Sie hat keinen gemeinsamen Punkt mit der Parabel","Sie verläuft immer durch den Scheitelpunkt"],r:2,
+ why:"Eine Passante hat KEINEN gemeinsamen Punkt mit der Parabel — D<0."},
+{deck:"Teil 4 — Parabel & Gerade", link:"deck41.html", q:"Warum wird beim Aufstellen einer Funktionsgleichung IMMER ein zusätzlicher Punkt benötigt?",
+ a:["Aus Tradition, mathematisch nötig ist er nicht","Weil sonst der Öffnungsfaktor a unbestimmt bleibt","Weil man sonst keine Parabel zeichnen kann","Weil ohne ihn automatisch a=1 angenommen werden müsste"],r:1,
+ why:"Scheitel oder Nullstellen allein legen a nicht fest — erst ein weiterer Punkt bestimmt a eindeutig."},
+
+// --- deck42.html: Wertemenge & Anwendung ---
+{deck:"Teil 5 — Wertemenge & Anwendung", link:"deck42.html", q:"f(x)=4(x−2)²−9 mit D=ℝ — wie lautet die Wertemenge?",
+ a:["W=[−9;∞[","W=]−∞;−9]","W=[2;∞[","W=]−∞;2]"],r:0,
+ why:"a=4>0, Scheitel S(2|−9) → W=[−9;∞[."},
+{deck:"Teil 5 — Wertemenge & Anwendung", link:"deck42.html", q:"g(x)=−3x²+12 mit D=ℝ — wie lautet die Wertemenge?",
+ a:["W=[12;∞[","W=]−∞;12]","W=[0;12]","W=]−∞;0]"],r:1,
+ why:"a=−3<0, Scheitel S(0|12) → W=]−∞;12]."},
+{deck:"Teil 5 — Wertemenge & Anwendung", link:"deck42.html", q:"Warum reicht es bei eingeschränkter Definitionsmenge NICHT, nur den Scheitelpunkt zu betrachten?",
+ a:["Der Scheitel liegt nie in D","Weil auch die Randwerte von D die Wertemenge mitbestimmen können","Weil Parabeln mit eingeschränktem D keine Wertemenge haben","Das stimmt nicht, der Scheitel reicht immer"],r:1,
+ why:"Ist D eingeschränkt, können die Randwerte von D die zweite Schranke der Wertemenge liefern."},
+{deck:"Teil 5 — Wertemenge & Anwendung", link:"deck42.html", q:"Beim Aufstellen der Funktionsgleichung eines Torbogens aus Scheitel und einem Punkt: was ist der erste Schritt?",
+ a:["Sofort die Wertemenge bestimmen","Scheitelpunktform ansetzen und den Punkt einsetzen","Die Nullstellen raten","Ein Koordinatensystem ist nicht nötig"],r:1,
+ why:"Der Scheitelpunkt ist bekannt — also wird die Scheitelpunktform angesetzt."},
+{deck:"Teil 5 — Wertemenge & Anwendung", link:"deck42.html", q:"Warum sollte ein Antwortsatz bei einer Anwendungsaufgabe die Modellgrenzen erwähnen?",
+ a:["Ist reine Formsache ohne Bedeutung","Weil ein mathematisches Modell die Realität nur näherungsweise beschreibt","Weil sonst die Rechnung falsch ist","Modellgrenzen sind nur bei linearen Funktionen relevant"],r:1,
+ why:"Ein parabelförmiges Modell beschreibt reale Objekte nur näherungsweise — das gehört ehrlich in den Antwortsatz."},
+
+// --- Eigene Transferfragen (kapitelübergreifend, eigene Werte) ---
+{deck:"Teil 2 — Scheitelform & allgemeine Form", link:"deck39.html", q:"f(x)=(x−3)²−2 — welcher Scheitelpunkt UND welche Öffnungsrichtung liegen vor?",
+ a:["S(3|−2), nach oben geöffnet","S(−3|−2), nach unten geöffnet","S(3|2), nach oben geöffnet","S(3|−2), nach unten geöffnet"],r:0,
+ why:"x_s=3, y_s=−2 → S(3|−2). a=1>0 → nach oben geöffnet."},
+{deck:"Teil 3 — Nullstellen & Linearfaktoren", link:"deck40.html", q:"Eine Parabel hat die Nullstellen x₁=−1 und x₂=5. Bei welchem x-Wert liegt der Scheitelpunkt?",
+ a:["x_s=2","x_s=3","x_s=4","x_s=−2"],r:0,
+ why:"x_s=(x₁+x₂)/2=(−1+5)/2=4/2=2."},
+{deck:"Teil 3 — Nullstellen & Linearfaktoren", link:"deck40.html", q:"f(x)=2x²−4x+1 — wie groß ist die Diskriminante D, und wie viele Nullstellen gibt es?",
+ a:["D=8, zwei einfache Nullstellen","D=8, keine Nullstelle","D=0, eine doppelte Nullstelle","D=−8, keine Nullstelle"],r:0,
+ why:"D=b²−4ac=(−4)²−4·2·1=16−8=8. D>0 → zwei einfache Nullstellen."},
+{deck:"Teil 4 — Parabel & Gerade", link:"deck41.html", q:"Eine Gerade ist Tangente an eine Parabel. Was bedeutet das für ihre gemeinsamen Punkte?",
+ a:["Es gibt keinen gemeinsamen Punkt","Es gibt genau einen gemeinsamen Punkt (Berührpunkt)","Es gibt genau zwei gemeinsame Punkte","Es gibt unendlich viele gemeinsame Punkte"],r:1,
+ why:"Eine Tangente berührt die Parabel — das ist definitionsgemäß genau EIN gemeinsamer Punkt."}
+];
+
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+let current=[];
+let deckStats={};
+
+function startQuiz(){
+  current = shuffle(POOL).slice(0,24);
+  deckStats={};
+  document.getElementById('startScreen').style.display='none';
+  document.getElementById('result').classList.remove('show');
+  const area=document.getElementById('quizArea');
+  area.innerHTML='';
+  let answered=0, score=0;
+  current.forEach((item,qi)=>{
+    if(!deckStats[item.deck]) deckStats[item.deck]={right:0,total:0,link:item.link};
+    deckStats[item.deck].total++;
+    const box=document.createElement('div'); box.className='quizq';
+    const tag=document.createElement('span'); tag.className='deckTag'; tag.textContent=item.deck; box.appendChild(tag);
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        answered++;
+        if(oi===item.r){ score++; deckStats[item.deck].right++; }
+        if(answered===current.length) showResult(score);
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    area.appendChild(box);
+  });
+}
+
+function showResult(score){
+  const res=document.getElementById('result');
+  res.classList.add('show');
+  document.getElementById('scoreBig').textContent='Ergebnis: '+score+' / '+current.length+' — '+
+    (score>=current.length*0.8?'stark! 💪':(score>=current.length*0.5?'solide, ein paar Themen nochmal ansehen':'lohnt sich, mehrere Teile zu wiederholen'));
+  const bd=document.getElementById('deckBreakdown');
+  bd.innerHTML='';
+  Object.keys(deckStats).sort().forEach(deck=>{
+    const s=deckStats[deck];
+    const row=document.createElement('div');
+    const pct=s.right/s.total;
+    row.className='deckRow '+(pct<0.5?'weak':(pct===1?'strong':''));
+    row.innerHTML='<span>'+deck+': '+s.right+' / '+s.total+' richtig'+(pct<0.6?' — nochmal ansehen empfohlen':'')+'</span><a href="'+s.link+'">Teil öffnen →</a>';
+    bd.appendChild(row);
+  });
+  res.scrollIntoView({behavior:'smooth'});
+}
+
+document.getElementById('startBtn').onclick=startQuiz;
+document.getElementById('againBtn').onclick=startQuiz;
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Funktions-Detektor — Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{max-width:640px;margin:0 auto;padding:18px 20px 40px;}
+  h3{margin:0 0 6px;}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  #progress{font-size:13px;color:var(--muted);margin-bottom:8px;}
+  #caseTitle{font-size:18px;color:var(--accent);text-align:center;font-weight:700;margin:6px 0 10px;}
+  #svgHost{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;}
+  .sliderRow{display:flex;align-items:center;gap:10px;margin:12px 0;}
+  .sliderRow label{font-size:13px;color:var(--muted);white-space:nowrap;}
+  input[type=range]{flex:1;}
+  #xVal{background:#1f2630;border:1px solid var(--line);border-radius:6px;padding:3px 10px;font-size:13px;font-weight:700;color:var(--accent);min-width:36px;text-align:center;}
+  #hitCount{text-align:center;font-size:14px;color:#5fd0c7;min-height:20px;margin:6px 0;}
+  .verdictRow{display:flex;gap:10px;justify-content:center;margin:12px 0;}
+  .vbtn{flex:1;max-width:220px;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:14px;cursor:pointer;}
+  .vbtn:hover{background:#283041;}
+  .vbtn.correct{background:#1c3d24;border-color:#4caf50;}
+  .vbtn.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .vbtn:disabled{cursor:default;}
+  #feedback{text-align:center;font-size:14px;min-height:40px;margin-top:6px;color:var(--fg);}
+  #nextBtn{display:none;margin:10px auto 0;background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:9px 18px;font-size:14px;cursor:pointer;}
+  #doneBox{text-align:center;font-size:16px;color:var(--accent);font-weight:700;margin-top:16px;display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h3>🕵️ Funktions-Detektor</h3>
+  <p class="hint">Bewege bei Graphen den Senkrechten-Test — trifft er den Graphen mehr als einmal, ist es KEINE Funktion. Bei Pfeilbildern zähl die Pfeile pro Element.</p>
+  <div id="progress">Fall 1 / 6</div>
+  <div id="caseTitle"></div>
+  <div id="svgHost"></div>
+  <div class="sliderRow" id="sliderRow">
+    <label for="xSlider">Teste bei x =</label>
+    <input type="range" id="xSlider" min="-5" max="5" step="1" value="-4"/>
+    <span id="xVal">-4</span>
+  </div>
+  <div id="hitCount"></div>
+  <div class="verdictRow">
+    <button class="vbtn" id="btnJa">✅ Ist eine Funktion</button>
+    <button class="vbtn" id="btnNein">❌ Ist keine Funktion</button>
+  </div>
+  <div id="feedback"></div>
+  <button id="nextBtn">Nächster Fall ▸</button>
+  <div id="doneBox">✅ Alle 6 Fälle ermittelt — der Senkrechten-Test sitzt!</div>
+</div>
+<script>
+const CASES=[
+  {id:"A", title:"Gerade: y = 0,5x + 1", type:"graph", correct:true,
+   yAt:(x)=>[0.5*x+1],
+   draw:()=>({kind:"line", from:[-5,0.5*-5+1], to:[5,0.5*5+1]}),
+   why:"Bei JEDEM x-Wert liegt genau ein Punkt auf der Geraden — der Senkrechten-Test trifft immer nur einmal. Das ist eine Funktion."},
+  {id:"B", title:"Senkrechte Linie: x = 3", type:"graph", correct:false,
+   yAt:(x)=> Math.abs(x-3)<0.001 ? "inf" : [],
+   draw:()=>({kind:"vline", x:3}),
+   why:"Bei x=3 liegen UNENDLICH viele Punkte übereinander — der Senkrechten-Test deckt sich dort komplett mit der Linie. x=3 ist keine Funktionsgleichung, sondern nur eine Relation."},
+  {id:"C", title:"Kreis: x² + y² = 9", type:"graph", correct:false,
+   yAt:(x)=> Math.abs(x)<3 ? [Math.sqrt(9-x*x), -Math.sqrt(9-x*x)] : (Math.abs(x-3)<0.001||Math.abs(x+3)<0.001?[0]:[]),
+   draw:()=>({kind:"circle", r:3}),
+   why:"Bei jedem x zwischen −3 und 3 trifft der Senkrechten-Test den Kreis ZWEIMAL (oben und unten) — nicht eindeutig, also keine Funktion."},
+  {id:"D", title:"Pfeilbild: D={1;2;3}", type:"pfeilbild", correct:false,
+   arrows:[[1,5],[1,6],[2,5],[3,6]],
+   why:"Element 1 hat ZWEI Pfeile (zu 5 UND zu 6) — nicht eindeutig, also keine Funktion."},
+  {id:"E", title:"Pfeilbild: D={1;2;3}", type:"pfeilbild", correct:true,
+   arrows:[[1,5],[2,5],[3,6]],
+   why:"Jedes Element aus D hat genau EINEN Pfeil — eindeutig, also eine Funktion. Dass 1 und 2 beide auf 5 zeigen, ist dabei völlig erlaubt: eindeutig heißt nur, dass jedes x nur EINEN Pfeil aussendet."},
+  {id:"F", title:"Parabel: y = x² − 4", type:"graph", correct:true,
+   yAt:(x)=>[x*x-4],
+   draw:()=>({kind:"curve", fn:(x)=>x*x-4, from:-3, to:3}),
+   why:"Auch bei einem krummen Graphen trifft der Senkrechten-Test immer nur EINMAL — jedes x hat genau einen Funktionswert. Auch Parabeln können Funktionen sein."}
+];
+let ci=0, xTest=-4, caseSolved=[false,false,false,false,false,false];
+
+function toX(x){ return 150+x*25; }
+function toY(y){ return 150-y*25; }
+
+function buildGraphSVG(c, xt){
+  let s='<svg viewBox="0 0 300 300" style="width:100%;max-width:320px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="0" y1="150" x2="300" y2="150" stroke="#9aa4b2" stroke-width="1"/>';
+  s+='<line x1="150" y1="0" x2="150" y2="300" stroke="#9aa4b2" stroke-width="1"/>';
+  const d=c.draw();
+  if(d.kind==="line"){
+    s+='<line x1="'+toX(d.from[0])+'" y1="'+toY(d.from[1])+'" x2="'+toX(d.to[0])+'" y2="'+toY(d.to[1])+'" stroke="#5fd0c7" stroke-width="2"/>';
+  } else if(d.kind==="vline"){
+    s+='<line x1="'+toX(d.x)+'" y1="'+toY(-5)+'" x2="'+toX(d.x)+'" y2="'+toY(5)+'" stroke="#5fd0c7" stroke-width="2"/>';
+  } else if(d.kind==="circle"){
+    s+='<circle cx="150" cy="150" r="'+(d.r*25)+'" fill="none" stroke="#5fd0c7" stroke-width="2"/>';
+  } else if(d.kind==="curve"){
+    let pts=[];
+    for(let x=d.from; x<=d.to+0.001; x+=0.2){ pts.push(toX(x)+","+toY(d.fn(x))); }
+    s+='<polyline points="'+pts.join(" ")+'" fill="none" stroke="#5fd0c7" stroke-width="2"/>';
+  }
+  s+='<line x1="'+toX(xt)+'" y1="0" x2="'+toX(xt)+'" y2="300" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="4,3"/>';
+  const hits=c.yAt(xt);
+  if(hits==="inf"){
+    for(let y=-4.5; y<=4.5; y+=1){ s+='<circle cx="'+toX(xt)+'" cy="'+toY(y)+'" r="3" fill="#c0392b"/>'; }
+  } else {
+    hits.forEach(y=>{ s+='<circle cx="'+toX(xt)+'" cy="'+toY(y)+'" r="4" fill="#f2a63c"/>'; });
+  }
+  s+='</svg>';
+  return s;
+}
+function buildPfeilbildSVG(c){
+  const dVals=[...new Set(c.arrows.map(a=>a[0]))];
+  const wVals=[...new Set(c.arrows.map(a=>a[1]))];
+  let s='<svg viewBox="0 0 300 220" style="width:100%;max-width:320px;height:auto;display:block;margin:0 auto;">';
+  s+='<ellipse cx="70" cy="110" rx="55" ry="95" fill="rgba(242,166,60,0.08)" stroke="#f2a63c" stroke-width="1.5"/>';
+  s+='<ellipse cx="230" cy="110" rx="55" ry="95" fill="rgba(95,208,199,0.08)" stroke="#5fd0c7" stroke-width="1.5"/>';
+  s+='<text x="70" y="8" text-anchor="middle" font-size="13" font-weight="700" fill="#f2a63c">D</text>';
+  s+='<text x="230" y="8" text-anchor="middle" font-size="13" font-weight="700" fill="#5fd0c7">W</text>';
+  const dY={}, wY={};
+  dVals.forEach((v,i)=>{ dY[v]=40+i*((160)/(Math.max(1,dVals.length-1)||1)); });
+  wVals.forEach((v,i)=>{ wY[v]=40+i*((160)/(Math.max(1,wVals.length-1)||1)); });
+  dVals.forEach(v=>{
+    s+='<circle cx="70" cy="'+dY[v]+'" r="4" fill="#f2a63c"/>';
+    s+='<text x="50" y="'+(dY[v]+4)+'" text-anchor="end" font-size="12" fill="#e6edf3">'+v+'</text>';
+  });
+  wVals.forEach(v=>{
+    s+='<circle cx="230" cy="'+wY[v]+'" r="4" fill="#5fd0c7"/>';
+    s+='<text x="250" y="'+(wY[v]+4)+'" font-size="12" fill="#e6edf3">'+v+'</text>';
+  });
+  c.arrows.forEach(a=>{
+    s+='<line x1="78" y1="'+dY[a[0]]+'" x2="222" y2="'+wY[a[1]]+'" stroke="#9aa4b2" stroke-width="1"/>';
+  });
+  s+='</svg>';
+  return s;
+}
+
+function render(){
+  const c=CASES[ci];
+  document.getElementById('progress').textContent='Fall '+(ci+1)+' / '+CASES.length;
+  document.getElementById('caseTitle').textContent=c.title;
+  document.getElementById('feedback').textContent='';
+  document.getElementById('nextBtn').style.display='none';
+  document.querySelectorAll('.vbtn').forEach(b=>{ b.disabled=false; b.classList.remove('correct','wrong'); });
+  if(c.type==="graph"){
+    document.getElementById('sliderRow').style.display='flex';
+    xTest=-4;
+    document.getElementById('xSlider').value=xTest;
+    document.getElementById('xVal').textContent=xTest;
+    document.getElementById('svgHost').innerHTML=buildGraphSVG(c, xTest);
+    updateHitCount(c, xTest);
+  } else {
+    document.getElementById('sliderRow').style.display='none';
+    document.getElementById('hitCount').textContent='';
+    document.getElementById('svgHost').innerHTML=buildPfeilbildSVG(c);
+  }
+}
+function updateHitCount(c, xt){
+  const hits=c.yAt(xt);
+  const n = hits==="inf" ? "unendlich viele" : hits.length;
+  document.getElementById('hitCount').textContent='Schnittpunkte bei x='+xt+': '+n;
+}
+document.getElementById('xSlider').addEventListener('input', e=>{
+  xTest=parseInt(e.target.value);
+  document.getElementById('xVal').textContent=xTest;
+  const c=CASES[ci];
+  document.getElementById('svgHost').innerHTML=buildGraphSVG(c, xTest);
+  updateHitCount(c, xTest);
+});
+
+function judge(guessFunktion, btn){
+  const c=CASES[ci];
+  if(caseSolved[ci]) return;
+  const other = guessFunktion ? document.getElementById('btnNein') : document.getElementById('btnJa');
+  document.querySelectorAll('.vbtn').forEach(b=>b.disabled=true);
+  if(guessFunktion===c.correct){
+    btn.classList.add('correct');
+  } else {
+    btn.classList.add('wrong');
+    other.classList.add('correct');
+  }
+  document.getElementById('feedback').textContent=c.why;
+  caseSolved[ci]=true;
+  window.lwAward && window.lwAward('mission', 'fall'+(ci+1));
+  document.getElementById('nextBtn').style.display = (ci<CASES.length-1) ? 'block' : 'none';
+  checkAllDone();
+}
+document.getElementById('btnJa').onclick=()=>judge(true, document.getElementById('btnJa'));
+document.getElementById('btnNein').onclick=()=>judge(false, document.getElementById('btnNein'));
+document.getElementById('nextBtn').onclick=()=>{
+  if(ci<CASES.length-1){ ci++; render(); }
+};
+function checkAllDone(){
+  if(caseSolved.every(Boolean)){
+    document.getElementById('doneBox').style.display='block';
+    window.lwAward && window.lwAward('mission', 'funktionsdetektor_komplett');
+  }
+}
+render();
+
+// Test-Hook fuer Playwright-Verifikation
+window.LAB = {
+  state: () => ({ caseIndex: ci, xTest: xTest, caseSolved: caseSolved.slice() }),
+  setX: (x) => { document.getElementById('xSlider').value=x; document.getElementById('xSlider').dispatchEvent(new Event('input')); },
+  judge: (guessFunktion) => judge(guessFunktion, guessFunktion ? document.getElementById('btnJa') : document.getElementById('btnNein')),
+  nextCase: () => document.getElementById('nextBtn').click()
+};
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

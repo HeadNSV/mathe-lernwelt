@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Lineare Gleichungssysteme · Was ist ein LGS? Einsetzen &amp; Gleichsetzen</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .warnbox{background:#3d1c1c;border-left:5px solid #c0392b;border-radius:8px;padding:10px 16px;font-size:min(1.9vw,16px);color:#ffd9d0;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+  .threebox{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>LINEARE GLEICHUNGSSYSTEME</h1>
+    <h2>Kapitel 15 · Teil 1 — Was ist ein LGS? Einsetzen &amp; Gleichsetzen</h2>
+    <div class="hook" style="max-width:70ch;">2 Döner + 1 Ayran = 11 € · 1 Döner + 2 Ayran = 8,50 € — was kostet ein Döner allein? Sobald du das löst, hast du gerade ein lineares Gleichungssystem gelöst.</div>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 15.1</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Was ist ein LGS -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Was ist ein lineares Gleichungssystem?</h2>
+      <div class="defbox">Existieren mehrere lineare Gleichungen mit denselben Variablen gleichzeitig, nennt man dies ein <b>lineares Gleichungssystem (LGS)</b>.<br>a₁x + b₁y = c₁<br>a₂x + b₂y = c₂</div>
+      <div class="defbox">Beim Döner-Ayran-Beispiel: D = Preis Döner, A = Preis Ayran.<br>(I) 2D + A = 11<br>(II) D + 2A = 8,5<br>Gesucht sind Werte für D und A, die BEIDE Gleichungen gleichzeitig erfüllen.</div>
+    </div>
+  </section>
+
+  <!-- 3 Geometrische Deutung -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Die geometrische Deutung <span class="chip">🌉 Brücke</span></h2>
+      <div class="svgbox"><div id="svgSchnitt"></div><div class="svgcaption">g: y=x+1 und h: y=−0,5x+4 — Schnittpunkt S(2|3)</div></div>
+      <div class="defbox">Jede lineare Gleichung mit zwei Variablen entspricht einer Geraden. Die Lösung des LGS ist genau der <b>Schnittpunkt</b> der beiden Geraden — das kennst du bereits aus dem Geraden-Duett-Kapitel: dort ging es um dieselbe Frage, nur ohne den Namen „Gleichungssystem".</div>
+    </div>
+  </section>
+
+  <!-- 4 Beispielaufgabe graphisch -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Beispielaufgabe: graphisches Lösen</h2>
+      <div class="defbox">Gegeben ist das LGS (G=ℝ):<br>(I) 3x + y = 7<br>(II) x − y = 1</div>
+      <div class="defbox">Nach y aufgelöst: (I) y=−3x+7 · (II) y=x−1. Beide Geraden zeichnen und den Schnittpunkt ablesen: S(2|1).<br>Probe: (I) 3·2+1=7 (wahr) · (II) 2−1=1 (wahr) ⟹ L={(2|1)}.</div>
+    </div>
+  </section>
+
+  <!-- 5 Drei Loesungsfaelle -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Die drei Lösungsfälle</h2>
+      <div class="defbox">Für a₁x+b₁y=c₁ und a₂x+b₂y=c₂ (mit a₁,a₂,b₁,b₂≠0) gilt:<br>
+      <b>genau eine Lösung</b>, wenn a₁:a₂ ≠ b₁:b₂ — Geraden schneiden sich in genau einem Punkt.<br>
+      <b>keine Lösung</b>, wenn a₁:a₂ = b₁:b₂, aber ≠ c₁:c₂ — Geraden sind echt parallel, L={ }.<br>
+      <b>unendlich viele Lösungen</b>, wenn a₁:a₂ = b₁:b₂ = c₁:c₂ — Geraden sind identisch.</div>
+    </div>
+  </section>
+
+  <!-- 6 SVG Trio -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Alle drei Fälle im Bild</h2>
+      <div class="threebox">
+        <div class="svgbox"><div id="svgFallA"></div><div class="svgcaption">x+y=5, x−y=1 → genau eine Lösung S(3|2)</div></div>
+        <div class="svgbox"><div id="svgFallB"></div><div class="svgcaption">2x+4y=12, x+2y=3 → parallel, L={ }</div></div>
+        <div class="svgbox"><div id="svgFallC"></div><div class="svgcaption">x+2y=3, 2x+4y=6 → identisch, unendlich viele</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 Einsetzverfahren Merksatz -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Das Einsetzverfahren</h2>
+      <div class="defbox">Beim <b>Einsetzverfahren</b> wird eine Gleichung nach einer Variablen aufgelöst, und der dafür gefundene Term wird in die andere Gleichung eingesetzt. Es entsteht eine Gleichung mit nur einer Variablen, die durch Äquivalenzumformung gelöst werden kann.</div>
+      <div class="defbox">Beispiel: (I) 3x−y=7 &nbsp; (II) x+2y=0 &nbsp; mit G=ℝ.</div>
+    </div>
+  </section>
+
+  <!-- 8 Steps Einsetzverfahren -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Einsetzverfahren</h2>
+      <div class="step" id="s8_1"><b class="lbl">Schritt 1 — nach x umstellen:</b> aus (II): x+2y=0 ⟺ x=−2y.</div>
+      <div class="step" id="s8_2"><b class="lbl">Schritt 2 — einsetzen in (I):</b> x=−2y in 3x−y=7: 3·(−2y)−y=7 ⟺ −6y−y=7 ⟺ −7y=7.</div>
+      <div class="step" id="s8_3"><b class="lbl">Schritt 3 — auflösen:</b> −7y=7 ⟺ y=−1.</div>
+      <div class="step" id="s8_4"><b class="lbl">Schritt 4 — zurück einsetzen:</b> x=−2·(−1)=2. Probe: (I) 3·2−(−1)=7 ✓ · (II) 2+2·(−1)=0 ✓ ⟹ L={(2|−1)}.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="8" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 9 Gleichsetzverfahren Merksatz -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Das Gleichsetzverfahren</h2>
+      <div class="defbox">Beim <b>Gleichsetzverfahren</b> werden beide Gleichungen nach DERSELBEN Variablen aufgelöst. Die entstehenden Terme werden gleichgesetzt — es entsteht wieder eine Gleichung mit nur einer Variablen.</div>
+      <div class="defbox">Beispiel: (I) y=2x−3 &nbsp; (II) y=−x+9 &nbsp; mit G=ℝ. Beide Gleichungen sind schon nach y aufgelöst — ideal fürs Gleichsetzverfahren.</div>
+    </div>
+  </section>
+
+  <!-- 10 Steps Gleichsetzverfahren -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Gleichsetzverfahren</h2>
+      <div class="step" id="s10_1"><b class="lbl">Schritt 1 — gleichsetzen:</b> (I)=(II): 2x−3=−x+9.</div>
+      <div class="step" id="s10_2"><b class="lbl">Schritt 2 — auflösen:</b> 2x−3=−x+9 ⟺ 3x=12 ⟺ x=4.</div>
+      <div class="step" id="s10_3"><b class="lbl">Schritt 3 — zurück einsetzen:</b> x=4 in (I): y=2·4−3=5.</div>
+      <div class="step" id="s10_4"><b class="lbl">Schritt 4 — Probe:</b> (II) y=−4+9=5 ✓ ⟹ L={(4|5)}.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="10" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 11 Bruecke Aequivalenzumformung -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Warum das erlaubt ist <span class="chip">🌉 Brücke</span></h2>
+      <div class="defbox">Beide Verfahren nutzen im Kern nur <b>Äquivalenzumformungen</b>, die du aus dem Gleichungen-Kapitel schon kennst: Umstellen nach einer Variablen ändert die Lösungsmenge einer Gleichung nicht, und das Einsetzen eines gleichwertigen Terms ändert ebenfalls nichts an der Lösung — es wird nur eine andere Schreibweise derselben Information verwendet.</div>
+    </div>
+  </section>
+
+  <!-- 12 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Schnitt-Finder</span><span class="sub">zwei Geraden per Regler einstellen, Lösungsfall klassifizieren</span></div>
+    <iframe allow="autoplay" data-src="schnittfinder46_labor.html"></iframe>
+  </section>
+
+  <!-- 13 Eselsbruecke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Einsetzen, wenn eine Variable schon allein dasteht — Gleichsetzen, wenn BEIDE Gleichungen schon nach derselben Variablen aufgelöst sind." Und: „Keine Lösung = Geraden laufen parallel nebeneinander her, ohne sich je zu treffen. Unendlich viele = die Geraden SIND dieselbe Linie."</div>
+    </div>
+  </section>
+
+  <!-- 14 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Materialmischung in der Werkstatt</h2>
+      <div class="defbox">Ein Betrieb mischt zwei Harz-Sorten zu einer neuen Mischung mit bestimmten Eigenschaften. Aus zwei Vorgaben (Gesamtmenge und Ziel-Eigenschaft der Mischung) entstehen zwei Gleichungen mit zwei Unbekannten — ein LGS, das das Mischungsverhältnis liefert.</div>
+    </div>
+  </section>
+
+  <!-- 15 Intuitions-Regler -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Schätz mal: welcher Lösungsfall?</h2>
+      <div class="defbox">(I) 2x+y=5 &nbsp; (II) 4x+2y=10 — wie viele Lösungen hat dieses LGS? (0 = keine, 1 = genau eine, 2 = unendlich viele)</div>
+      <div id="estLGS46"></div>
+    </div>
+  </section>
+
+  <!-- 16 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>(I), (II)</td><td>„Gleichung eins, Gleichung zwei"</td><td>Nummerierung der Gleichungen eines LGS</td></tr>
+        <tr><td>L={(x|y)}</td><td>„Lösungsmenge"</td><td>Lösung als Zahlenpaar, NICHT als einzelne Zahl</td></tr>
+        <tr><td>L={ }</td><td>„leere Menge"</td><td>keine Lösung — Geraden echt parallel</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 17 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Verfahren</th><th>Ideal wenn …</th></tr>
+      <tr><td>Einsetzverfahren</td><td>eine Variable schon allein dasteht</td></tr>
+      <tr><td>Gleichsetzverfahren</td><td>beide Gleichungen nach derselben Variablen aufgelöst sind</td></tr>
+    </table>
+  </section>
+
+  <!-- 18 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Löse mit dem Einsetzverfahren: (I) y=x+2 &nbsp; (II) 2x+y=11.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>2x+(x+2)=11 → 3x=9 → x=3, y=5 → L={(3|5)}</details>
+        </li>
+        <li style="margin-top:10px;">Löse mit dem Gleichsetzverfahren: (I) y=3x−1 &nbsp; (II) y=x+3.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>3x−1=x+3 → 2x=4 → x=2, y=5 → L={(2|5)}</details>
+        </li>
+        <li style="margin-top:10px;">(I) x+y=4 &nbsp; (II) 2x+2y=8 — wie viele Lösungen?
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>Verhältnisse 1:2=1:2=4:8 alle gleich → identisch, unendlich viele Lösungen</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 19 Pruefungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Ein LGS geometrisch als Schnittpunkt zweier Geraden deuten und die drei Lösungsfälle unterscheiden.</b></li>
+        <li><b>Einsetz- und Gleichsetzverfahren sicher anwenden und wissen, wann welches geeignet ist.</b></li>
+        <li><b>Die Lösung IMMER als Zahlenpaar angeben, nicht als einzelne Zahl.</b></li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">Kapitel-Brücke zum nächsten Deck: <i>„Es gibt noch einen dritten Lösungsweg — und der wird besonders praktisch, wenn Brüche drohen."</i> Genau darum geht es im nächsten Deck.</div>
+    </div>
+  </section>
+
+  <!-- 20 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+function toX46(x, ox, scale){ return ox+x*scale; }
+function toY46(y, oy, scale){ return oy-y*scale; }
+function buildLinesSVG46(fns, xr, w, h, ox, oy, sx, sy, colors){
+  let s='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;max-width:420px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="0" y1="'+oy+'" x2="'+w+'" y2="'+oy+'" stroke="#9aa4b2" stroke-width="1"/>';
+  s+='<line x1="'+ox+'" y1="0" x2="'+ox+'" y2="'+h+'" stroke="#9aa4b2" stroke-width="1"/>';
+  fns.forEach((fn,i)=>{
+    let pts=[];
+    for(let x=xr[0]; x<=xr[1]+0.001; x+=0.2){
+      const y=fn(x);
+      const py=toY46(y,oy,sy);
+      if(py>-20 && py<h+20) pts.push(toX46(x,ox,sx)+","+py);
+    }
+    s+='<polyline points="'+pts.join(" ")+'" fill="none" stroke="'+colors[i%colors.length]+'" stroke-width="2.4"/>';
+  });
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgSchnitt').innerHTML=buildLinesSVG46(
+  [x=>x+1, x=>-0.5*x+4], [-2,6], 300,190, 40,150, 30,18, ['#5fd0c7','#e06fa0']
+);
+document.getElementById('svgFallA').innerHTML=buildLinesSVG46(
+  [x=>5-x, x=>x-1], [-1,6], 180,150, 30,120, 22,16, ['#5fd0c7','#e06fa0']
+);
+document.getElementById('svgFallB').innerHTML=buildLinesSVG46(
+  [x=>(12-2*x)/4, x=>(3-x)/2], [-1,6], 180,150, 30,120, 22,16, ['#5fd0c7','#e06fa0']
+);
+document.getElementById('svgFallC').innerHTML=buildLinesSVG46(
+  [x=>(3-x)/2, x=>(6-2*x)/4], [-1,6], 180,150, 30,120, 22,16, ['#5fd0c7','#f2a63c']
+);
+
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Was ist ein lineares Gleichungssystem?", "Die geometrische Deutung", "Beispielaufgabe: graphisches Lösen", "Die drei Lösungsfälle", "Alle drei Fälle im Bild", "Das Einsetzverfahren", "📐 Schritt für Schritt: Einsetzverfahren", "Das Gleichsetzverfahren", "📐 Schritt für Schritt: Gleichsetzverfahren", "Warum das erlaubt ist", "🧪 Schnitt-Finder", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Materialmischung in der Werkstatt", "Schätz mal: welcher Lösungsfall?", "Symbol-Legende", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=18;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck46_s1_Charon.mp3",txt:"Lineare Gleichungssysteme. Zwei Döner plus ein Ayran macht elf Euro, ein Döner plus zwei Ayran macht acht fünfzig - was kostet ein Döner allein? Sobald du das löst, hast du gerade ein lineares Gleichungssystem gelöst."},
+ 2:{wav:"narration_deck46_s2_Charon.mp3",txt:"Existieren mehrere lineare Gleichungen mit denselben Variablen gleichzeitig, nennt man das ein lineares Gleichungssystem."},
+ 3:{wav:"narration_deck46_s3_Charon.mp3",txt:"Jede lineare Gleichung mit zwei Variablen entspricht einer Geraden - die Lösung des Gleichungssystems ist genau der Schnittpunkt der beiden Geraden."},
+ 4:{wav:"narration_deck46_s4_Charon.mp3",txt:"Schauen wir uns gemeinsam ein Beispiel für das graphische Lösen an."},
+ 5:{wav:"narration_deck46_s5_Charon.mp3",txt:"Drei Fälle sind möglich: genau eine Lösung, keine Lösung, oder unendlich viele Lösungen - je nachdem wie die Geraden zueinander liegen."},
+ 6:{wav:"narration_deck46_s6_Charon.mp3",txt:"Hier siehst du alle drei Fälle nebeneinander im Bild."},
+ 7:{wav:"narration_deck46_s7_Charon.mp3",txt:"Beim Einsetzverfahren wird eine Gleichung nach einer Variablen aufgelöst und der Term in die andere Gleichung eingesetzt."},
+ 8:{wav:"narration_deck46_s8_Charon.mp3",txt:"Jetzt rechnen wir gemeinsam ein Beispiel mit dem Einsetzverfahren, Schritt für Schritt."},
+ 9:{wav:"narration_deck46_s9_Charon.mp3",txt:"Beim Gleichsetzverfahren werden beide Gleichungen nach derselben Variablen aufgelöst und dann gleichgesetzt."},
+ 10:{wav:"narration_deck46_s10_Charon.mp3",txt:"Jetzt rechnen wir gemeinsam ein Beispiel mit dem Gleichsetzverfahren, Schritt für Schritt."},
+ 11:{wav:"narration_deck46_s11_Charon.mp3",txt:"Beide Verfahren beruhen im Kern auf denselben Äquivalenzumformungen, die du schon aus dem Gleichungen-Kapitel kennst."},
+ 12:{wav:"narration_deck46_s12_Charon.mp3",txt:"Jetzt bist du dran: stelle zwei Geraden per Regler ein und klassifiziere den Lösungsfall."},
+ 13:{wav:"narration_deck46_s13_Charon.mp3",txt:"Einsetzen, wenn eine Variable schon allein dasteht - Gleichsetzen, wenn beide Gleichungen schon nach derselben Variablen aufgelöst sind."},
+ 14:{wav:"narration_deck46_s14_Charon.mp3",txt:"Auch beim Mischen von Materialien in der Werkstatt entstehen oft lineare Gleichungssysteme."},
+ 15:{wav:"narration_deck46_s15_Charon.mp3",txt:"Bevor du ins Labor gehst: schätz doch mal, wie viele Lösungen dieses Gleichungssystem hat."},
+ 16:{wav:"narration_deck46_s16_Charon.mp3",txt:"Hier noch mal alle Symbole rund um lineare Gleichungssysteme im Überblick."},
+ 17:{wav:"narration_deck46_s17_Charon.mp3",txt:"Fassen wir zusammen, wann welches Verfahren ideal ist."},
+ 18:{wav:"narration_deck46_s18_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben rund um lineare Gleichungssysteme."},
+ 19:{wav:"narration_deck46_s19_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst - und einen Ausblick auf das nächste Thema."},
+ 20:{wav:"narration_deck46_s20_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"(I) x+2y=5 und (II) x+2y=9 — welcher Lösungsfall liegt vor?",
+  a:["Genau eine Lösung","Keine Lösung (parallel)","Unendlich viele Lösungen (identisch)","Das lässt sich ohne Grafik nicht sagen"],r:1,
+  why:"Gleiche linke Seite, aber unterschiedliche rechte Seite (5≠9) — die Geraden sind echt parallel, L={ }."},
+ {q:"Beim Lösen ergibt sich am Ende die wahre Aussage 0=0. Was bedeutet das?",
+  a:["Keine Lösung","Unendlich viele Lösungen — aber NUR die Zahlenpaare AUF der gemeinsamen Geraden, nicht jedes beliebige Zahlenpaar","Genau eine Lösung bei x=0","Ein Rechenfehler ist passiert"],r:1,
+  why:"0=0 zeigt: die beiden Gleichungen sind äquivalent, die Geraden identisch — Lösung ist die ganze Gerade, aber eben nur die Punkte DARAUF, nicht jedes x,y der Ebene."},
+ {q:"Ein Schüler berechnet x=3 und schreibt als Lösungsmenge L={3}. Was ist daran problematisch?",
+  a:["Nichts, das ist korrekt","Die Lösung eines LGS mit zwei Variablen ist ein Zahlenpaar (x|y), nicht nur eine einzelne Zahl","3 ist die falsche Zahl","Man darf L={} nicht anders schreiben"],r:1,
+  why:"Vergessen, y zu bestimmen, ist ein klassischer Fehler — die Lösungsmenge muss als Zahlenpaar wie L={(3|y)} angegeben werden."},
+ {q:"(I) y=4x+1 und (II) y=−2x+7 — welches Verfahren ist hier am direktesten?",
+  a:["Einsetzverfahren","Gleichsetzverfahren, da beide Gleichungen schon nach y aufgelöst sind","Additionsverfahren","Keines davon funktioniert hier"],r:1,
+  why:"Beide Gleichungen sind bereits nach derselben Variablen (y) aufgelöst — das ist der Idealfall fürs Gleichsetzverfahren."},
+ {q:"(I) 2x−y=3 und (II) x=5. Welches Verfahren passt hier am besten?",
+  a:["Gleichsetzverfahren","Einsetzverfahren, da x in (II) schon direkt gegeben ist","Man kann dieses LGS nicht lösen","Additionsverfahren, da beide Gleichungen nach y aufgelöst sind"],r:1,
+  why:"x=5 steht schon isoliert da — einfach in (I) einsetzen ist der direkteste Weg."}
+];
+const DECK_ID="lgs/deck46";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), oi===item.r);
+        answered++; if(oi===item.r) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estLGS46', {
+    frage: '(I) 2x+y=5 und (II) 4x+2y=10 — wie viele Lösungen hat dieses LGS? (0 = keine, 1 = genau eine, 2 = unendlich viele)',
+    min: 0, max: 2, korrekt: 2, toleranz: 0,
+    begruendung: 'Gleichung (II) ist genau das Doppelte von Gleichung (I) — Verhältnisse 2:4=1:2=5:10 alle gleich, die Geraden sind identisch: unendlich viele Lösungen.'
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Rechnen mit Brüchen · Teil 4 — Rechnen mit Potenzen</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .svggrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  @media (max-width:760px){ .svggrid{grid-template-columns:1fr;} }
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+  .confrow{display:flex;gap:8px;margin-bottom:10px;}
+  .confchip{flex:1;background:#1f2630;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:7px 10px;font-size:13px;cursor:pointer;}
+  .confchip.sure.on{background:#1e4a34;border-color:#4caf50;}
+  .confchip.unsure.on{background:#4a3d1e;border-color:var(--accent);}
+  .quizoptswrap{opacity:0.4;pointer-events:none;transition:opacity .2s;}
+  .quizoptswrap.enabled{opacity:1;pointer-events:auto;}
+  .quizwarn{margin-top:8px;padding:8px 12px;background:#3d2a12;border-left:3px solid #c0392b;border-radius:6px;font-size:min(1.9vw,14px);color:#ffd9c2;display:none;}
+  .quizwarn.show{display:block;}
+  .fdline{display:flex;gap:10px;align-items:center;justify-content:center;margin:8px 0;}
+  .fdcard{flex:1;max-width:220px;border-radius:10px;padding:14px;text-align:center;font-size:min(2.2vw,18px);font-weight:700;}
+  .fdcard.bad{background:rgba(192,57,43,0.15);border:2px solid #c0392b;color:#ff9c8a;}
+  .fdcard.good{background:rgba(76,175,80,0.15);border:2px solid #4caf50;color:#8adf9c;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>RECHNEN MIT BRÜCHEN <span class="accent">· Teil 4</span></h1>
+    <h2>Rechnen mit Potenzen</h2>
+    <p>Ein Blatt Papier 50-mal gefaltet wäre dicker als die Strecke zur Sonne — wie kann das sein? Und was ist eigentlich a³ · a² wirklich, ohne alles einzeln auszuschreiben?</p>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 4.4</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Rueckblick Potenz-Anatomie -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Rückblick: Basis, Exponent, Potenz</h2>
+      <div class="svgbox"><div id="svgS2"></div><div class="svgcaption">aⁿ — a ist die Basis, n ist der Exponent</div></div>
+      <div class="defbox">Eine Potenz aⁿ ist die Kurzschreibweise für ein Produkt aus n gleichen Faktoren a. Das kennst du schon aus dem Kapitel „Rechnen mit ganzen Zahlen” — jetzt kommen die Rechenregeln dazu.</div>
+      <ul class="bul">
+        <li>a⁴ = a · a · a · a — vier gleiche Faktoren a.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 3 Gesetz 1: gleiche Basis multiplizieren -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Gesetz 1: gleiche Basis multiplizieren</h2>
+      <div class="svgbox"><div id="svgS3"></div><div class="svgcaption">a³ · a² — die Faktoren wandern einfach in EINE Reihe</div></div>
+      <div class="defbox">Potenzen mit gleicher Basis werden multipliziert, indem die Exponenten addiert werden: aⁿ · aᵐ = aⁿ⁺ᵐ.</div>
+      <ul class="bul">
+        <li>a³ · a² = (a·a·a) · (a·a) = a·a·a·a·a = a⁵.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 4 Gesetz 2: gleiche Basis dividieren -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Gesetz 2: gleiche Basis dividieren</h2>
+      <div class="svgbox"><div id="svgS4"></div><div class="svgcaption">a⁵ : a² — gemeinsame Faktoren kürzen sich weg</div></div>
+      <div class="defbox">Potenzen mit gleicher Basis werden dividiert, indem die Exponenten subtrahiert werden: aⁿ/aᵐ = aⁿ⁻ᵐ.</div>
+      <ul class="bul">
+        <li>a⁵/a² = (a·a·a·a·a)/(a·a) = a·a·a = a³.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 5 Gesetz 3: Potenz einer Potenz -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Gesetz 3: Potenz einer Potenz</h2>
+      <div class="svgbox"><div id="svgS5"></div><div class="svgcaption">(a³)² — ZWEI Gruppen aus je 3 Faktoren</div></div>
+      <div class="defbox">Potenzen werden potenziert, indem die Exponenten multipliziert werden: (aⁿ)ᵐ = aⁿ·ᵐ.</div>
+      <ul class="bul">
+        <li>(a³)² = a³ · a³ = a³⁺³ = a⁶ = a³·².</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 6 Gesetz 4: gleicher Exponent -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Gesetz 4: gleicher Exponent (Produkt/Quotient)</h2>
+      <div class="defbox">Produkte und Quotienten werden potenziert, indem jeder Faktor einzeln potenziert wird: (a·b)ⁿ = aⁿ·bⁿ und (a/b)ⁿ = aⁿ/bⁿ.</div>
+      <ul class="bul">
+        <li>(a·b)³ = (a·b)·(a·b)·(a·b) = a·a·a · b·b·b = a³ · b³.</li>
+      </ul>
+      <div class="alltagbox">🏠 In der Elektrotechnik werden Widerstände z. B. mit (2R)² statt umständlich ausgeschrieben berechnet — dasselbe Gesetz, nur mit Formelbuchstaben.</div>
+    </div>
+  </section>
+
+  <!-- 7 Schritt-für-Schritt kombiniert -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> (3² · 3³)² vereinfachen</h2>
+      <div class="defbox">Aufgabe: Vereinfache (3² · 3³)² zu einer einzigen Potenz.</div>
+      <div class="step" id="s7_1"><b class="lbl">Klammer zuerst — Gesetz 1 (gleiche Basis multiplizieren):</b> 3² · 3³ = 3²⁺³ = 3⁵.</div>
+      <div class="step" id="s7_2"><b class="lbl">Jetzt Gesetz 3 (Potenz einer Potenz):</b> (3⁵)² = 3⁵·² = 3¹⁰.</div>
+      <div class="step" id="s7_3"><b class="lbl">Antwortsatz:</b> (3² · 3³)² = 3¹⁰ = 59 049.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="7" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 8 Besondere Exponenten -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Besondere Exponenten: 0 und 1</h2>
+      <div class="defbox">Jede Potenz mit dem Exponenten 0 hat den Wert 1 (a≠0): a⁰ = 1. Jede Potenz mit dem Exponenten 1 hat den Wert a: a¹ = a.</div>
+      <ul class="bul">
+        <li>Herleitung über Gesetz 2: a⁴/a⁴ = a⁴⁻⁴ = a⁰. Da a⁴/a⁴ aber offensichtlich 1 ist, muss a⁰ = 1 gelten.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 9 Negative Exponenten -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Negative Exponenten</h2>
+      <div class="svgbox"><div id="svgS9"></div><div class="svgcaption">a⁻ⁿ ist der Kehrwert von aⁿ</div></div>
+      <div class="defbox">Jede Potenz mit negativem Exponenten lässt sich als Bruch mit positivem Exponenten schreiben: a⁻ⁿ = 1/aⁿ (a≠0).</div>
+      <ul class="bul">
+        <li>3⁻² = 1/3² = 1/9.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10 Vorzeichenregel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>⚠️ Vorzeichenregel — Basis GENAU erkennen</h2>
+      <div class="svgbox">
+        <div class="fdline">
+          <div class="fdcard bad">(−2)⁴<br/>Basis = −2<br/>= 16</div>
+          <div class="fdcard good">−2⁴<br/>Basis = 2, davor ein Minus<br/>= −16</div>
+        </div>
+        <div class="svgcaption">Klammern um die Basis verändern das Ergebnis komplett!</div>
+      </div>
+      <div class="defbox">Negative Basis + gerader Exponent → Ergebnis positiv. Negative Basis + ungerader Exponent → Ergebnis negativ. Ohne Klammer gehört das Minus NICHT zur Basis.</div>
+    </div>
+  </section>
+
+  <!-- 11 Eselsbrücke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Mal-Punkt-Rechnung mit Potenzen: gleiche Basis → Exponenten ADDIEREN beim Mal, SUBTRAHIEREN beim Geteilt, MULTIPLIZIEREN beim Potenz-hoch-Potenz.” Die Grundrechenart der Exponenten ist immer eine Stufe „einfacher” als die der Basis.</div>
+    </div>
+  </section>
+
+  <!-- 12 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Datengrößen in der IT</h2>
+      <div class="defbox">1 Kilobyte = 2¹⁰ Byte, 1 Megabyte = 2²⁰ Byte, 1 Gigabyte = 2³⁰ Byte — jede Stufe ist Gesetz 1 in Aktion: 2¹⁰ · 2¹⁰ = 2²⁰.</div>
+      <ul class="bul">
+        <li>IT-Fachkräfte rechnen ständig mit Zehner- und Zweierpotenzen — Speichergrößen, Übertragungsraten, Verschlüsselung.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 13 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>aⁿ</td><td>„a hoch n”</td><td>Potenz: a ist Basis, n ist Exponent</td></tr>
+        <tr><td>aⁿ · aᵐ = aⁿ⁺ᵐ</td><td>„gleiche Basis multiplizieren”</td><td>Exponenten addieren</td></tr>
+        <tr><td>aⁿ/aᵐ = aⁿ⁻ᵐ</td><td>„gleiche Basis dividieren”</td><td>Exponenten subtrahieren</td></tr>
+        <tr><td>(aⁿ)ᵐ = aⁿᵐ</td><td>„Potenz einer Potenz”</td><td>Exponenten multiplizieren</td></tr>
+        <tr><td>a⁻ⁿ</td><td>„a hoch minus n”</td><td>= 1/aⁿ</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 14 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Gesetz-Sortierer</span><span class="sub">Term erscheint — richtiges Gesetz + Ergebnis wählen</span></div>
+    <iframe allow="autoplay" data-src="potenzgesetze13_labor.html"></iframe>
+  </section>
+
+  <!-- 15 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Gesetz</th><th>Regel</th></tr>
+      <tr><td>gleiche Basis · </td><td>aⁿ · aᵐ = aⁿ⁺ᵐ</td></tr>
+      <tr><td>gleiche Basis :</td><td>aⁿ/aᵐ = aⁿ⁻ᵐ</td></tr>
+      <tr><td>Potenz einer Potenz</td><td>(aⁿ)ᵐ = aⁿᵐ</td></tr>
+      <tr><td>gleicher Exponent</td><td>(a·b)ⁿ = aⁿ·bⁿ</td></tr>
+      <tr><td>a⁰ / a⁻ⁿ</td><td>= 1 / = 1/aⁿ</td></tr>
+    </table>
+  </section>
+
+  <!-- 16 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Fasse zusammen: b² · b⁵ · b.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>b²⁺⁵⁺¹ = b⁸</details>
+        </li>
+        <li style="margin-top:10px;">Vereinfache (2⁴)³.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>2⁴·³ = 2¹² = 4096</details>
+        </li>
+        <li style="margin-top:10px;">Berechne (−3)³ und −3³.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>(−3)³ = −27 (Basis −3, ungerade) · −3³ = −27 (Basis 3, davor Minus) — hier zufällig gleich, weil der Exponent ungerade ist!</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 17 Prüfungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Die vier Potenzgesetze korrekt anwenden</b> können (gleiche Basis mal/geteilt, Potenz einer Potenz, gleicher Exponent).</li>
+        <li><b>a⁰, a¹ und negative Exponenten</b> erklären und anwenden können.</li>
+        <li><b>(−a)ⁿ von −aⁿ unterscheiden</b> können.</li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">Typische Prüfungsaufgabe: <i>„Ein Mitschüler rechnet a³ · a² = a⁶. Erkläre den Fehler und nenne das richtige Ergebnis.”</i> → Beim Multiplizieren gleicher Basen werden die Exponenten ADDIERT, nicht multipliziert: a³ · a² = a³⁺² = a⁵. a⁶ entstünde nur bei einer Potenz einer Potenz wie (a³)² oder (a²)³.</div>
+    </div>
+  </section>
+
+  <!-- 18 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+// === SVG-Helfer: Basis/Exponent-Beschriftung ===
+function buildBaseExpSVG(){
+  const W=220,H=110;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:220px;height:auto;display:block;margin:0 auto;">';
+  s+='<text x="90" y="60" text-anchor="middle" font-size="40" font-weight="700" fill="#5fd0c7">a</text>';
+  s+='<text x="120" y="34" text-anchor="middle" font-size="24" font-weight="700" fill="#f2a63c">n</text>';
+  s+='<text x="90" y="90" text-anchor="middle" font-size="13" fill="#9aa4b2">Basis</text>';
+  s+='<text x="150" y="30" text-anchor="middle" font-size="13" fill="#9aa4b2">Exponent</text>';
+  s+='<line x1="90" y1="70" x2="90" y2="82" stroke="#5fd0c7" stroke-width="1.5"/>';
+  s+='<line x1="120" y1="40" x2="140" y2="34" stroke="#f2a63c" stroke-width="1.5"/>';
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgS2').innerHTML=buildBaseExpSVG();
+
+// === SVG-Helfer: Buchstaben-Kacheln fuer Potenzgesetze ===
+function buildLetterTilesSVG(rows){
+  // rows: [{label, tiles:[{v,cancel,hl}], op}]
+  const tw=26, th=26, gap=4, labelW=70, x0=8;
+  let y=6, s='';
+  rows.forEach(row=>{
+    s+='<text x="'+x0+'" y="'+(y+th/2+5)+'" font-size="13" font-weight="700" fill="'+(row.color||'#9aa4b2')+'">'+row.label+'</text>';
+    row.tiles.forEach(t=>{
+      const x=x0+labelW+t.i*(tw+gap);
+      const cancel=t.cancel, hl=t.hl;
+      const fill= hl? 'rgba(242,166,60,0.26)' : (cancel? '#151b24':'#1b222c');
+      const stroke= hl? '#f2a63c' : (cancel? '#c0392b':'#2a3038');
+      const tcol= hl? '#f2a63c' : (cancel? '#6b7280':'#e6edf3');
+      s+='<rect x="'+x+'" y="'+y+'" width="'+tw+'" height="'+th+'" rx="5" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.4"/>';
+      s+='<text x="'+(x+tw/2)+'" y="'+(y+th/2+5)+'" text-anchor="middle" font-size="14" font-weight="700" fill="'+tcol+'">'+t.v+'</text>';
+      if(cancel){ s+='<line x1="'+(x+3)+'" y1="'+(y+th-3)+'" x2="'+(x+tw-3)+'" y2="'+(y+3)+'" stroke="#c0392b" stroke-width="2"/>'; }
+    });
+    y+=th+8;
+  });
+  const maxI=Math.max.apply(null, rows.map(r=>r.tiles.length?Math.max.apply(null,r.tiles.map(t=>t.i)):0));
+  const W=x0+labelW+(maxI+1)*(tw+gap)+8, H=y+2;
+  return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:340px;height:auto;display:block;margin:0 auto;">'+s+'</svg>';
+}
+// Gesetz 1: a^3 * a^2 -> a^5
+document.getElementById('svgS3').innerHTML=buildLetterTilesSVG([
+  {label:'a³ · a² =', tiles:[0,1,2,3,4].map(i=>({v:'a',i}))},
+  {label:'= a⁵', tiles:[0,1,2,3,4].map(i=>({v:'a',i,hl:true}))}
+]);
+// Gesetz 2: a^5 / a^2 -> a^3 (2 gecancelt)
+document.getElementById('svgS4').innerHTML=buildLetterTilesSVG([
+  {label:'a⁵ : a² =', tiles:[0,1,2,3,4].map(i=>({v:'a',i,cancel:i>=3}))},
+  {label:'= a³', tiles:[0,1,2].map(i=>({v:'a',i,hl:true}))}
+]);
+// Gesetz 3: (a^3)^2 -> zwei Gruppen von 3
+document.getElementById('svgS5').innerHTML=buildLetterTilesSVG([
+  {label:'Gruppe 1 (a³)', tiles:[0,1,2].map(i=>({v:'a',i}))},
+  {label:'Gruppe 2 (a³)', tiles:[0,1,2].map(i=>({v:'a',i}))},
+  {label:'= a⁶', tiles:[0,1,2,3,4,5].map(i=>({v:'a',i,hl:true}))}
+]);
+
+// === SVG: negative Exponenten (Kehrwert) ===
+function buildNegExpSVG(){
+  const W=260,H=90;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:260px;height:auto;display:block;margin:0 auto;">';
+  s+='<text x="60" y="52" text-anchor="middle" font-size="22" font-weight="700" fill="#e6edf3">3⁻²</text>';
+  s+='<text x="130" y="52" text-anchor="middle" font-size="18" fill="#9aa4b2">=</text>';
+  s+='<text x="190" y="38" text-anchor="middle" font-size="20" font-weight="700" fill="#5fd0c7">1</text>';
+  s+='<line x1="165" y1="50" x2="215" y2="50" stroke="#5fd0c7" stroke-width="2"/>';
+  s+='<text x="190" y="70" text-anchor="middle" font-size="20" font-weight="700" fill="#5fd0c7">3²</text>';
+  s+='<text x="130" y="76" text-anchor="middle" font-size="12" fill="#9aa4b2">= 1/9</text>';
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgS9').innerHTML=buildNegExpSVG();
+
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Rückblick: Basis, Exponent, Potenz", "Gesetz 1: gleiche Basis multiplizieren", "Gesetz 2: gleiche Basis dividieren", "Gesetz 3: Potenz einer Potenz", "Gesetz 4: gleicher Exponent", "📐 Schritt für Schritt: (3² · 3³)²", "Besondere Exponenten: 0 und 1", "Negative Exponenten", "⚠️ Vorzeichenregel", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Datengrößen in der IT", "Symbol-Legende", "🧪 Gesetz-Sortierer", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=18;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck13_s1_Charon.mp3",txt:"Rechnen mit Brüchen, Teil vier. Ein Blatt Papier fünfzig mal gefaltet wäre dicker als die Strecke zur Sonne - wie kann das sein? Und was ist eigentlich a hoch drei mal a hoch zwei wirklich, ohne alles einzeln auszuschreiben? Genau darum geht's jetzt: Rechnen mit Potenzen."},
+ 2:{wav:"narration_deck13_s2_Charon.mp3",txt:"Eine Potenz a hoch n ist die Kurzschreibweise für ein Produkt aus n gleichen Faktoren a - das kennst du schon, jetzt kommen die Rechenregeln dazu."},
+ 3:{wav:"narration_deck13_s3_Charon.mp3",txt:"Potenzen mit gleicher Basis multiplizierst du, indem du die Exponenten addierst. a hoch drei mal a hoch zwei sind zusammen fünf Faktoren a, also a hoch fünf."},
+ 4:{wav:"narration_deck13_s4_Charon.mp3",txt:"Bei der Division mit gleicher Basis subtrahierst du die Exponenten - die gemeinsamen Faktoren kürzen sich einfach weg."},
+ 5:{wav:"narration_deck13_s5_Charon.mp3",txt:"Bei einer Potenz einer Potenz multiplizierst du die Exponenten. Überleg kurz: a hoch drei, das Ganze hoch zwei, sind doch einfach ZWEI Gruppen von je drei Faktoren - wie viele Faktoren a sind das insgesamt?"},
+ 6:{wav:"narration_deck13_s6_Charon.mp3",txt:"Haben zwei verschiedene Basen den gleichen Exponenten, potenzierst du einfach jeden Faktor einzeln - das gilt für Produkte genauso wie für Brüche."},
+ 7:{wav:"narration_deck13_s7_Charon.mp3",txt:"Jetzt kombinieren wir zwei Gesetze in einer Aufgabe. Klick dich durch die Schritte - erst die Klammer, dann die äußere Potenz."},
+ 8:{wav:"narration_deck13_s8_Charon.mp3",txt:"Jede Potenz mit dem Exponenten Null hat den Wert Eins, jede Potenz mit dem Exponenten Eins hat einfach den Wert der Basis."},
+ 9:{wav:"narration_deck13_s9_Charon.mp3",txt:"Ein negativer Exponent lässt sich immer als Bruch mit positivem Exponenten schreiben - er ist einfach der Kehrwert."},
+ 10:{wav:"narration_deck13_s10_Charon.mp3",txt:"Hier lauert eine klassische Falle: Klammern um die Basis entscheiden alles. Minus zwei in Klammern hoch vier ist positiv sechzehn, aber minus zwei hoch vier ohne Klammer ist negativ sechzehn - schau genau hin, wo das Minuszeichen steht."},
+ 11:{wav:"narration_deck13_s11_Charon.mp3",txt:"Merk's dir so: die Grundrechenart der Exponenten ist immer eine Stufe einfacher als die der Basis - aus Mal wird Plus, aus Potenzieren wird Mal."},
+ 12:{wav:"narration_deck13_s12_Charon.mp3",txt:"In der IT begegnen dir Zweierpotenzen ständig - Kilobyte, Megabyte, Gigabyte bauen alle nach demselben Potenzgesetz aufeinander auf."},
+ 13:{wav:"narration_deck13_s13_Charon.mp3",txt:"Hier noch mal alle Potenzgesetze im Überblick, bevor du selbst im Labor Terme sortierst."},
+ 14:{wav:"narration_deck13_s14_Charon.mp3",txt:"Jetzt bist du dran: ein Term erscheint, du wählst das passende Gesetz und das richtige Ergebnis."},
+ 15:{wav:"narration_deck13_s15_Charon.mp3",txt:"Fassen wir zusammen: bei gleicher Basis addierst oder subtrahierst du die Exponenten, bei Potenz einer Potenz multiplizierst du sie, und bei gleichem Exponenten potenzierst du jeden Faktor einzeln."},
+ 16:{wav:"narration_deck13_s16_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben zu den Potenzgesetzen."},
+ 17:{wav:"narration_deck13_s17_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst - inklusive einer Aufgabe, bei der du einen typischen Rechenfehler erklären sollst."},
+ 18:{wav:"narration_deck13_s18_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"Was ist a³ · a²?",
+  a:["a⁶","a⁵","a¹","2a⁵"],r:1,
+  why:"Gleiche Basis multiplizieren: Exponenten addieren. 3+2=5 → a⁵."},
+ {q:"Was ist a⁸ : a³?",
+  a:["a⁵","a¹¹","a²⁴","a⁻⁵"],r:0,
+  why:"Gleiche Basis dividieren: Exponenten subtrahieren. 8−3=5 → a⁵."},
+ {q:"Was ist (a²)⁴?",
+  a:["a⁶","a⁸","a²","4a²"],r:1,
+  why:"Potenz einer Potenz: Exponenten multiplizieren. 2·4=8 → a⁸."},
+ {q:"Was ist (−3)² im Vergleich zu −3²?",
+  a:["Beide sind 9","Beide sind −9","(−3)²=9, aber −3²=−9","(−3)²=−9, aber −3²=9"],r:2,
+  why:"(−3)² hat die Basis −3 (Klammer!) → 9. −3² hat die Basis 3 mit einem Minus davor → −9."},
+ {q:"Was ist a⁰ (a≠0)?",
+  a:["0","1","a","nicht definiert"],r:1,
+  why:"Jede Potenz mit Exponent 0 hat den Wert 1 — herleitbar über aⁿ/aⁿ = aⁿ⁻ⁿ = a⁰ = 1."},
+ {q:"Wie schreibt man 5⁻² mit positivem Exponenten?",
+  a:["−25","1/25","−5²","25"],r:1,
+  why:"a⁻ⁿ = 1/aⁿ, also 5⁻² = 1/5² = 1/25."}
+];
+const DECK_ID="rechnen2/deck13";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, conf:conf, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+
+    let sureChoice='unsure';
+    const confrow=document.createElement('div'); confrow.className='confrow';
+    const sureBtn=document.createElement('button'); sureBtn.className='confchip sure'; sureBtn.textContent='🟢 sicher'; sureBtn.type='button';
+    const unsureBtn=document.createElement('button'); unsureBtn.className='confchip unsure'; unsureBtn.textContent='🟡 unsicher'; unsureBtn.type='button';
+    confrow.appendChild(sureBtn); confrow.appendChild(unsureBtn);
+    box.appendChild(confrow);
+
+    const optsWrap=document.createElement('div'); optsWrap.className='quizoptswrap';
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    const warn=document.createElement('div'); warn.className='quizwarn'; warn.textContent='⚠️ Genau die merken sich die 5 Fragen des Tages.';
+
+    function chooseSure(which){
+      sureChoice=which;
+      sureBtn.classList.toggle('on', which==='sure');
+      unsureBtn.classList.toggle('on', which==='unsure');
+      optsWrap.classList.add('enabled');
+    }
+    sureBtn.onclick=()=>chooseSure('sure');
+    unsureBtn.onclick=()=>chooseSure('unsure');
+
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        const ok=(oi===item.r), conf=(sureChoice==='sure');
+        optsWrap.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(!ok) b.classList.add('wrong');
+        why.classList.add('show');
+        if(conf && !ok) warn.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), ok, conf);
+        answered++; if(ok) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      optsWrap.appendChild(b);
+    });
+    box.appendChild(optsWrap);
+    box.appendChild(why);
+    box.appendChild(warn);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

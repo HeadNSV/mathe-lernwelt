@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Wahrheitstafel-Labor — A und B live togglen</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{display:flex;height:100%;padding:14px 18px;gap:20px;}
+  #left{flex:0 0 min(48vw,520px);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:10px;overflow-y:auto;}
+  #right{flex:1;display:flex;flex-direction:column;gap:12px;padding-top:6px;overflow-y:auto;}
+  h3{margin:0 0 6px;font-size:18px;color:var(--accent);}
+  .modebar{display:flex;gap:8px;margin-bottom:10px;}
+  .modebar button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 14px;font-size:13.5px;cursor:pointer;}
+  .modebar button.on{background:var(--accent);color:#12100a;font-weight:700;}
+  .toggles{display:flex;gap:16px;margin-bottom:16px;}
+  .togglebtn{background:#151b24;border:2px solid var(--line);border-radius:12px;padding:14px 26px;font-size:20px;font-weight:700;cursor:pointer;color:var(--fg);min-width:110px;}
+  .togglebtn.w{border-color:#4caf50;color:#4caf50;}
+  .togglebtn.f{border-color:#c0392b;color:#c0392b;}
+  .togglebtn .lbl{font-size:13px;color:var(--muted);display:block;font-weight:400;margin-bottom:4px;}
+  table.tt{border-collapse:collapse;width:100%;max-width:480px;}
+  table.tt th,table.tt td{border:1px solid var(--line);padding:9px 8px;text-align:center;font-size:15px;}
+  table.tt th{background:#1b222c;color:var(--accent);}
+  table.tt td.empty{color:var(--muted);}
+  table.tt tr.current td{background:rgba(242,166,60,0.20);}
+  table.tt td.res-w{color:#4caf50;font-weight:700;}
+  table.tt td.res-f{color:#c0392b;font-weight:700;}
+  #fillNote{font-size:13.5px;color:var(--muted);margin-top:10px;text-align:center;}
+  #fillNote.done{color:#4caf50;font-weight:700;}
+  #progress{font-size:14px;color:var(--muted);}
+  #feedback{min-height:70px;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:14.5px;}
+  #feedback.ok{border-color:#4caf50;}
+  #feedback.bad{border-color:#c0392b;}
+  #missionExpr{font-size:22px;color:var(--accent);font-weight:700;text-align:center;margin:8px 0;}
+  #missionDone{display:none;background:#173d28;border:1px solid #4caf50;border-radius:8px;padding:14px 18px;font-size:16px;color:#dff3df;}
+  #missionDone.show{display:block;}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:8px;text-align:center;}
+  #missionBox{display:none;}
+  #missionBox.show{display:flex;flex-direction:column;gap:10px;}
+  #exploreBox.hide, #missionBox.hideNow{display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="left">
+    <div class="modebar">
+      <button id="modeExplore" class="on">🔎 Erkunden-Modus</button>
+      <button id="modeMission">🎯 Missions-Modus</button>
+    </div>
+    <div class="toggles">
+      <button id="btnA" class="togglebtn w"><span class="lbl">Aussage A</span>wahr</button>
+      <button id="btnB" class="togglebtn w"><span class="lbl">Aussage B</span>wahr</button>
+    </div>
+    <table class="tt" id="ttable">
+      <thead><tr><th>A</th><th>B</th><th>A̅</th><th>A∧B</th><th>A∨B</th><th>A⇒B</th></tr></thead>
+      <tbody id="ttbody"></tbody>
+    </table>
+    <div id="fillNote">Togglere A und B durch alle 4 Kombinationen — jede Zeile trägt sich automatisch ein.</div>
+  </div>
+  <div id="right">
+    <h3>🧪 Wahrheitstafel-Labor</h3>
+    <div id="exploreBox">
+      <div id="progress">Erkunden-Modus: stell A und B beliebig ein und beobachte, wie sich A̅, A∧B, A∨B und A⇒B verändern.</div>
+      <div id="feedback">Klick auf die Buttons links, um A bzw. B umzuschalten.</div>
+    </div>
+    <div id="missionBox">
+      <div id="progress2">Missions-Modus: stell A und B so ein, dass der gezeigte Ausdruck FALSCH wird.</div>
+      <div id="missionExpr"></div>
+      <div id="feedback2">Klick oben auf A/B, dann prüfen.</div>
+      <div id="missionDone">🎉 Alle Missionen erfüllt! Du kennst jetzt alle vier Wahrheitstafeln aus dem Effeff.</div>
+    </div>
+    <div class="hint">Tipp: eine Implikation A⇒B ist NUR dann falsch, wenn A wahr und B falsch ist — bei allen anderen Belegungen ist sie automatisch wahr.</div>
+  </div>
+</div>
+<script>
+let A=true, B=true;
+const btnA=document.getElementById('btnA'), btnB=document.getElementById('btnB');
+const ttbody=document.getElementById('ttbody');
+const fillNote=document.getElementById('fillNote');
+const visited=new Set();
+
+function wf(v){ return v?'w':'f'; }
+function neg(v){ return !v; }
+function und(a,b){ return a&&b; }
+function oder(a,b){ return a||b; }
+function impl(a,b){ return (!a)||b; }
+
+function rowKey(a,b){ return (a?'w':'f')+(b?'w':'f'); }
+
+function renderToggles(){
+  btnA.className='togglebtn '+(A?'w':'f'); btnA.innerHTML='<span class="lbl">Aussage A</span>'+(A?'wahr':'falsch');
+  btnB.className='togglebtn '+(B?'w':'f'); btnB.innerHTML='<span class="lbl">Aussage B</span>'+(B?'wahr':'falsch');
+}
+
+const ROWS=[[true,true],[true,false],[false,true],[false,false]];
+function renderTable(){
+  visited.add(rowKey(A,B));
+  ttbody.innerHTML='';
+  ROWS.forEach(([a,b])=>{
+    const key=rowKey(a,b);
+    const isCurrent=(a===A && b===B);
+    const known=visited.has(key);
+    const tr=document.createElement('tr');
+    if(isCurrent) tr.className='current';
+    function cell(txt, resClass){
+      const td=document.createElement('td');
+      if(!known){ td.className='empty'; td.textContent='·'; }
+      else { td.textContent=txt; if(resClass) td.className=resClass; }
+      return td;
+    }
+    tr.appendChild(cell(wf(a)));
+    tr.appendChild(cell(wf(b)));
+    tr.appendChild(cell(wf(neg(a)), neg(a)?'res-w':'res-f'));
+    tr.appendChild(cell(wf(und(a,b)), und(a,b)?'res-w':'res-f'));
+    tr.appendChild(cell(wf(oder(a,b)), oder(a,b)?'res-w':'res-f'));
+    tr.appendChild(cell(wf(impl(a,b)), impl(a,b)?'res-w':'res-f'));
+    ttbody.appendChild(tr);
+  });
+  if(visited.size>=4){ fillNote.classList.add('done'); fillNote.textContent='✅ Vollständige Wahrheitstafel entdeckt — alle 4 Zeilen kennst du jetzt aus eigener Erfahrung.'; }
+  else { fillNote.classList.remove('done'); fillNote.textContent='Togglere A und B durch alle 4 Kombinationen — jede Zeile trägt sich automatisch ein ('+visited.size+' / 4 gefunden).'; }
+}
+
+function update(){
+  renderToggles();
+  renderTable();
+  if(currentMode==='mission') checkMissionState();
+}
+
+btnA.onclick=()=>{ A=!A; update(); };
+btnB.onclick=()=>{ B=!B; update(); };
+
+// === Modus-Umschaltung ===
+let currentMode='explore';
+const modeExplore=document.getElementById('modeExplore'), modeMission=document.getElementById('modeMission');
+const exploreBox=document.getElementById('exploreBox'), missionBox=document.getElementById('missionBox');
+modeExplore.onclick=()=>{
+  currentMode='explore';
+  modeExplore.classList.add('on'); modeMission.classList.remove('on');
+  exploreBox.style.display='flex'; exploreBox.style.flexDirection='column'; exploreBox.style.gap='10px';
+  missionBox.classList.remove('show');
+};
+modeMission.onclick=()=>{
+  currentMode='mission';
+  modeMission.classList.add('on'); modeExplore.classList.remove('on');
+  exploreBox.style.display='none';
+  missionBox.classList.add('show');
+  renderMission();
+};
+exploreBox.style.display='flex'; exploreBox.style.flexDirection='column'; exploreBox.style.gap='10px';
+
+// === Missions-Modus: „Finde die Belegung, die den Ausdruck FALSCH macht" ===
+const MISSIONS=[
+  {label:"A ∧ B", fn:(a,b)=>und(a,b), why:"A∧B ist FALSCH, sobald mindestens eine der beiden Teilaussagen falsch ist — nur bei A=wahr UND B=wahr bleibt sie wahr."},
+  {label:"A ∨ B", fn:(a,b)=>oder(a,b), why:"A∨B ist NUR dann falsch, wenn BEIDE Teilaussagen falsch sind — das ist die einzige Belegung."},
+  {label:"A ⇒ B", fn:(a,b)=>impl(a,b), why:"A⇒B ist NUR dann falsch, wenn A wahr UND B falsch ist — bei jeder anderen Belegung gilt die Implikation automatisch als wahr."},
+  {label:"A̅ ∧ B", fn:(a,b)=>und(neg(a),b), why:"A̅∧B ist wahr genau dann, wenn A falsch UND B wahr ist — bei jeder anderen Belegung ist der Ausdruck falsch."},
+  {label:"A ∨ B̅", fn:(a,b)=>oder(a,neg(b)), why:"A∨B̅ ist NUR dann falsch, wenn A falsch UND B̅ falsch (also B wahr) ist — also genau bei A=falsch, B=wahr."}
+];
+let mi=0, missionAttempted=false, missionScore=0;
+function renderMission(){
+  if(mi>=MISSIONS.length){
+    document.getElementById('missionExpr').textContent='';
+    document.getElementById('feedback2').textContent='';
+    document.getElementById('missionDone').classList.add('show');
+    document.getElementById('progress2').textContent='Mission abgeschlossen: '+missionScore+' / '+MISSIONS.length+' beim ersten Versuch richtig.';
+    window.lwAward && window.lwAward('mission');
+    return;
+  }
+  document.getElementById('missionExpr').textContent=MISSIONS[mi].label+'  →  FALSCH machen';
+  document.getElementById('feedback2').className='';
+  document.getElementById('feedback2').textContent='Stell A und B links so ein, dass der Ausdruck FALSCH wird — dann klick „Prüfen".';
+  document.getElementById('progress2').textContent='Mission '+(mi+1)+' / '+MISSIONS.length+' · bisher '+missionScore+' beim ersten Versuch richtig';
+  missionAttempted=false;
+}
+function checkMissionState(){
+  // nur zur Live-Anzeige, keine automatische Pruefung (Klick auf "Pruefen" nötig via checkBtn) -- hier no-op
+}
+const checkBtnWrap=document.createElement('div');
+checkBtnWrap.innerHTML='<button id="checkMissionBtn" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:9px 18px;font-size:14.5px;cursor:pointer;">Prüfen ▸</button>';
+missionBox.insertBefore(checkBtnWrap, document.getElementById('missionDone'));
+document.getElementById('checkMissionBtn').onclick=()=>{
+  if(mi>=MISSIONS.length) return;
+  const result=MISSIONS[mi].fn(A,B);
+  const fb=document.getElementById('feedback2');
+  if(result===false){
+    fb.className='ok';
+    fb.textContent='✅ Richtig! '+MISSIONS[mi].why;
+    if(!missionAttempted) missionScore++;
+    mi++;
+    setTimeout(renderMission, 900);
+  } else {
+    fb.className='bad';
+    fb.textContent='❌ Noch falsch — der Ausdruck ist mit A='+(A?'wahr':'falsch')+', B='+(B?'wahr':'falsch')+' gerade WAHR. Tipp: '+MISSIONS[mi].why;
+    missionAttempted=true;
+  }
+};
+
+update();
+
+// postMessage-Empfang vom Deck (additiv, kein Zwang)
+window.addEventListener('message', (e)=>{
+  if(e.data==='deck-stop'){ /* Labor braucht keinen eigenen Ton, no-op */ }
+});
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

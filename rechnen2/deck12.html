@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Rechnen mit Brüchen · Teil 3 — Multiplizieren, Dividieren &amp; Dezimalzahlen</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .svggrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  @media (max-width:760px){ .svggrid{grid-template-columns:1fr;} }
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+  .confrow{display:flex;gap:8px;margin-bottom:10px;}
+  .confchip{flex:1;background:#1f2630;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:7px 10px;font-size:13px;cursor:pointer;}
+  .confchip.sure.on{background:#1e4a34;border-color:#4caf50;}
+  .confchip.unsure.on{background:#4a3d1e;border-color:var(--accent);}
+  .quizoptswrap{opacity:0.4;pointer-events:none;transition:opacity .2s;}
+  .quizoptswrap.enabled{opacity:1;pointer-events:auto;}
+  .quizwarn{margin-top:8px;padding:8px 12px;background:#3d2a12;border-left:3px solid #c0392b;border-radius:6px;font-size:min(1.9vw,14px);color:#ffd9c2;display:none;}
+  .quizwarn.show{display:block;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>RECHNEN MIT BRÜCHEN <span class="accent">· Teil 3</span></h1>
+    <h2>Multiplizieren, Dividieren &amp; Dezimalzahlen</h2>
+    <p>Du brauchst nur 3/4 von 2/3 einer Filamentrolle für ein Bauteil — wie viel ist das wirklich? Und wie oft passt eigentlich ein halber Liter in einen ganzen?</p>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 4.3</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Multiplikation -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Multiplikation von Brüchen</h2>
+      <div class="svgbox"><div id="svgS2"></div><div class="svgcaption">2/3 · 3/4 — die doppelt gefärbte Fläche ist das Ergebnis: 6/12 = 1/2</div></div>
+      <div class="defbox">Zwei Brüche werden multipliziert, indem Zähler mit Zähler und Nenner mit Nenner multipliziert werden: a/b · c/d = (a·c)/(b·d).</div>
+      <ul class="bul">
+        <li>2/3 · 3/4 = (2·3)/(3·4) = 6/12 = 1/2.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 3 Vorher kürzen -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Vorher kürzen spart Rechnen</h2>
+      <div class="defbox">Man darf schon VOR dem Ausmultiplizieren kürzen — über Kreuz zwischen Zähler des einen und Nenner des anderen Bruchs.</div>
+      <ul class="bul">
+        <li>2/3 · 3/4 — die 3 im Zähler und die 3 im Nenner kürzen sich weg: 2/1 · 1/4 = 2/4 = 1/2.</li>
+        <li>Gleiches Ergebnis wie eben — aber mit kleineren Zahlen gerechnet.</li>
+      </ul>
+      <div class="alltagbox">🏠 Genau wie beim vollständigen Kürzen: je früher du kürzt, desto kleiner werden die Zwischenzahlen.</div>
+    </div>
+  </section>
+
+  <!-- 4 Zahl mal Bruch -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Zahl mal Bruch</h2>
+      <div class="defbox">Jede ganze Zahl lässt sich als Scheinbruch mit Nenner 1 schreiben — dann gilt dieselbe Multiplikationsregel.</div>
+      <ul class="bul">
+        <li>5 · 2/3 = 5/1 · 2/3 = 10/3.</li>
+      </ul>
+      <div class="alltagbox">🏠 „5 mal 2 Drittel Liter" ist dieselbe Rechnung wie „5/1 mal 2/3" — nur in Worten statt in Brüchen.</div>
+    </div>
+  </section>
+
+  <!-- 5 Division = Kehrbruch -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Division = Mal Kehrbruch (WARUM?)</h2>
+      <div class="svgbox"><div id="svgS5"></div><div class="svgcaption">Wie oft passt 1/2 Liter in einen 1-Liter-Eimer? Zweimal!</div></div>
+      <div class="defbox">Ein Term wird durch einen Bruch dividiert, indem er mit dessen Kehrbruch multipliziert wird: (a/b) : (c/d) = a/b · d/c.</div>
+      <ul class="bul">
+        <li>1 : 1/2 = 1 · 2/1 = 2 — der 1-Liter-Eimer lässt sich zweimal mit dem 1/2-Liter-Gefäß füllen.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 6 Schritt-für-Schritt Division -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> 3/4 : 2/5</h2>
+      <div class="defbox">Aufgabe: Berechne 3/4 : 2/5.</div>
+      <div class="step" id="s6_1"><b class="lbl">Kehrbruch bilden:</b> aus 2/5 wird 5/2.</div>
+      <div class="step" id="s6_2"><b class="lbl">Division → Multiplikation:</b> 3/4 : 2/5 = 3/4 · 5/2.</div>
+      <div class="step" id="s6_3"><b class="lbl">Ausmultiplizieren:</b> (3·5)/(4·2) = 15/8.</div>
+      <div class="step" id="s6_4"><b class="lbl">Antwortsatz:</b> 3/4 : 2/5 = 15/8 (unecht — lässt sich nicht weiter kürzen).</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="6" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 7 Dezimalzahlen -> Brüche -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Dezimalzahlen in Brüche umwandeln</h2>
+      <div class="svgbox"><div id="svgS7"></div><div class="svgcaption">Mit 100 multiplizieren verschiebt das Komma um 2 Stellen</div></div>
+      <div class="defbox">Endliche Dezimalzahl x=0,45: Man multipliziert mit einer Zehnerpotenz, bis eine ganze Zahl entsteht: 100x = 45 → x = 45/100 = 9/20.</div>
+      <ul class="bul">
+        <li>Das Verfahren funktioniert für JEDE endliche Dezimalzahl gleich — nur die Zehnerpotenz ändert sich je nach Anzahl der Nachkommastellen.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 8 Schritt-für-Schritt periodisch -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> 0,3̄ (periodisch) in einen Bruch</h2>
+      <div class="defbox">Aufgabe: Wandle die periodische Dezimalzahl x = 0,3̄ = 0,3333… in einen Bruch um.</div>
+      <div class="step" id="s8_1"><b class="lbl">Verzehnfachen:</b> 10x = 3,3333… (die Periode verschiebt sich um eine Stelle).</div>
+      <div class="step" id="s8_2"><b class="lbl">Subtrahieren:</b> 10x − x = 3,3333… − 0,3333… = 3, also 9x = 3.</div>
+      <div class="step" id="s8_3"><b class="lbl">Auflösen:</b> x = 3/9.</div>
+      <div class="step" id="s8_4"><b class="lbl">Antwortsatz:</b> vollständig gekürzt: x = 1/3.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="8" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+      <div id="estPeriod12"></div>
+    </div>
+  </section>
+
+  <!-- 9 Eselsbrücke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Teilen durch einen Bruch heißt: mit dem Kehrbruch malnehmen — dreh den Bruch um, dann multiplizier!"</div>
+    </div>
+  </section>
+
+  <!-- 10 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> 3D-Druck-Filament</h2>
+      <div class="svgbox"><div id="svgS10"></div><div class="svgcaption">3/4 von 2/3 einer Filamentrolle = 1/2 Rolle</div></div>
+      <div class="defbox">Ein Bauteil braucht 3/4 von den 2/3 einer Filamentrolle, die für das ganze Projekt eingeplant sind: 3/4 · 2/3 = 6/12 = 1/2 Rolle.</div>
+      <ul class="bul">
+        <li>„Anteil von einem Anteil" ist in fast jedem Handwerk normal: Materialverbrauch, Rezeptzutaten, Verdünnungen.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 11 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>a/b · c/d</td><td>„mal"</td><td>Zähler·Zähler, Nenner·Nenner</td></tr>
+        <tr><td>a/b : c/d</td><td>„geteilt durch"</td><td>= a/b · d/c (mal Kehrbruch)</td></tr>
+        <tr><td>x=0,abc</td><td>„Ansatz zur Umwandlung"</td><td>Dezimalzahl als Variable, dann mit 10ⁿ multiplizieren</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 12 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Flächenmodell-Werkstatt</span><span class="sub">Bruch · Bruch als Rechteck-Überlappung</span></div>
+    <iframe allow="autoplay" data-src="flaechenmodell12_labor.html"></iframe>
+  </section>
+
+  <!-- 13 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Begriff</th><th>Kernaussage</th></tr>
+      <tr><td>Multiplikation</td><td>Zähler·Zähler, Nenner·Nenner — vorher kürzen erlaubt</td></tr>
+      <tr><td>Division</td><td>mit dem Kehrbruch des zweiten Bruchs multiplizieren</td></tr>
+      <tr><td>endliche Dezimalzahl</td><td>x=0,abc → 10ⁿ·x = ganze Zahl → Bruch bilden</td></tr>
+      <tr><td>periodische Dezimalzahl</td><td>10ⁿx − x subtrahieren, bis die Periode verschwindet</td></tr>
+    </table>
+  </section>
+
+  <!-- 14 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Berechne 3/5 · 5/6 — kürze wenn möglich VORHER.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>5 kürzt sich weg: 3/1 · 1/6 = 3/6 = 1/2</details>
+        </li>
+        <li style="margin-top:10px;">Berechne 5/8 : 3/4.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>5/8 · 4/3 = 20/24 = 5/6</details>
+        </li>
+        <li style="margin-top:10px;">Wandle 0,875 in einen Bruch um.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>x=0,875 → 1000x=875 → x=875/1000 = 7/8</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 15 Prüfungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Brüche multiplizieren</b> (auch mit Vorher-Kürzen) können.</li>
+        <li><b>Brüche dividieren</b> (Kehrbruch-Trick) können.</li>
+        <li><b>Dezimalzahlen — endlich und periodisch — in Brüche umwandeln</b> können.</li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">Typische Prüfungsaufgabe: <i>„Ein Mitschüler behauptet: Division durch einen Bruch macht das Ergebnis IMMER kleiner. Widerlege das mit einem Gegenbeispiel."</i> → 1/2 : 1/4 = 1/2 · 4/1 = 2 — das Ergebnis 2 ist GRÖSSER als 1/2! Division durch einen Bruch kleiner als 1 macht das Ergebnis größer, nicht kleiner.</div>
+    </div>
+  </section>
+
+  <!-- 16 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+// === SVG: Rechteck-Modell fuer Multiplikation (a/b Spalten, c/d Zeilen) ===
+function buildRectModelSVG(numA,denA,numB,denB,gridW,gridH){
+  gridW=gridW||210; gridH=gridH||150;
+  const x0=14, y0=30, gw=gridW, gh=gridH;
+  const rightPad=64, W=x0+gw+rightPad, H=y0+gh+34;
+  const colW=gw/denA, rowH=gh/denB;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:320px;height:auto;display:block;margin:0 auto;">';
+  // Bruch-B-Beschriftung oben links (horizontal statt gedreht - vermeidet Rand-Clipping)
+  s+='<text x="'+x0+'" y="18" font-size="13" font-weight="700" fill="#f2a63c">Zeilen: '+numB+'/'+denB+'</text>';
+  // base grid
+  s+='<rect x="'+x0+'" y="'+y0+'" width="'+gw+'" height="'+gh+'" fill="none" stroke="#2a3038" stroke-width="1.5"/>';
+  // columns shaded (numA of denA) - color A
+  s+='<rect x="'+x0+'" y="'+y0+'" width="'+(colW*numA)+'" height="'+gh+'" fill="rgba(95,208,199,0.22)"/>';
+  // rows shaded (numB of denB) - color B
+  s+='<rect x="'+x0+'" y="'+y0+'" width="'+gw+'" height="'+(rowH*numB)+'" fill="rgba(242,166,60,0.22)"/>';
+  // overlap gets extra highlight automatically via alpha stacking; add outline around overlap
+  s+='<rect x="'+x0+'" y="'+y0+'" width="'+(colW*numA)+'" height="'+(rowH*numB)+'" fill="none" stroke="#4caf50" stroke-width="2.4" stroke-dasharray="4,3"/>';
+  // grid lines
+  for(let i=1;i<denA;i++){ const x=x0+i*colW; s+='<line x1="'+x+'" y1="'+y0+'" x2="'+x+'" y2="'+(y0+gh)+'" stroke="#2a3038" stroke-width="1"/>'; }
+  for(let j=1;j<denB;j++){ const y=y0+j*rowH; s+='<line x1="'+x0+'" y1="'+y+'" x2="'+(x0+gw)+'" y2="'+y+'" stroke="#2a3038" stroke-width="1"/>'; }
+  s+='<text x="'+(x0+gw/2)+'" y="'+(y0+gh+18)+'" text-anchor="middle" font-size="13" font-weight="700" fill="#5fd0c7">Spalten: '+numA+'/'+denA+'</text>';
+  s+='<text x="'+(x0+gw+10)+'" y="'+(y0+gh/2+5)+'" font-size="14" font-weight="700" fill="#4caf50">= '+(numA*numB)+'/'+(denA*denB)+'</text>';
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgS2').innerHTML=buildRectModelSVG(2,3,3,4);
+document.getElementById('svgS10').innerHTML=buildRectModelSVG(2,3,3,4);
+
+// === SVG: Eimer-Modell (Division) ===
+function buildBucketSVG(){
+  const W=280,H=140;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:280px;height:auto;display:block;margin:0 auto;">';
+  // 1-liter bucket outline
+  s+='<rect x="30" y="20" width="80" height="100" rx="6" fill="none" stroke="#9aa4b2" stroke-width="2"/>';
+  s+='<line x1="30" y1="70" x2="110" y2="70" stroke="#5fd0c7" stroke-width="2" stroke-dasharray="4,3"/>';
+  s+='<text x="70" y="14" text-anchor="middle" font-size="12" fill="#9aa4b2">1 Liter</text>';
+  s+='<rect x="30" y="70" width="80" height="50" fill="rgba(95,208,199,0.28)"/>';
+  s+='<text x="70" y="100" text-anchor="middle" font-size="13" font-weight="700" fill="#5fd0c7">1×</text>';
+  s+='<rect x="30" y="20" width="80" height="50" fill="rgba(242,166,60,0.28)"/>';
+  s+='<text x="70" y="50" text-anchor="middle" font-size="13" font-weight="700" fill="#f2a63c">2×</text>';
+  s+='<text x="180" y="55" text-anchor="middle" font-size="14" fill="#e6edf3">1/2-Liter-</text>';
+  s+='<text x="180" y="72" text-anchor="middle" font-size="14" fill="#e6edf3">Gefäß passt</text>';
+  s+='<text x="180" y="89" text-anchor="middle" font-size="16" font-weight="700" fill="#4caf50">2× hinein</text>';
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgS5').innerHTML=buildBucketSVG();
+
+// === SVG: Komma-Verschiebung ===
+function buildDecimalShiftSVG(){
+  const W=280,H=90;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:280px;height:auto;display:block;margin:0 auto;">';
+  s+='<text x="70" y="46" text-anchor="middle" font-size="22" font-weight="700" fill="#e6edf3">x = 0,45</text>';
+  s+='<text x="140" y="46" text-anchor="middle" font-size="18" fill="#9aa4b2">— ×100 —&gt;</text>';
+  s+='<text x="220" y="46" text-anchor="middle" font-size="22" font-weight="700" fill="#5fd0c7">100x = 45</text>';
+  s+='<text x="140" y="70" text-anchor="middle" font-size="13" fill="#9aa4b2">Komma wandert 2 Stellen nach rechts</text>';
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgS7').innerHTML=buildDecimalShiftSVG();
+
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Multiplikation von Brüchen", "Vorher kürzen spart Rechnen", "Zahl mal Bruch", "Division = Mal Kehrbruch", "📐 Schritt für Schritt: 3/4 : 2/5", "Dezimalzahlen in Brüche umwandeln", "📐 Schritt für Schritt: periodische Dezimalzahl", "💡 Eselsbrücke", "🔧 Praxisbeispiel: 3D-Druck-Filament", "Symbol-Legende", "🧪 Flächenmodell-Werkstatt", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=17;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck12_s1_Charon.mp3",txt:"Rechnen mit Brüchen, Teil drei. Du brauchst nur drei Viertel von zwei Dritteln einer Filamentrolle für ein Bauteil - wie viel ist das wirklich? Und wie oft passt eigentlich ein halber Liter in einen ganzen? Genau darum geht's jetzt."},
+ 2:{wav:"narration_deck12_s2_Charon.mp3",txt:"Zwei Brüche multiplizierst du, indem du Zähler mal Zähler und Nenner mal Nenner rechnest. Zwei Drittel mal drei Viertel ergibt sechs Zwölftel, gekürzt ein Halb."},
+ 3:{wav:"narration_deck12_s3_Charon.mp3",txt:"Du darfst schon vor dem Ausmultiplizieren kürzen - über Kreuz zwischen Zähler des einen und Nenner des anderen Bruchs. Das spart dir größere Zwischenzahlen."},
+ 4:{wav:"narration_deck12_s4_Charon.mp3",txt:"Eine ganze Zahl schreibst du als Scheinbruch mit Nenner eins, dann gilt dieselbe Multiplikationsregel wie immer."},
+ 5:{wav:"narration_deck12_s5_Charon.mp3",txt:"Division durch einen Bruch heißt: mit dem Kehrbruch multiplizieren. Überleg kurz: wie oft passt ein halber Liter wirklich in einen ganzen Liter-Eimer?"},
+ 6:{wav:"narration_deck12_s6_Charon.mp3",txt:"Jetzt rechnen wir gemeinsam drei Viertel geteilt durch zwei Fünftel. Klick dich durch die Schritte - erst der Kehrbruch, dann die Multiplikation."},
+ 7:{wav:"narration_deck12_s7_Charon.mp3",txt:"Um eine endliche Dezimalzahl in einen Bruch umzuwandeln, multiplizierst du mit einer Zehnerpotenz, bis eine ganze Zahl dasteht - das Komma wandert einfach nach rechts."},
+ 8:{wav:"narration_deck12_s8_Charon.mp3",txt:"Bei einer periodischen Dezimalzahl ist der Trick etwas anders: du verzehnfachst und ziehst dann die ursprüngliche Zahl ab, damit sich die Periode weghebt. Überleg schon mal, was bei der Subtraktion übrig bleibt."},
+ 9:{wav:"narration_deck12_s9_Charon.mp3",txt:"Merk's dir so: teilen durch einen Bruch heißt, mit dem Kehrbruch malnehmen - dreh den Bruch um, dann multiplizier."},
+ 10:{wav:"narration_deck12_s10_Charon.mp3",txt:"Drei Viertel von zwei Dritteln einer Filamentrolle sind genau die Hälfte der Rolle - Materialverbrauch ist überall dieselbe Bruch-Multiplikation."},
+ 11:{wav:"narration_deck12_s11_Charon.mp3",txt:"Hier noch mal alle Symbole dieser Folie im Überblick, bevor du selbst im Labor mit dem Flächenmodell experimentierst."},
+ 12:{wav:"narration_deck12_s12_Charon.mp3",txt:"Jetzt bist du dran: stell zwei Brüche ein und beobachte live, wie sich die überlappende Fläche verändert."},
+ 13:{wav:"narration_deck12_s13_Charon.mp3",txt:"Fassen wir zusammen: multiplizieren ist Zähler mal Zähler und Nenner mal Nenner, dividieren ist mal Kehrbruch, und Dezimalzahlen lassen sich beide in Brüche zurückverwandeln."},
+ 14:{wav:"narration_deck12_s14_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben zu Multiplikation, Division und Dezimalzahlen."},
+ 15:{wav:"narration_deck12_s15_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst - inklusive einer Aufgabe, bei der du eine weit verbreitete Fehlvorstellung widerlegen sollst."},
+ 16:{wav:"narration_deck12_s16_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"Was ist 2/3 · 3/4?",
+  a:["6/7","1/2","5/12","2/12"],r:1,
+  why:"2/3 · 3/4 = 6/12 = 1/2 (Zähler·Zähler über Nenner·Nenner, dann kürzen)."},
+ {q:"Warum darf man beim Multiplizieren schon VOR dem Ausrechnen kürzen?",
+  a:["Weil das nur bei geraden Zahlen erlaubt ist","Weil Kürzen den Wert nicht ändert — egal ob vorher oder nachher gekürzt wird","Weil man sonst ein falsches Ergebnis bekommt","Das darf man nicht, nur nachher kürzen ist erlaubt"],r:1,
+  why:"Kürzen ändert den Wert eines Bruchs nicht — das gilt unabhängig davon, ob man vor oder nach dem Ausmultiplizieren kürzt."},
+ {q:"Was ist 5 · 2/3?",
+  a:["10/3","7/3","10/15","2/15"],r:0,
+  why:"5 = 5/1 → 5/1 · 2/3 = 10/3."},
+ {q:"Wie berechnet man a/b : c/d?",
+  a:["a/b · c/d","a/b · d/c","b/a · c/d","a·c / b·d addiert"],r:1,
+  why:"Division durch einen Bruch heißt: mit dessen Kehrbruch multiplizieren — a/b · d/c."},
+ {q:"Macht eine Division durch einen Bruch das Ergebnis IMMER kleiner?",
+  a:["Ja, immer","Nein — z. B. ist 1/2 : 1/4 = 2, also größer als 1/2","Nur bei negativen Brüchen","Nur wenn der Nenner größer als der Zähler ist"],r:1,
+  why:"Division durch einen Bruch kleiner als 1 macht das Ergebnis GRÖSSER, nicht kleiner — 1/2 : 1/4 = 1/2 · 4/1 = 2."},
+ {q:"Welcher Bruch entspricht der periodischen Dezimalzahl 0,3̄?",
+  a:["3/10","1/3","3/100","1/30"],r:1,
+  why:"x=0,3̄ → 10x−x=9x=3 → x=3/9=1/3."}
+];
+const DECK_ID="rechnen2/deck12";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, conf:conf, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+
+    let sureChoice='unsure';
+    const confrow=document.createElement('div'); confrow.className='confrow';
+    const sureBtn=document.createElement('button'); sureBtn.className='confchip sure'; sureBtn.textContent='🟢 sicher'; sureBtn.type='button';
+    const unsureBtn=document.createElement('button'); unsureBtn.className='confchip unsure'; unsureBtn.textContent='🟡 unsicher'; unsureBtn.type='button';
+    confrow.appendChild(sureBtn); confrow.appendChild(unsureBtn);
+    box.appendChild(confrow);
+
+    const optsWrap=document.createElement('div'); optsWrap.className='quizoptswrap';
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    const warn=document.createElement('div'); warn.className='quizwarn'; warn.textContent='⚠️ Genau die merken sich die 5 Fragen des Tages.';
+
+    function chooseSure(which){
+      sureChoice=which;
+      sureBtn.classList.toggle('on', which==='sure');
+      unsureBtn.classList.toggle('on', which==='unsure');
+      optsWrap.classList.add('enabled');
+    }
+    sureBtn.onclick=()=>chooseSure('sure');
+    unsureBtn.onclick=()=>chooseSure('unsure');
+
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        const ok=(oi===item.r), conf=(sureChoice==='sure');
+        optsWrap.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(!ok) b.classList.add('wrong');
+        why.classList.add('show');
+        if(conf && !ok) warn.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), ok, conf);
+        answered++; if(ok) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      optsWrap.appendChild(b);
+    });
+    box.appendChild(optsWrap);
+    box.appendChild(why);
+    box.appendChild(warn);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estPeriod12', {
+    frage: 'Ist die periodische Dezimalzahl 0,9̄ (also 0,999…) kleiner als 1, gleich 1, oder größer als 1?',
+    min: 1, max: 3, korrekt: 2, toleranz: 0, start: 1,
+    labels: ['kleiner als 1', 'gleich 1', 'größer als 1'],
+    begruendung: 'x=0,9̄ → 10x=9,9̄ → 10x−x=9x=9 → x=1. Derselbe Trick wie eben beweist: 0,9̄ ist EXAKT 1, nicht nur „fast".'
+  });
+});
+</script>
+</body>
+</html>

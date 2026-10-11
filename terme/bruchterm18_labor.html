@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Kürzungs-Richter — Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{max-width:760px;margin:0 auto;padding:18px 20px 40px;}
+  h3{margin:0 0 6px;}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  .modebar{display:flex;gap:8px;margin-bottom:14px;}
+  .modebar button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;}
+  .modebar button.on{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  .part{display:none;}
+  .part.show{display:block;}
+  #caseBox{font-size:20px;color:var(--accent);text-align:center;font-weight:700;margin:14px 0;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:16px;}
+  #judgeRow{display:flex;gap:10px;justify-content:center;margin-bottom:12px;}
+  #judgeRow button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px 20px;font-size:15px;cursor:pointer;}
+  #judgeRow button.ok-btn{border-color:#4caf50;}
+  #judgeRow button.bad-btn{border-color:#c0392b;}
+  #resultLine{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:14.5px;text-align:center;min-height:24px;}
+  #resultLine.ok{border-color:#4caf50;background:#173d28;}
+  #resultLine.bad{border-color:#c0392b;background:#3d1c1c;}
+  #progress{font-size:14px;color:var(--muted);text-align:center;margin-top:10px;}
+  #missionDone{display:none;background:#173d28;border:1px solid #4caf50;border-radius:8px;padding:14px 18px;font-size:15px;color:#dff3df;text-align:center;margin-top:10px;}
+  #missionDone.show{display:block;}
+  button.resetbtn{display:block;margin:14px auto 0;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 16px;font-size:13.5px;cursor:pointer;}
+  .sliderrow{margin:10px 0;font-size:14px;}
+  .sliderrow input{width:100%;}
+  #proofLine{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:14px 18px;font-size:16px;text-align:center;margin-top:10px;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="modebar">
+    <button id="modeMission" class="on">⚖️ Kürzungs-Richter</button>
+    <button id="modePuzzle">🕵️ Der Gegenbeweis</button>
+  </div>
+
+  <div class="part show" id="partMission">
+    <h3>⚖️ Gültig oder illegal gekürzt?</h3>
+    <p class="hint">Ein Term und seine „gekürzte" Version werden vorgeschlagen. Urteile: Ist die Umformung gültig?</p>
+    <div id="caseBox"></div>
+    <div id="judgeRow">
+      <button class="ok-btn" id="btnValid">✓ Gültig</button>
+      <button class="bad-btn" id="btnInvalid">✗ Illegal</button>
+    </div>
+    <div id="resultLine">Urteile über den ersten Fall.</div>
+    <div id="progress"></div>
+    <div id="missionDone"></div>
+    <button class="resetbtn" id="resetBtn">↺ Neu starten</button>
+  </div>
+
+  <div class="part" id="partPuzzle">
+    <h3>🕵️ Der Gegenbeweis: (x+3)/3 = x+1 ?</h3>
+    <p class="hint">Verschieb x und vergleiche live beide Seiten — stimmen sie jemals überein?</p>
+    <div class="sliderrow">x = <span id="xVal">3</span><input type="range" id="xSlider" min="-10" max="10" value="3"/></div>
+    <div id="proofLine"></div>
+  </div>
+</div>
+<script>
+// === Kuerzungs-Richter Missionsmodus ===
+const CASES=[
+  {before:"(3x−3)/(x−1)", after:"3", valid:true, why:"Richtig ausgeklammert: 3·(x−1)/(x−1) = 3 — hier steht ein Produkt, Kürzen ist erlaubt."},
+  {before:"(x+3)/3", after:"x+1", valid:false, why:"FALSCH! x+3 ist eine Summe ohne gemeinsamen Faktor mit 3 — hier darf gar nichts gekürzt werden."},
+  {before:"(10x+5)/5", after:"2x+1", valid:true, why:"Richtig: 10x+5 = 5·(2x+1), danach kürzt sich die 5 weg."},
+  {before:"(x+5)/5", after:"x+1", valid:false, why:"FALSCH! Genau wie beim Klassiker-Fehler — x+5 hat keinen gemeinsamen Faktor mit 5."},
+  {before:"(a−3)/(3−a)", after:"−1", valid:true, why:"Richtig: 3−a = −(a−3), also (a−3)/(−(a−3)) = −1 — der Vorzeichentrick macht es möglich."},
+  {before:"(2x+4x²)/(2x)", after:"1+2x", valid:true, why:"Richtig: 2x+4x² = 2x·(1+2x), danach kürzt sich 2x weg."},
+  {before:"(x²+4)/4", after:"x²+1", valid:false, why:"FALSCH! x²+4 ist eine Summe — 4 lässt sich aus x² nicht herausziehen, hier gibt es keinen gemeinsamen Faktor."}
+];
+let ci=0, correctFirstTry=0, order=[...CASES.keys()];
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+shuffle(order);
+let firstTryClean=true;
+function loadCase(){
+  if(ci>=CASES.length){
+    document.getElementById('missionDone').classList.add('show');
+    document.getElementById('missionDone').textContent='🎉 Alle '+CASES.length+' Fälle beurteilt! '+correctFirstTry+' davon im ersten Versuch richtig.';
+    window.lwAward && window.lwAward('mission');
+    document.getElementById('caseBox').textContent='';
+    document.getElementById('judgeRow').style.display='none';
+    return;
+  }
+  const c=CASES[order[ci]];
+  firstTryClean=true;
+  document.getElementById('caseBox').textContent=c.before+'  →  '+c.after;
+  document.getElementById('resultLine').className='';
+  document.getElementById('resultLine').textContent='Gültig oder illegal?';
+  document.getElementById('progress').textContent='Fall '+(ci+1)+' / '+CASES.length+' · bisher '+correctFirstTry+' im 1. Versuch richtig';
+  document.getElementById('judgeRow').style.display='flex';
+  [...document.getElementById('judgeRow').children].forEach(b=>b.disabled=false);
+}
+function judge(saidValid){
+  if(ci>=CASES.length) return;
+  const c=CASES[order[ci]];
+  const rl=document.getElementById('resultLine');
+  if(saidValid===c.valid){
+    [...document.getElementById('judgeRow').children].forEach(b=>b.disabled=true);
+    rl.className='ok';
+    rl.textContent='✅ Richtig geurteilt! '+c.why;
+    if(firstTryClean) correctFirstTry++;
+    ci++;
+    setTimeout(loadCase,1300);
+  } else {
+    firstTryClean=false;
+    rl.className='bad';
+    rl.textContent='❌ Nochmal überlegen: '+c.why;
+  }
+}
+document.getElementById('btnValid').onclick=()=>judge(true);
+document.getElementById('btnInvalid').onclick=()=>judge(false);
+document.getElementById('resetBtn').onclick=()=>{
+  ci=0; correctFirstTry=0; order=shuffle([...CASES.keys()]);
+  document.getElementById('missionDone').classList.remove('show');
+  document.getElementById('judgeRow').style.display='flex';
+  loadCase();
+};
+loadCase();
+
+// === Raetselmodus: Gegenbeweis (x+3)/3 vs x+1 ===
+const xSlider=document.getElementById('xSlider'), xVal=document.getElementById('xVal'), proofLine=document.getElementById('proofLine');
+function renderProof(){
+  const x=parseInt(xSlider.value);
+  xVal.textContent=x;
+  const left=(x+3)/3, right=x+1;
+  const same=Math.abs(left-right)<0.0001;
+  proofLine.innerHTML = '(x+3)/3 = '+left.toFixed(2)+'   vs.   x+1 = '+right+
+    '<br><span style="color:'+(same?'#4caf50':'#e05a5a')+';font-weight:700;">'+(same?'gleich!':'NICHT gleich — Unterschied: '+(right-left).toFixed(2))+'</span>';
+}
+xSlider.addEventListener('input', renderProof);
+renderProof();
+
+// mode switch
+const modeMission=document.getElementById('modeMission'), modePuzzle=document.getElementById('modePuzzle');
+const partMission=document.getElementById('partMission'), partPuzzle=document.getElementById('partPuzzle');
+modeMission.onclick=()=>{ modeMission.classList.add('on'); modePuzzle.classList.remove('on'); partMission.classList.add('show'); partPuzzle.classList.remove('show'); };
+modePuzzle.onclick=()=>{ modePuzzle.classList.add('on'); modeMission.classList.remove('on'); partPuzzle.classList.add('show'); partMission.classList.remove('show'); };
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

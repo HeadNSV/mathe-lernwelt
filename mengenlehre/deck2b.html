@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Mengenlehre · Teil 2b — Zahlenmengen II: ℤ, ℚ, ℝ</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2.1vw,19px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:8px 14px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .ov{text-decoration:overline;}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:4vh 7vw;}
+  .ebox{max-width:min(86vw,960px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.8vw,32px);margin:0 0 14px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:12px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2.1vw,18px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:13px 17px;font-size:min(2.3vw,19px);color:#f6e7cf;margin-bottom:12px;}
+  .bul{font-size:min(2.2vw,18px);line-height:1.5;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:5px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.3vw,19px);color:#d7f3f0;margin-bottom:14px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:12px 18px;font-size:min(1.9vw,16px);color:#dff3df;margin-top:10px;}
+  .legend td,.legend th{font-size:min(1.9vw,16px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:8px 0;font-size:min(2.1vw,18px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  .slide.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+  .confrow{display:flex;gap:8px;margin-bottom:10px;}
+  .confchip{flex:1;background:#1f2630;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:7px 10px;font-size:13px;cursor:pointer;}
+  .confchip.sure.on{background:#1e4a34;border-color:#4caf50;}
+  .confchip.unsure.on{background:#4a3d1e;border-color:var(--accent);}
+  .quizoptswrap{opacity:0.4;pointer-events:none;transition:opacity .2s;}
+  .quizoptswrap.enabled{opacity:1;pointer-events:auto;}
+  .quizwarn{margin-top:8px;padding:8px 12px;background:#3d2a12;border-left:3px solid #c0392b;border-radius:6px;font-size:min(1.9vw,14px);color:#ffd9c2;display:none;}
+  .quizwarn.show{display:block;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>MENGENLEHRE <span class="accent">· Teil 2b</span></h1>
+    <h2>Zahlenmengen II — ℤ, ℚ, ℝ &amp; die Zahlen-Zwiebel</h2>
+    <p>Dein Taschenrechner zeigt 0,3333333… an — ist das eine „echte" Zahl? Und warum crasht jeder Rechner der Welt, wenn du versuchst, durch 0 zu teilen? Genau darum geht's jetzt.</p>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 1.2b</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 ganze Zahlen + Betrag -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Die ganzen Zahlen ℤ &amp; der Betrag</h2>
+      <div class="svgbox"><div id="svgS2a"></div><div class="svgcaption">ℕ={0;1;2;…} ⊂ ℤ={…;−2;−1;0;1;2;…}</div></div>
+      <div class="defbox">ℤ besteht aus allen natürlichen Zahlen, der 0 und den Gegenzahlen (…,−3,−2,−1,0,1,2,3,…). ℕ liegt vollständig innerhalb von ℤ.</div>
+      <div class="svgbox"><div id="svgS2b"></div><div class="svgcaption">|−5| = 5 = |5|</div></div>
+      <ul class="bul">
+        <li><b>Betrag einer Zahl:</b> |a| gibt den Abstand einer Zahl zur 0 an — deshalb ist er stets 0 oder positiv.</li>
+      </ul>
+      <div class="alltagbox">🏠 Ein Kontostand von −50 € bedeutet: du schuldest 50 € — der Betrag zeigt „wie viel", das Vorzeichen zeigt „Haben oder Soll".</div>
+    </div>
+  </section>
+
+  <!-- 3 Erweiterung zu Q -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Erweiterung zu den rationalen Zahlen ℚ</h2>
+      <div class="svgbox"><div id="svgS3"></div><div class="svgcaption">ℕ ⊂ ℤ ⊂ ℚ — ℚ enthält z. B. auch 3/4 und −1/2</div></div>
+      <div class="hook">➗ In ℤ kannst du addieren, subtrahieren und multiplizieren — jede Rechnung ergibt wieder eine ganze Zahl. Aber −5 : 3 ergibt KEINE ganze Zahl. Um solche Divisionen ausdrücken zu können, wird ℤ um Bruchzahlen erweitert.</div>
+      <div class="defbox">Eine Bruchzahl hat die Form a:b bzw. a/b, wobei a und b ganze Zahlen sind, a kein Vielfaches von b ist und b ≠ 0 gilt. a heißt Zähler, b heißt Nenner. Die entstehende Menge heißt ℚ.</div>
+      <div class="alltagbox">🏠 Ein Rezept für 3 Personen auf 2 Personen umrechnen — ohne Bruchzahlen ginge das schlicht nicht.</div>
+    </div>
+  </section>
+
+  <!-- 4 Sonderformen -->
+  <section class="slide explain scroll">
+    <div class="ebox">
+      <h2>Besondere Bruchzahlen</h2>
+      <div class="svggrid">
+        <div class="svgbox"><div id="svgS4a"></div><div class="svgcaption">Stammbruch: Zähler = 1</div></div>
+        <div class="svgbox"><div id="svgS4b"></div><div class="svgcaption">Scheinbruch: kürzt sich zur ganzen Zahl</div></div>
+        <div class="svgbox"><div id="svgS4c"></div><div class="svgcaption">Unechter Bruch: |Zähler| &gt; |Nenner|</div></div>
+        <div class="svgbox"><div id="svgS4d"></div><div class="svgcaption">Kehrbruch: Zähler ↔ Nenner vertauscht</div></div>
+      </div>
+      <div class="defbox">Innerhalb der unendlichen Menge der Bruchzahlen gibt es vier Sonderformen mit eigenem Namen:</div>
+      <ul class="bul">
+        <li><b>Stammbruch</b> — Zähler ist 1. Beispiele: −1/3, 1/2, 1/4, 1/25.</li>
+        <li><b>Scheinbruch</b> — Zähler ist ein ganzzahliges Vielfaches des Nenners, lässt sich also zu einer ganzen Zahl kürzen. Beispiele: 6/3 = 2, 25/5 = 5, −9/3 = −3.</li>
+        <li><b>Unechter Bruch</b> — der Betrag des Zählers ist größer als der des Nenners. Beispiele: −12/11, 8/5, 3/2.</li>
+        <li><b>Kehrbruch</b> — Zähler und Nenner vertauscht; eine Bruchzahl mal ihr Kehrbruch ergibt immer 1. Beispiel: 3/2 → Kehrbruch 2/3.</li>
+      </ul>
+      <div class="alltagbox">🏠 3/2 Zoll Rohrgewinde ist ein unechter Bruch. 6/3 Zoll wäre dagegen ein Scheinbruch — in Wahrheit einfach „2 Zoll" und würde nie so angeschrieben.</div>
+    </div>
+  </section>
+
+  <!-- 5 Regeln für Brüche -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Regeln für Brüche</h2>
+      <div class="defbox">Drei Regeln, die bei Bruchzahlen immer gelten:</div>
+      <ul class="bul">
+        <li>Der Nenner eines Bruchs darf niemals 0 sein (Beweis dazu gleich auf der nächsten Folie).</li>
+        <li>Ist der Zähler 0, ist der ganze Bruchwert 0 — für jede Zahl a ≠ 0 gilt: 0/a = 0.</li>
+        <li>Vorzeichenregel: +a/+b = +a/b &nbsp;·&nbsp; −a/+b = −a/b &nbsp;·&nbsp; +a/−b = −a/b &nbsp;·&nbsp; −a/−b = +a/b.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 6 Dezimalzahlen -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Endliche &amp; periodische Dezimalzahlen</h2>
+      <div class="svggrid">
+        <div class="svgbox"><div id="svgS6a"></div><div class="svgcaption">endlich → rational</div></div>
+        <div class="svgbox"><div id="svgS6b"></div><div class="svgcaption">periodisch → auch rational</div></div>
+      </div>
+      <div class="defbox">Jede endliche und jede periodische Dezimalzahl lässt sich als Bruchzahl darstellen — beide gehören zur Menge ℚ.</div>
+      <ul class="bul">
+        <li>Endlich: 0,875 = 7/8.</li>
+        <li>Periodisch: 0,<span class="ov">27</span> = 3/11 — die Ziffernfolge „27" wiederholt sich unendlich.</li>
+      </ul>
+      <div class="defbox">Menge der rationalen Zahlen ℚ: Sie besteht aus allen ganzen Zahlen, den Bruchzahlen und den Dezimalzahlen, die sich als Bruchzahl darstellen lassen.</div>
+      <div class="alltagbox">🏠 Dein Taschenrechner zeigt oft 0,3333333 statt 1/3 an — das ist exakt dieselbe Zahl, nur anders dargestellt.</div>
+    </div>
+  </section>
+
+  <!-- 7 Schritt-für-Schritt: keine Division durch 0 -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Warum keine Division durch 0?</h2>
+      <div class="defbox">Beweise durch Widerspruch: Eine Division a : 0 mit a ≠ 0 ist nicht definiert.</div>
+      <div class="step" id="s7_1"><b class="lbl">Annahme:</b> a : 0 wäre für ein a ≠ 0 möglich und würde das Ergebnis c liefern: a : 0 = c.</div>
+      <div class="step" id="s7_2"><b class="lbl">Umformung:</b> Division rückgängig gemacht heißt Multiplikation — also müsste gelten: a = c · 0.</div>
+      <div class="step" id="s7_3"><b class="lbl">Auswertung:</b> Aber c · 0 ergibt für JEDES beliebige c immer 0.</div>
+      <div class="step" id="s7_4"><b class="lbl">Widerspruch:</b> Das bedeutet a = 0 — das widerspricht aber der Voraussetzung a ≠ 0.</div>
+      <div class="step" id="s7_5"><b class="lbl">Antwortsatz:</b> Die Annahme war falsch. Eine Division durch 0 ist daher nicht definiert.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="7" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 8 Irrationale Zahlen -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Irrationale Zahlen</h2>
+      <div class="svgbox"><div id="svgS8"></div><div class="svgcaption">π = 3,14159265358979… — keine Ziffernfolge wiederholt sich je, egal wie weit du gehst</div></div>
+      <div class="defbox">Eine irrationale Zahl lässt sich NICHT als Bruchzahl darstellen — ihre Dezimaldarstellung ist unendlich lang UND nicht periodisch.</div>
+      <ul class="bul">
+        <li>π = 3,14159265… zeigt keine Periode, egal wie viele Nachkommastellen du berechnest.</li>
+        <li>Neben π gibt es unendlich viele weitere irrationale Zahlen, z. B. √2.</li>
+      </ul>
+      <div class="alltagbox">🏠 Ein Kreis mit exaktem Durchmesser 1 hat einen Umfang von genau π — eine Zahl, die sich niemals exakt als Bruch hinschreiben lässt, egal wie viele Nachkommastellen du nimmst.</div>
+      <div id="estPi2b"></div>
+    </div>
+  </section>
+
+  <!-- 9 Reelle Zahlen + Zwiebel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Die reellen Zahlen ℝ &amp; die Zahlen-Zwiebel</h2>
+      <div class="svgbox"><div id="svgS9"></div><div class="svgcaption">ℕ ⊂ ℤ ⊂ ℚ ⊂ ℝ — ℝ enthält zusätzlich π, √2 (irrational)</div></div>
+      <div class="defbox">Die Menge der reellen Zahlen ℝ umfasst die rationalen UND die irrationalen Zahlen. Mit ℝ ist jede Stelle des Zahlenstrahls beschrieben.</div>
+      <ul class="bul">
+        <li>Merksatz als Vorschau: jede Schale umschließt die vorige vollständig. Was ⊂ ganz genau bedeutet, lernst du im nächsten Teil „Mengen vergleichen &amp; verknüpfen".</li>
+        <li>−7 liegt deshalb NICHT nur in EINER Schale, sondern gleichzeitig in ℤ, in ℚ UND in ℝ.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10 Einschränkung/Erweiterung -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Einschränkung &amp; Erweiterung der Zahlenmengen</h2>
+      <div class="svgbox"><div id="svgS10"></div><div class="svgcaption">ℤ₀⁺ = {0; 1; 2; 3; …} — nur die rechte, „positive-plus-Null"-Hälfte der ℤ-Schale</div></div>
+      <div class="defbox">Mit Zusatzsymbolen lassen sich die festen Zahlenmengen ℕ, ℤ, ℚ, ℝ einschränken oder erweitern.</div>
+      <ul class="bul">
+        <li>Ein hochgestelltes <b>+</b> oder <b>−</b> wählt nur die positiven bzw. negativen Zahlen aus.</li>
+        <li>Ein tiefgestellter Index <b>0</b> gibt an, dass die Zahl 0 mit dazugehört.</li>
+        <li>Beispiel: ℤ₀⁺ = alle positiven ganzen Zahlen UND die 0. Beispiel: ℚ⁻ = alle negativen rationalen Zahlen (ohne 0).</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 11 Eselsbrücke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Zahlen-Zwiebel: <b>N</b>immt <b>Z</b>wiebeln <b>Qu</b>asi <b>R</b>oh" — ℕ ⊂ ℤ ⊂ ℚ ⊂ ℝ, jede Schale umschließt die vorige.</div>
+    </div>
+  </section>
+
+  <!-- 12 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Zoll-Brüche in der Werkstatt</h2>
+      <div class="defbox">In der Kfz- und Metallwerkstatt werden Schlüsselweiten und Gewinde oft in Zoll-Brüchen angegeben: 1/4", 3/8", 5/16", 1/2" — waschechte Bruchzahlen.</div>
+      <ul class="bul">
+        <li>3/8 Zoll ist eine gewöhnliche Bruchzahl (keine der vier Sonderformen).</li>
+        <li>4/2 Zoll würde dagegen NIE so angeschrieben — es ist ein Scheinbruch und heißt schlicht „2 Zoll".</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 13 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>ℕ</td><td>„en"</td><td>natürliche Zahlen</td></tr>
+        <tr><td>ℤ</td><td>„zet"</td><td>ganze Zahlen</td></tr>
+        <tr><td>ℚ</td><td>„ku"</td><td>rationale Zahlen (Quotienten)</td></tr>
+        <tr><td>ℝ</td><td>„er"</td><td>reelle Zahlen</td></tr>
+        <tr><td>|a|</td><td>„Betrag von a"</td><td>Abstand der Zahl a zur 0</td></tr>
+        <tr><td>⊂</td><td>„ist enthalten in"</td><td>Vorschau — genaue Definition folgt im nächsten Teil</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 14 Schritt-für-Schritt: Zwiebel einordnen -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Zahlen in die Zwiebel einordnen</h2>
+      <div class="defbox">Aufgabe: Ordne −1, 7/3, 4, −18/5, π und 1,<span class="ov">63</span> jeweils in die INNERSTE passende Schale der Zahlen-Zwiebel ein.</div>
+      <div class="step" id="s14_1"><b class="lbl">−1 prüfen:</b> −1 ist eine ganze Zahl (kein Bruch, keine Dezimalzahl) → innerste passende Schale: ℤ.</div>
+      <div class="step" id="s14_2"><b class="lbl">4 prüfen:</b> 4 ist eine natürliche Zahl (positiv, ganzzahlig) → innerste Schale: ℕ.</div>
+      <div class="step" id="s14_3"><b class="lbl">7/3 und −18/5 prüfen:</b> Beide sind echte Bruchzahlen (kein Vielfaches im Zähler) → Schale: ℚ.</div>
+      <div class="step" id="s14_4"><b class="lbl">1,<span class="ov">63</span> prüfen:</b> Die Ziffernfolge „63" wiederholt sich unendlich (periodisch) → jede periodische Dezimalzahl ist rational → Schale: ℚ.</div>
+      <div class="step" id="s14_5"><b class="lbl">π prüfen &amp; Antwortsatz:</b> π hat unendlich viele, NICHT periodische Nachkommastellen → π ist irrational, liegt also nur in ℝ. Ergebnis: ℕ = {4} · ℤ = {−1} · ℚ = {7/3; −18/5; 1,<span class="ov">63</span>} · nur ℝ (irrational) = {π}.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="14" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 15 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Zahlen-Sortierer — Zwiebel-Diagramm</span><span class="sub">Missions- &amp; Rätsel-Modus</span></div>
+    <iframe allow="autoplay" data-src="zahlenmengen2b_labor.html"></iframe>
+  </section>
+
+  <!-- 16 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Begriff</th><th>Kernaussage</th></tr>
+      <tr><td>ℤ</td><td>ganze Zahlen: ℕ, 0 und die Gegenzahlen der natürlichen Zahlen</td></tr>
+      <tr><td>Betrag |a|</td><td>Abstand zur 0, stets 0 oder positiv</td></tr>
+      <tr><td>ℚ</td><td>ℤ erweitert um Bruchzahlen — jede endliche/periodische Dezimalzahl gehört dazu</td></tr>
+      <tr><td>irrational</td><td>unendlich UND nicht periodisch (z. B. π, √2) → nicht als Bruch darstellbar</td></tr>
+      <tr><td>ℝ</td><td>rationale + irrationale Zahlen — deckt den ganzen Zahlenstrahl ab</td></tr>
+      <tr><td>Zwiebel</td><td>ℕ ⊂ ℤ ⊂ ℚ ⊂ ℝ — jede Schale enthält die vorige komplett</td></tr>
+    </table>
+  </section>
+
+  <!-- 17 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Bestimme |−12| und |9|.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>|−12| = 12 · |9| = 9</details>
+        </li>
+        <li style="margin-top:10px;">Ordne 16/4, 5/9 und −7/2 jeweils einer Sonderform zu (Stammbruch, Scheinbruch, unechter Bruch oder „keine Sonderform").
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>16/4 = 4 → Scheinbruch · 5/9 → keine Sonderform (Zähler ≠ 1, kein Vielfaches) · −7/2 → unechter Bruch</details>
+        </li>
+        <li style="margin-top:10px;">Gib zu 4 und zu −9 jeweils die Gegenzahl an.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>Gegenzahl von 4 ist −4 · Gegenzahl von −9 ist 9</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 18 Prüfungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.3vw,19px);">
+        <li><b>Zwischen ℕ, ℤ, ℚ und ℝ unterscheiden</b> und wissen, dass sie ineinander verschachtelt sind.</li>
+        <li><b>Die vier Bruch-Sonderformen erkennen</b> (Stammbruch, Scheinbruch, unechter Bruch, Kehrbruch).</li>
+        <li><b>Begründen, warum eine Division durch 0 nicht definiert ist.</b></li>
+        <li><b>Rational von irrational unterscheiden</b> (periodisch = rational, unendlich UND nicht periodisch = irrational).</li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">Typische Prüfungsfrage: <i>„Eine Mitschülerin fragt: Zu welcher Zahlenmenge gehört jetzt die Zahl −7? Zur Menge der ganzen Zahlen oder zur Menge der rationalen Zahlen?"</i> → Beides! −7 liegt in ℤ UND in ℚ (und auch in ℝ) — jede Schale der Zahlen-Zwiebel umschließt die vorige vollständig, eine Zahl verliert ihre Zugehörigkeit zur inneren Schale nie.</div>
+    </div>
+  </section>
+
+  <!-- 19 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+// === SVG-Grafiken (additiv, Grafik-Nachrüstung 23.07.) ===
+// Zwiebel-Diagramm-Helfer: bis zu 4 verschachtelte Ellipsen mit Beispielzahlen je Schale
+function buildOnionSVG(rings){
+  // rings: [{label, examples, color}] von aussen nach innen. Nur Struktur+Label in der SVG (kollisionssicher);
+  // die Beispielzahlen stehen als Caption-Text unterhalb der Grafik im HTML (siehe Aufrufer).
+  const W=340, H=170;
+  const cx=W/2, cy=H/2+6;
+  const n=rings.length;
+  const maxRx=W/2-18, maxRy=H/2-16;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:420px;height:auto;display:block;margin:0 auto;">';
+  rings.forEach((r,i)=>{
+    const frac=(n-i)/n;
+    const rx=maxRx*frac, ry=maxRy*frac;
+    s+='<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+rx+'" ry="'+ry+'" fill="'+r.color+'" fill-opacity="0.13" stroke="'+r.color+'" stroke-width="2"/>';
+  });
+  // Ring-Label in der eigenen (nicht ueberlappenden) Bande am linken Rand, alle auf gleicher Hoehe cy
+  rings.forEach((r,i)=>{
+    const frac=(n-i)/n;
+    const rx=maxRx*frac;
+    const isInner=(i===rings.length-1);
+    const x=isInner? cx : (cx-rx+16);
+    const anchor=isInner? 'middle':'start';
+    s+='<text x="'+x+'" y="'+(cy+5)+'" text-anchor="'+anchor+'" font-size="15" fill="'+r.color+'" font-weight="700">'+r.label+'</text>';
+  });
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgS2a').innerHTML=buildOnionSVG([
+  {label:'ℤ',examples:'…,−2,−1',color:'#5fd0c7'},
+  {label:'ℕ',examples:'0,1,2,3,…',color:'#f2a63c'}
+]);
+document.getElementById('svgS3').innerHTML=buildOnionSVG([
+  {label:'ℚ',examples:'…,−1/2,3/4,…',color:'#6fcf6f'},
+  {label:'ℤ',examples:'…,−2,−1',color:'#5fd0c7'},
+  {label:'ℕ',examples:'0,1,2,3,…',color:'#f2a63c'}
+]);
+document.getElementById('svgS9').innerHTML=buildOnionSVG([
+  {label:'ℝ',examples:'π, √2 (irrational)',color:'#d18cff'},
+  {label:'ℚ',examples:'…,−1/2,3/4,…',color:'#6fcf6f'},
+  {label:'ℤ',examples:'…,−2,−1',color:'#5fd0c7'},
+  {label:'ℕ',examples:'0,1,2,3,…',color:'#f2a63c'}
+]);
+// Betrag-Zahlenstrahl: |-5|=5=|5|
+(function(){
+  const xOf=v=>170+v*22;
+  const y=40;
+  let s='<svg viewBox="0 -14 340 88" style="width:100%;max-width:420px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="10" y1="'+y+'" x2="330" y2="'+y+'" stroke="#4a5568" stroke-width="2"/>';
+  s+='<polygon points="330,'+y+' 322,'+(y-5)+' 322,'+(y+5)+'" fill="#4a5568"/>';
+  for(let v=-6;v<=6;v++){
+    const x=xOf(v);
+    s+='<line x1="'+x+'" y1="'+(y-5)+'" x2="'+x+'" y2="'+(y+5)+'" stroke="#4a5568" stroke-width="1.2"/>';
+    if(v===0||v===-5||v===5){
+      s+='<circle cx="'+x+'" cy="'+y+'" r="6" fill="#f2a63c"/>';
+    }
+    s+='<text x="'+x+'" y="'+(y+22)+'" text-anchor="middle" font-size="11" fill="#9aa4b2">'+v+'</text>';
+  }
+  s+='<path d="M'+xOf(-5)+','+(y-16)+' Q170,'+(y-32)+' '+xOf(0)+','+(y-16)+'" fill="none" stroke="#5fd0c7" stroke-width="1.5"/>';
+  s+='<text x="'+((xOf(-5)+xOf(0))/2)+'" y="'+(y-36)+'" text-anchor="middle" font-size="12" fill="#5fd0c7">Abstand 5</text>';
+  s+='<path d="M'+xOf(0)+','+(y-16)+' Q'+xOf(2.5)+','+(y-32)+' '+xOf(5)+','+(y-16)+'" fill="none" stroke="#5fd0c7" stroke-width="1.5"/>';
+  s+='<text x="'+((xOf(0)+xOf(5))/2)+'" y="'+(y-36)+'" text-anchor="middle" font-size="12" fill="#5fd0c7">Abstand 5</text>';
+  s+='</svg>';
+  document.getElementById('svgS2b').innerHTML=s;
+})();
+// Bruch-Kachel-Helfer: Zaehler ueber Nenner mit Bruchstrich, optional Zusatztext (z.B. "= 2") oder Kehrbruch-Partner
+function buildFractionSVG(num, den, opts){
+  opts = opts||{};
+  const W=opts.W||140, H=opts.H||96;
+  const cx=opts.partner? W*0.28 : W/2;
+  const barW=Math.max(30, Math.max((''+num).length, (''+den).length)*13);
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:170px;height:auto;display:block;margin:0 auto;">';
+  s+='<text x="'+cx+'" y="'+(H/2-10)+'" text-anchor="middle" font-size="22" font-weight="700" fill="#f2a63c">'+num+'</text>';
+  s+='<line x1="'+(cx-barW/2)+'" y1="'+(H/2)+'" x2="'+(cx+barW/2)+'" y2="'+(H/2)+'" stroke="#f2a63c" stroke-width="2.5"/>';
+  s+='<text x="'+cx+'" y="'+(H/2+28)+'" text-anchor="middle" font-size="22" font-weight="700" fill="#f2a63c">'+den+'</text>';
+  if(opts.suffix){
+    s+='<text x="'+cx+'" y="'+(H-8)+'" text-anchor="middle" font-size="16" fill="#5fd0c7">'+opts.suffix+'</text>';
+  }
+  if(opts.partner){
+    const px=W*0.78;
+    s+='<text x="'+((cx+px)/2)+'" y="'+(H/2+5)+'" text-anchor="middle" font-size="20" fill="#5fd0c7">↔</text>';
+    const pBarW=Math.max(24, Math.max((''+opts.partner[0]).length, (''+opts.partner[1]).length)*13);
+    s+='<text x="'+px+'" y="'+(H/2-10)+'" text-anchor="middle" font-size="22" font-weight="700" fill="#5fd0c7">'+opts.partner[0]+'</text>';
+    s+='<line x1="'+(px-pBarW/2)+'" y1="'+(H/2)+'" x2="'+(px+pBarW/2)+'" y2="'+(H/2)+'" stroke="#5fd0c7" stroke-width="2.5"/>';
+    s+='<text x="'+px+'" y="'+(H/2+28)+'" text-anchor="middle" font-size="22" font-weight="700" fill="#5fd0c7">'+opts.partner[1]+'</text>';
+  }
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgS4a').innerHTML=buildFractionSVG('1','2');
+document.getElementById('svgS4b').innerHTML=buildFractionSVG('6','3',{suffix:'= 2'});
+document.getElementById('svgS4c').innerHTML=buildFractionSVG('8','5');
+document.getElementById('svgS4d').innerHTML=buildFractionSVG('3','2',{W:180,partner:['2','3']});
+// Dezimal <-> Bruch: Pfeil von Dezimalzahl zur Bruchkachel
+function buildDecimalToFractionSVG(decText, num, den){
+  const W=220, H=96;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:240px;height:auto;display:block;margin:0 auto;">';
+  s+='<text x="34" y="'+(H/2+7)+'" text-anchor="middle" font-size="19" font-weight="700" fill="#e6edf3">'+decText+'</text>';
+  s+='<line x1="62" y1="'+(H/2)+'" x2="104" y2="'+(H/2)+'" stroke="#5fd0c7" stroke-width="2"/>';
+  s+='<polygon points="104,'+(H/2)+' 96,'+(H/2-5)+' 96,'+(H/2+5)+'" fill="#5fd0c7"/>';
+  const cx=160, barW=Math.max(30,Math.max((''+num).length,(''+den).length)*13);
+  s+='<text x="'+cx+'" y="'+(H/2-10)+'" text-anchor="middle" font-size="22" font-weight="700" fill="#f2a63c">'+num+'</text>';
+  s+='<line x1="'+(cx-barW/2)+'" y1="'+(H/2)+'" x2="'+(cx+barW/2)+'" y2="'+(H/2)+'" stroke="#f2a63c" stroke-width="2.5"/>';
+  s+='<text x="'+cx+'" y="'+(H/2+28)+'" text-anchor="middle" font-size="22" font-weight="700" fill="#f2a63c">'+den+'</text>';
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgS6a').innerHTML=buildDecimalToFractionSVG('0,875', '7','8');
+document.getElementById('svgS6b').innerHTML=buildDecimalToFractionSVG('0,2̅7̅', '3','11');
+// Pi-Ziffernband: viele Nachkommastellen ohne erkennbares Muster
+(function(){
+  const digits='3,14159265358979323846264338327950288419716939';
+  const W=460, H=64;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:520px;height:auto;display:block;margin:0 auto;">';
+  s+='<rect x="4" y="10" width="'+(W-8)+'" height="34" rx="6" fill="#151b24" stroke="#2a3038"/>';
+  s+='<text x="'+(W/2)+'" y="33" text-anchor="middle" font-size="14" font-family="monospace" fill="#f2a63c" letter-spacing="0.5">'+digits+'…</text>';
+  s+='<text x="'+(W/2)+'" y="56" text-anchor="middle" font-size="12" fill="#9aa4b2">kein Block wiederholt sich je — nicht periodisch</text>';
+  s+='</svg>';
+  document.getElementById('svgS8').innerHTML=s;
+})();
+// Beschnittene Zwiebel-Schale fuer Z0+: nur rechte Haelfte der Z-Ellipse sichtbar
+(function(){
+  const W=320, H=150, cx=W/2, cy=H/2+4, rx=118, ry=58;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:380px;height:auto;display:block;margin:0 auto;">';
+  s+='<defs><clipPath id="rightHalf"><rect x="'+cx+'" y="0" width="'+(W-cx)+'" height="'+H+'"/></clipPath></defs>';
+  s+='<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+rx+'" ry="'+ry+'" fill="#5fd0c7" fill-opacity="0.05" stroke="#5fd0c7" stroke-width="1.5" stroke-dasharray="4 3"/>';
+  s+='<g clip-path="url(#rightHalf)"><ellipse cx="'+cx+'" cy="'+cy+'" rx="'+rx+'" ry="'+ry+'" fill="#5fd0c7" fill-opacity="0.22" stroke="#5fd0c7" stroke-width="2.5"/></g>';
+  s+='<line x1="'+cx+'" y1="'+(cy-ry-10)+'" x2="'+cx+'" y2="'+(cy+ry+10)+'" stroke="#f2a63c" stroke-width="2" stroke-dasharray="3 3"/>';
+  s+='<text x="'+cx+'" y="'+(cy-ry-16)+'" text-anchor="middle" font-size="13" fill="#f2a63c" font-weight="700">0</text>';
+  s+='<text x="'+(cx-rx/2)+'" y="'+(cy+ry+26)+'" text-anchor="middle" font-size="12" fill="#4a5568">ℤ⁻ (ausgeschlossen)</text>';
+  s+='<text x="'+(cx+rx/2)+'" y="'+(cy+5)+'" text-anchor="middle" font-size="16" fill="#5fd0c7" font-weight="700">ℤ₀⁺</text>';
+  s+='<text x="'+(cx+rx/2)+'" y="'+(cy+ry+26)+'" text-anchor="middle" font-size="12" fill="#5fd0c7">{0;1;2;3;…}</text>';
+  s+='</svg>';
+  document.getElementById('svgS10').innerHTML=s;
+})();
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Die ganzen Zahlen ℤ & der Betrag", "Erweiterung zu ℚ", "Besondere Bruchzahlen", "Regeln für Brüche", "Endliche & periodische Dezimalzahlen", "📐 Schritt für Schritt: keine Division durch 0", "Irrationale Zahlen", "Die reellen Zahlen ℝ & die Zwiebel", "Einschränkung & Erweiterung", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Zoll-Brüche", "Symbol-Legende", "📐 Schritt für Schritt: Zwiebel einordnen", "🧪 Zahlen-Sortierer", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=18;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck2b_s1_Charon.mp3",txt:"Zahlenmengen zwei – dein Taschenrechner zeigt manchmal null Komma drei drei drei drei drei an. Ist das eine echte Zahl? Und warum crasht jeder Rechner der Welt, wenn du versuchst, durch Null zu teilen? Genau darum geht's jetzt."},
+ 2:{wav:"narration_deck2b_s2_Charon.mp3",txt:"Schau auf die Zwiebel-Grafik: ℕ liegt komplett innerhalb von ℤ. Die ganzen Zahlen umfassen alle natürlichen Zahlen, die Null, und die Gegenzahlen. Und schau auf den Zahlenstrahl darunter: der Betrag einer Zahl gibt einfach ihren Abstand zur Null an – deshalb ist er nie negativ. Betrag von minus fünf ist fünf, genauso wie Betrag von plus fünf."},
+ 3:{wav:"narration_deck2b_s3_Charon.mp3",txt:"Schau auf die Zwiebel: jetzt kommt eine dritte Schale dazu. In den ganzen Zahlen kannst du addieren, subtrahieren und multiplizieren, aber minus fünf geteilt durch drei ergibt keine ganze Zahl. Deshalb wird die Menge um Bruchzahlen erweitert – und genau das ergibt die rationalen Zahlen."},
+ 4:{wav:"narration_deck2b_s4_Charon.mp3",txt:"Vier Bruchzahlen bekommen eigene Namen: der Stammbruch mit der Eins im Zähler, der Scheinbruch, der sich zu einer ganzen Zahl kürzen lässt, der unechte Bruch, bei dem der Zähler größer ist als der Nenner, und der Kehrbruch, bei dem Zähler und Nenner vertauscht sind."},
+ 5:{wav:"narration_deck2b_s5_Charon.mp3",txt:"Drei Regeln merken: der Nenner darf niemals Null sein, ein Bruch mit Zähler Null ist immer Null, und bei den Vorzeichen gilt – zwei gleiche Vorzeichen ergeben ein Plus, zwei unterschiedliche ein Minus."},
+ 6:{wav:"narration_deck2b_s6_Charon.mp3",txt:"Sowohl endliche als auch periodische Dezimalzahlen lassen sich immer als Bruch schreiben – beide gehören zu den rationalen Zahlen. Null Komma acht sieben fünf ist sieben Achtel, und die periodische Zahl null Komma Periode sieben zwei ist drei Elftel."},
+ 7:{wav:"narration_deck2b_s7_Charon.mp3",txt:"Jetzt der Beweis, warum eine Division durch Null nicht erlaubt ist. Überleg schon mal: wenn a geteilt durch Null wirklich ein Ergebnis c hätte, was würde das für a mal Null bedeuten? Klick dich durch die Schritte, um den Widerspruch selbst zu sehen."},
+ 8:{wav:"narration_deck2b_s8_Charon.mp3",txt:"Eine irrationale Zahl lässt sich nicht als Bruch schreiben – ihre Dezimaldarstellung ist unendlich lang und zeigt niemals eine Wiederholung. Pi ist das bekannteste Beispiel, aber es gibt unendlich viele weitere, etwa Wurzel zwei."},
+ 9:{wav:"narration_deck2b_s9_Charon.mp3",txt:"Schau auf die vollständige Zwiebel mit allen vier Schalen: die reellen Zahlen fassen rationale und irrationale Zahlen zusammen und decken damit jede Stelle des Zahlenstrahls ab. Die natürlichen Zahlen liegen in den ganzen, die liegen in den rationalen, die liegen in den reellen Zahlen."},
+ 10:{wav:"narration_deck2b_s10_Charon.mp3",txt:"Mit einem hochgestellten Plus oder Minus schränkst du eine Zahlenmenge auf positive oder negative Zahlen ein, ein tiefgestellter Index Null holt die Null wieder mit dazu."},
+ 11:{wav:"narration_deck2b_s11_Charon.mp3",txt:"Merk's dir mit: Nimmt Zwiebeln Quasi Roh – natürlich, ganz, rational, reell, jede Schale umschließt die vorige."},
+ 12:{wav:"narration_deck2b_s12_Charon.mp3",txt:"In der Werkstatt begegnen dir Bruchzahlen ständig als Zoll-Maße – drei Achtel Zoll, ein Viertel Zoll. Vier Halbe Zoll würde dagegen nie so angeschrieben, das wäre ja bloß zwei Zoll."},
+ 13:{wav:"narration_deck2b_s13_Charon.mp3",txt:"Hier noch mal alle Symbole dieser Folie im Überblick, bevor wir gemeinsam ein größeres Beispiel durchrechnen."},
+ 14:{wav:"narration_deck2b_s14_Charon.mp3",txt:"Jetzt ordnen wir gemeinsam sechs verschiedene Zahlen in die Zwiebel ein. Überleg bei jeder Zahl kurz: ist sie ganzzahlig, ein Bruch, periodisch, oder zeigt sie gar keine Wiederholung? Klick dich durch die Schritte."},
+ 15:{wav:"narration_deck2b_s15_Charon.mp3",txt:"Jetzt bist du dran: sortiere die Zahlen per Klick in die richtige Schale der Zwiebel, und versuch dich danach am Rätsel-Modus."},
+ 16:{wav:"narration_deck2b_s16_Charon.mp3",txt:"Fassen wir zusammen: ganze, rationale und reelle Zahlen bauen aufeinander auf wie eine Zwiebel, der Betrag ist nie negativ, und periodisch bedeutet immer rational."},
+ 17:{wav:"narration_deck2b_s17_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm – drei Aufgaben zu Betrag, Bruch-Sonderformen und Gegenzahlen."},
+ 18:{wav:"narration_deck2b_s18_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst – inklusive der klassischen Fangfrage, zu welcher Zahlenmenge minus sieben denn nun gehört."},
+ 19:{wav:"narration_deck2b_s19_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst – du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt (mehrere unabhängige Gruppen) ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"Welche Aussage über die Zahl −7 stimmt?",
+  a:["−7 ist nur eine ganze Zahl, keine rationale Zahl","−7 ist nur eine rationale Zahl, keine ganze Zahl","−7 ist ganze Zahl UND rationale Zahl UND reelle Zahl gleichzeitig","−7 gehört zu keiner der genannten Zahlenmengen"],r:2,
+  why:"Jede Schale der Zahlen-Zwiebel enthält die vorherige komplett — eine ganze Zahl ist automatisch auch rational und reell."},
+ {q:"Wie würdest du 4/2 einordnen?",
+  a:["Stammbruch","Scheinbruch, weil sich 4/2 zur ganzen Zahl 2 kürzen lässt","Unechter Bruch","Kehrbruch"],r:1,
+  why:"Scheinbruch: der Zähler ist ein ganzzahliges Vielfaches des Nenners und lässt sich zu einer ganzen Zahl kürzen (4/2 = 2)."},
+ {q:"Ist 0,27 mit Periode 27 (also 0,272727…) eine rationale oder irrationale Zahl?",
+  a:["Irrational, weil sie unendlich viele Nachkommastellen hat","Rational, weil sie periodisch ist und sich als Bruch schreiben lässt","Weder rational noch irrational","Das kann man nicht entscheiden"],r:1,
+  why:"Periodische Dezimalzahlen sind IMMER rational — 0,27̄ = 3/11. „Unendlich viele Nachkommastellen” allein macht eine Zahl noch nicht irrational, entscheidend ist die fehlende Periode."},
+ {q:"Was ist |−4|?",
+  a:["−4","4","0","nicht definiert"],r:1,
+  why:"Der Betrag ist immer 0 oder positiv — er misst nur den Abstand zur 0, nie mit Vorzeichen."},
+ {q:"Warum ist eine Division durch 0 nicht definiert?",
+  a:["Weil 0 keine Zahl ist","Weil der Taschenrechner das nicht kann","Weil aus a:0=c die Aussage a=c·0=0 folgen würde — Widerspruch zu a≠0","Weil das Ergebnis immer unendlich groß wäre"],r:2,
+  why:"Der Widerspruchsbeweis zeigt: a:0=c würde a=0 erzwingen — für a≠0 ein Widerspruch, also ist die Division nicht definiert."},
+ {q:"Welche der folgenden Zahlen ist irrational?",
+  a:["7/3","1,63 mit Periode 63 (also 1,636363…)","π","−18/5"],r:2,
+  why:"π hat unendlich viele Nachkommastellen OHNE Periode — die anderen sind Bruchzahlen bzw. periodische Dezimalzahlen, also rational."}
+];
+const DECK_ID="mengenlehre/deck2b";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, conf:conf, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+
+    let sureChoice='unsure';
+    const confrow=document.createElement('div'); confrow.className='confrow';
+    const sureBtn=document.createElement('button'); sureBtn.className='confchip sure'; sureBtn.textContent='🟢 sicher'; sureBtn.type='button';
+    const unsureBtn=document.createElement('button'); unsureBtn.className='confchip unsure'; unsureBtn.textContent='🟡 unsicher'; unsureBtn.type='button';
+    confrow.appendChild(sureBtn); confrow.appendChild(unsureBtn);
+    box.appendChild(confrow);
+
+    const optsWrap=document.createElement('div'); optsWrap.className='quizoptswrap';
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    const warn=document.createElement('div'); warn.className='quizwarn'; warn.textContent='⚠️ Genau die merken sich die 5 Fragen des Tages.';
+
+    function chooseSure(which){
+      sureChoice=which;
+      sureBtn.classList.toggle('on', which==='sure');
+      unsureBtn.classList.toggle('on', which==='unsure');
+      optsWrap.classList.add('enabled');
+    }
+    sureBtn.onclick=()=>chooseSure('sure');
+    unsureBtn.onclick=()=>chooseSure('unsure');
+
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        const ok=(oi===item.r), conf=(sureChoice==='sure');
+        optsWrap.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(!ok) b.classList.add('wrong');
+        why.classList.add('show');
+        if(conf && !ok) warn.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), ok, conf);
+        answered++; if(ok) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      optsWrap.appendChild(b);
+    });
+    box.appendChild(optsWrap);
+    box.appendChild(why);
+    box.appendChild(warn);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estPi2b', {
+    frage: 'Wie viele Nachkommastellen von π sind (Stand Ende 2025) mit dem Computer berechnet? Schätze den Exponenten: 10 hoch wie viel?',
+    min: 2, max: 16, korrekt: 14, toleranz: 1,
+    begruendung: 'Der aktuelle Weltrekord liegt bei rund 314 Billionen Nachkommastellen — also 10 hoch 14 (StorageReview/Micron, November 2025).'
+  });
+});
+</script>
+</body>
+</html>

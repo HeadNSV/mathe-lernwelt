@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Mengenlehre · Teil 1 — Was ist eine Menge?</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2.1vw,19px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:8px 14px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:4vh 7vw;}
+  .ebox{max-width:min(86vw,960px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.8vw,32px);margin:0 0 14px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:12px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2.1vw,18px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:13px 17px;font-size:min(2.4vw,20px);color:#f6e7cf;margin-bottom:14px;}
+  .bul{font-size:min(2.3vw,19px);line-height:1.55;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:6px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.3vw,19px);color:#d7f3f0;margin-bottom:14px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:12px 18px;font-size:min(2vw,17px);color:#dff3df;margin-top:12px;}
+  .legend td,.legend th{font-size:min(1.9vw,16px);}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+  .confrow{display:flex;gap:8px;margin-bottom:10px;}
+  .confchip{flex:1;background:#1f2630;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:7px 10px;font-size:13px;cursor:pointer;}
+  .confchip.sure.on{background:#1e4a34;border-color:#4caf50;}
+  .confchip.unsure.on{background:#4a3d1e;border-color:var(--accent);}
+  .quizoptswrap{opacity:0.4;pointer-events:none;transition:opacity .2s;}
+  .quizoptswrap.enabled{opacity:1;pointer-events:auto;}
+  .quizwarn{margin-top:8px;padding:8px 12px;background:#3d2a12;border-left:3px solid #c0392b;border-radius:6px;font-size:min(1.9vw,14px);color:#ffd9c2;display:none;}
+  .quizwarn.show{display:block;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>MENGENLEHRE <span class="accent">· Teil 1</span></h1>
+    <h2>Was ist eigentlich eine „Menge"?</h2>
+    <p>Deine Musik-App weiß genau, welche Songs du und dein Kumpel BEIDE mögt — dabei wird da nirgends addiert oder multipliziert. Dahinter steckt eine über 150 Jahre alte Idee EINES Mathematikers, auf der heute die gesamte moderne Mathematik aufbaut: die Mengenlehre.</p>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 1.1</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Der Begriff Menge -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Der Begriff »Menge«</h2>
+      <div class="hook">🗺️ Bayern besteht aus sieben Regierungsbezirken: Oberfranken, Unterfranken, Mittelfranken, Oberpfalz, Schwaben, Oberbayern, Niederbayern. Mathematisch betrachtet ist das schon eine ganz normale Menge.</div>
+      <div class="defbox">Eine Menge ist die Zusammenfassung wohlunterscheidbarer Objekte zu einem Ganzen. Die einzelnen Objekte einer Menge heißen Elemente.</div>
+      <ul class="bul">
+        <li>„Wohlunterscheidbar" heißt: kein Objekt gleicht einem anderen — jeder Regierungsbezirk ist eindeutig als eigenes Element erkennbar.</li>
+        <li>Mengen bekommen zur Bezeichnung meist einen Großbuchstaben, z. B. <b>B</b> für die Menge der bayerischen Regierungsbezirke.</li>
+      </ul>
+      <div class="alltagbox">🏠 Deine Playlist ist genauso eine Menge: jeder Song ein Element, kein Song kommt darin doppelt als „derselbe Song" vor — wie bei deiner Werkzeugkiste, in der jede Schraube eindeutig M4 oder M6 ist.</div>
+    </div>
+  </section>
+
+  <!-- 3 Venn-Diagramm + Element-Symbol -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Venn-Diagramm &amp; das Element-Symbol ∈</h2>
+      <div class="svgbox"><div id="svgS3"></div><div class="svgcaption">Ndb. ∈ B</div></div>
+      <div class="defbox">Eine Menge lässt sich als geschlossene Kurve zeichnen — das nennt man Venn-Diagramm. Alle Elemente liegen innerhalb dieser Kurve. „Niederbayern ist Element von B" schreibt man kurz: <b>Ndb. ∈ B</b> — das Symbol ∈ bedeutet „ist Element von".</div>
+      <div class="alltagbox">🏠 Der Wetterbericht tickt genauso: „Regen ∈ heute" heißt nur, dass Regen eines der Wetterereignisse ist, die heute eintreten.</div>
+    </div>
+  </section>
+
+  <!-- 4 Aufzählende Form + leere Menge -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Aufzählende Form &amp; die leere Menge</h2>
+      <div class="defbox">Bei der aufzählenden Form schreibst du alle Elemente einzeln zwischen geschweifte Klammern, getrennt durch Semikolon: B = {Obf.; Ufr.; Mfr.; Opf.; Schw.; Obb.; Ndb.}</div>
+      <div class="svgbox"><div id="svgS4"></div></div>
+      <ul class="bul">
+        <li>⚠️ Klassische Falle: {0} ist NICHT dieselbe Menge wie { }! {0} enthält ein Element (die Zahl Null) — { } enthält gar keins.</li>
+      </ul>
+      <div class="alltagbox">🏠 Ein leerer Einkaufswagen { } ist etwas anderes als ein Wagen mit genau einem 0-€-Gutschein drin {Gutschein} — im ersten liegt nichts, im zweiten liegt genau ein Ding.</div>
+    </div>
+  </section>
+
+  <!-- 5 Beschreibende Form -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Beschreibende Form</h2>
+      <div class="svgbox"><div id="svgS5"></div></div>
+      <div class="defbox">Bei der beschreibenden Form gibst du statt einzelner Elemente eine gemeinsame Eigenschaft an: B = { Objekte | Eigenschaft }. Der senkrechte Strich | wird gesprochen als „mit der Eigenschaft".</div>
+      <ul class="bul">
+        <li>Erkenntnis: Bei 12,9 Millionen Einwohnern Bayerns wäre eine aufzählende Form für „alle Einwohner Bayerns" unmöglich zu schreiben — hier bleibt die beschreibende Form die einzig praktikable.</li>
+      </ul>
+      <div class="alltagbox">🏠 Ein Kontakte-Filter im Handy funktioniert genauso: „Kontakte | die in der Gruppe Familie sind" beschreibt eine Menge, ohne jeden Namen einzeln aufzuzählen.</div>
+    </div>
+  </section>
+
+  <!-- 6 Eselsbrücke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Beschreibende Form = Steckbrief, aufzählende Form = Gästeliste."</div>
+      <ul class="bul">
+        <li>Ein Steckbrief nennt ein Merkmal („wohnhaft in Bayern") — das ist die beschreibende Form.</li>
+        <li>Eine Gästeliste nennt jeden Namen einzeln — das ist die aufzählende Form.</li>
+      </ul>
+      <div class="alltagbox">🏠 Bei einer Familienfeier mit 8 Gästen schreibst du eine Gästeliste (aufzählend). Bei einer Konzert-Zulassung „alle mit gültigem Ticket" reicht die Eigenschaft (beschreibend) — Tausende Namen aufzuzählen wäre unsinnig.</div>
+    </div>
+  </section>
+
+  <!-- 7 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Lagerlogistik</h2>
+      <div class="defbox">Ein Lagerist filtert Artikel nach Kategorie — z. B. { Artikel | Kategorie = Elektrowerkzeug }. Das ist nichts anderes als eine Menge in beschreibender Form.</div>
+      <ul class="bul">
+        <li>Der gesamte Lagerbestand ist dabei die Grundmenge, der Filter liefert eine Teilmenge passender Artikel.</li>
+        <li>Genau dieses Prinzip steckt in jeder Lagerverwaltungssoftware, jeder Online-Shop-Suche und jedem Datenbank-Filter — die beschreibende Form ist der Normalfall in der IT.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 8 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <div class="defbox">Diese Zeichen begleiten dich durch das ganze Kapitel Mengenlehre — sie werden immer laut mitgesprochen, damit sie ihren Schrecken verlieren.</div>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>∈</td><td>„ist Element von"</td><td>Objekt gehört zur Menge</td></tr>
+        <tr><td>∉</td><td>„ist nicht Element von"</td><td>Objekt gehört NICHT zur Menge</td></tr>
+        <tr><td>{ }</td><td>„leere Menge"</td><td>Menge ohne jedes Element</td></tr>
+        <tr><td>{ ; }</td><td>„Mengenklammern"</td><td>umschließen aufgezählte Elemente, getrennt durch Semikolon</td></tr>
+        <tr><td>|</td><td>„mit der Eigenschaft"</td><td>trennt Objekt-Platzhalter von der beschreibenden Bedingung</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 9 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Begriff</th><th>Kernaussage</th></tr>
+      <tr><td>Menge</td><td>Zusammenfassung wohlunterscheidbarer Objekte (Elemente) zu einem Ganzen</td></tr>
+      <tr><td>Venn-Diagramm</td><td>grafische Darstellung als geschlossene Kurve</td></tr>
+      <tr><td>Aufzählende Form</td><td>alle Elemente einzeln, mit Semikolon getrennt, in { }</td></tr>
+      <tr><td>Beschreibende Form</td><td>Objekte mit gemeinsamer Eigenschaft, getrennt durch |</td></tr>
+      <tr><td>leere Menge</td><td>{ } enthält kein Element — Achtung: {0} ≠ { }</td></tr>
+    </table>
+  </section>
+
+  <!-- 10 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Gib die Menge der Wochentage, die mit dem Buchstaben „S" beginnen, in aufzählender Form an.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>
+            {Samstag; Sonntag}
+          </details>
+        </li>
+        <li style="margin-top:12px;">Gib die Menge der positiven Teiler von 20 in aufzählender Form an.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>
+            {1; 2; 4; 5; 10; 20}
+          </details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 11 Prüfungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.3vw,19px);">
+        <li><b>Die Definition einer Menge nennen können</b> (wohlunterscheidbare Objekte, Elemente).</li>
+        <li><b>Das Element-Symbol ∈ richtig verwenden</b> können.</li>
+        <li><b>Zwischen aufzählender und beschreibender Form wählen</b> können — je nachdem, wie viele Elemente es sind.</li>
+        <li><b>{0} von { } unterscheiden</b> können.</li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">Typische Prüfungsaufgabe: <i>„Warum ist »eine Menge Feinstaub« mathematisch gesehen keine Menge?"</i> → Die einzelnen Feinstaubpartikel sind nicht wohlunterscheidbar — man kann sie weder zählen noch als eindeutig identifizierbare Einzelobjekte benennen. Die Alltagssprache verwendet „Menge" hier nur als Sammelbegriff für „viel", nicht im mathematischen Sinn wohlunterscheidbarer Elemente.</div>
+    </div>
+  </section>
+
+  <!-- 12 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+// === SVG-Grafiken (additiv, Grafik-Nachrüstung 23.07.) ===
+// Slide 3: Venn-Diagramm Regierungsbezirke, Ndb hervorgehoben
+(function(){
+  const items=[["Obf",90,55],["Ufr",170,50],["Mfr",130,85],["Opf",200,90],["Schw",90,110],["Obb",165,125],["Ndb",120,150]];
+  let s='<svg viewBox="0 0 280 200" style="width:100%;max-width:420px;height:auto;display:block;margin:0 auto;">';
+  s+='<ellipse cx="150" cy="105" rx="120" ry="85" fill="rgba(242,166,60,0.10)" stroke="#f2a63c" stroke-width="2"/>';
+  s+='<text x="255" y="30" font-size="16" fill="#f2a63c" font-weight="700">B</text>';
+  items.forEach(([t,x,y])=>{
+    const isNdb=(t==='Ndb');
+    s+='<circle cx="'+x+'" cy="'+y+'" r="'+(isNdb?9:6)+'" fill="'+(isNdb?'#5fd0c7':'#e6edf3')+'"/>';
+    s+='<text x="'+x+'" y="'+(y-12)+'" text-anchor="middle" font-size="13" fill="'+(isNdb?'#5fd0c7':'#9aa4b2')+'" font-weight="'+(isNdb?'700':'400')+'">'+t+'</text>';
+  });
+  s+='<text x="150" y="192" text-anchor="middle" font-size="13" fill="#5fd0c7">Ndb. ist Element von B (∈)</text>';
+  s+='</svg>';
+  document.getElementById('svgS3').innerHTML=s;
+})();
+// Slide 4: {0} vs { } Gegenüberstellung
+(function(){
+  let s='<svg viewBox="0 0 340 110" style="width:100%;max-width:420px;height:auto;display:block;margin:0 auto;">';
+  s+='<rect x="20" y="15" width="130" height="80" rx="10" fill="none" stroke="#5fd0c7" stroke-width="2"/>';
+  s+='<text x="85" y="60" text-anchor="middle" font-size="16" fill="#9aa4b2">(leer)</text>';
+  s+='<text x="85" y="100" text-anchor="middle" font-size="15" fill="#5fd0c7" font-weight="700">{ } — kein Element</text>';
+  s+='<rect x="190" y="15" width="130" height="80" rx="10" fill="rgba(242,166,60,0.12)" stroke="#f2a63c" stroke-width="2"/>';
+  s+='<circle cx="255" cy="52" r="14" fill="#f2a63c"/><text x="255" y="57" text-anchor="middle" font-size="14" fill="#12100a" font-weight="700">0</text>';
+  s+='<text x="255" y="100" text-anchor="middle" font-size="15" fill="#f2a63c" font-weight="700">{0} — ein Element</text>';
+  s+='</svg>';
+  document.getElementById('svgS4').innerHTML=s;
+})();
+// Slide 5: aufzaehlend vs beschreibend Gegenueberstellung
+(function(){
+  let s='<svg viewBox="0 0 380 130" style="width:100%;max-width:460px;height:auto;display:block;margin:0 auto;">';
+  s+='<rect x="15" y="10" width="165" height="105" rx="10" fill="#151b24" stroke="#4a5568" stroke-width="1.5"/>';
+  s+='<text x="97" y="32" text-anchor="middle" font-size="14" fill="#9aa4b2" font-weight="700">aufzählend</text>';
+  s+='<text x="97" y="58" text-anchor="middle" font-size="12" fill="#e6edf3">B={Obf.;Ufr.;Mfr.;</text>';
+  s+='<text x="97" y="74" text-anchor="middle" font-size="12" fill="#e6edf3">Opf.;Schw.;Obb.;Ndb.}</text>';
+  s+='<text x="97" y="98" text-anchor="middle" font-size="11" fill="#9aa4b2">jedes Element einzeln</text>';
+  s+='<rect x="200" y="10" width="165" height="105" rx="10" fill="rgba(242,166,60,0.10)" stroke="#f2a63c" stroke-width="1.5"/>';
+  s+='<text x="282" y="32" text-anchor="middle" font-size="14" fill="#f2a63c" font-weight="700">beschreibend</text>';
+  s+='<text x="282" y="58" text-anchor="middle" font-size="12" fill="#e6edf3">B={Regierungsbezirke |</text>';
+  s+='<text x="282" y="74" text-anchor="middle" font-size="12" fill="#e6edf3">liegen in Bayern}</text>';
+  s+='<text x="282" y="98" text-anchor="middle" font-size="11" fill="#9aa4b2">gemeinsame Eigenschaft</text>';
+  s+='</svg>';
+  document.getElementById('svgS5').innerHTML=s;
+})();
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Der Begriff »Menge«", "Venn-Diagramm & ∈", "Aufzählende Form & leere Menge", "Beschreibende Form", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Lagerlogistik", "Symbol-Legende", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{ s.classList.toggle('active', k===idx); });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=12;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration (additiv, Format strikt: eine Folie pro Zeile fuer tools/voice_slides.py) ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck1_s1_Charon.mp3",txt:"Mengenlehre – deine Musik-App weiß genau, welche Songs du und dein Kumpel beide mögt, obwohl da nirgends addiert oder multipliziert wird. Dahinter steckt eine über hundertfünfzig Jahre alte Idee, auf der die gesamte moderne Mathematik aufbaut: die Mengenlehre. Los geht's mit der Grundfrage – was ist eigentlich eine Menge?"},
+ 2:{wav:"narration_deck1_s2_Charon.mp3",txt:"Bayern besteht aus sieben Regierungsbezirken – Oberfranken, Unterfranken, Mittelfranken, Oberpfalz, Schwaben, Oberbayern und Niederbayern. Mathematisch betrachtet ist das schon eine ganz normale Menge: eine Zusammenfassung wohlunterscheidbarer Objekte, die man Elemente nennt. Wohlunterscheidbar heißt einfach: kein Objekt gleicht einem anderen."},
+ 3:{wav:"narration_deck1_s3_Charon.mp3",txt:"Schau auf die Grafik: zeichnest du die sieben Bezirke als Punkte in eine geschlossene Kurve, bekommst du ein Venn-Diagramm. Der hervorgehobene Punkt ist Niederbayern – dafür gibt es eine kurze Schreibweise: Ndb. Element-Zeichen B. Das Symbol bedeutet einfach »ist Element von«."},
+ 4:{wav:"narration_deck1_s4_Charon.mp3",txt:"Bei der aufzählenden Form schreibst du jedes Element einzeln zwischen geschweifte Klammern, getrennt durch Semikolon. Und jetzt eine klassische Falle, schau auf die beiden Kästen: eine Menge mit der Null drin ist NICHT dasselbe wie die leere Menge – die eine enthält ein Element, die andere gar keins. Überleg kurz: was ist der Unterschied zwischen »nichts drin« und »eine Null drin«?"},
+ 5:{wav:"narration_deck1_s5_Charon.mp3",txt:"Schau auf die Gegenüberstellung: links stehen alle Elemente einzeln aufgezählt, rechts steht nur eine gemeinsame Eigenschaft, getrennt durch einen senkrechten Strich, gesprochen »mit der Eigenschaft«. Bei zwölf Komma neun Millionen Einwohnern Bayerns wird schnell klar, warum die rechte Form oft die einzig praktikable ist."},
+ 6:{wav:"narration_deck1_s6_Charon.mp3",txt:"Merk's dir so: beschreibende Form ist wie ein Steckbrief mit einem Merkmal, aufzählende Form ist wie eine Gästeliste mit jedem Namen einzeln."},
+ 7:{wav:"narration_deck1_s7_Charon.mp3",txt:"In der Lagerlogistik ist das Alltag: ein Filter wie »Artikel mit der Eigenschaft Kategorie Elektrowerkzeug« ist nichts anderes als eine Menge in beschreibender Form – genau das Prinzip hinter jeder Lagerverwaltungssoftware."},
+ 8:{wav:"narration_deck1_s8_Charon.mp3",txt:"Hier sind die Symbole, die dich durchs ganze Kapitel begleiten – sprich sie ruhig laut mit, das nimmt ihnen den Schrecken."},
+ 9:{wav:"narration_deck1_s9_Charon.mp3",txt:"Fassen wir zusammen: eine Menge ist eine Zusammenfassung wohlunterscheidbarer Elemente, darstellbar als Venn-Diagramm, aufzählend oder beschreibend – und die leere Menge ist etwas ganz anderes als eine Menge mit der Null drin."},
+ 10:{wav:"narration_deck1_s10_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm: zwei Aufgaben zur aufzählenden Form, mit Lösung zum Aufklappen, falls du nicht weiterkommst."},
+ 11:{wav:"narration_deck1_s11_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst – und eine klassische Transferfrage: warum »eine Menge Feinstaub« mathematisch gesehen gar keine Menge ist."},
+ 12:{wav:"narration_deck1_s12_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst – du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{}); // Autoplay-Block ODER WAV fehlt noch → still weiter
+}
+
+// === Transkript (📜) ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"Was ist eine Menge im mathematischen Sinn?",
+  a:["Irgendeine große Anzahl von Dingen","Eine Zusammenfassung wohlunterscheidbarer Objekte zu einem Ganzen","Eine Liste von Zahlen in aufsteigender Reihenfolge","Eine Formel zur Berechnung von Summen"],r:1,
+  why:"Die mathematische Definition verlangt ausdrücklich Wohlunterscheidbarkeit — jedes Objekt (Element) muss eindeutig von den anderen unterscheidbar sein."},
+ {q:"Was bedeutet die Aussage „Ndb. ∈ B”?",
+  a:["Niederbayern ist NICHT Teil von B","Niederbayern ist Element der Menge B","B ist eine Teilmenge von Niederbayern","Niederbayern und B sind gleich groß"],r:1,
+  why:"Das Symbol ∈ bedeutet „ist Element von”. Ndb. ∈ B liest sich als „Niederbayern ist Element von B”."},
+ {q:"Für welche Menge eignet sich die BESCHREIBENDE Form am besten?",
+  a:["Die 7 Regierungsbezirke Bayerns","Die 3 Grundfarben","Alle 12,9 Millionen Einwohner Bayerns","Die Wochentage des Wochenendes"],r:2,
+  why:"Bei riesigen Mengen ist die aufzählende Form unpraktikabel — die beschreibende Form über ein gemeinsames Merkmal bleibt die einzig sinnvolle Darstellung."},
+ {q:"Ist {0} dasselbe wie { }?",
+  a:["Ja, beide enthalten kein Element","Nein — {0} enthält ein Element (die Zahl Null), { } enthält gar keins","Ja, weil 0 für „nichts” steht","Nein, weil { } undefiniert ist"],r:1,
+  why:"{0} ist eine Menge MIT einem Element (der Zahl 0) — { } dagegen enthält überhaupt kein Element. Eine der häufigsten Verwechslungen in der Mengenlehre."},
+ {q:"„Regierungsbezirke, die in Bayern liegen” (mit senkrechtem Strich geschrieben) — welche Darstellungsform ist das?",
+  a:["Aufzählende Form","Venn-Diagramm","Beschreibende Form","Es ist gar keine Menge"],r:2,
+  why:"Der senkrechte Strich | steht für „mit der Eigenschaft” — das ist das Kennzeichen der beschreibenden Form."},
+ {q:"Warum ist »eine Menge Feinstaub« mathematisch gesehen KEINE Menge?",
+  a:["Weil Feinstaub unsichtbar ist","Weil die einzelnen Partikel nicht wohlunterscheidbar sind","Weil Feinstaub keine Zahl ist","Weil man Feinstaub nicht zeichnen kann"],r:1,
+  why:"Die mathematische Definition verlangt wohlunterscheidbare Elemente. Feinstaubpartikel lassen sich nicht einzeln als unterscheidbare Objekte fassen — „Menge” ist hier nur umgangssprachlich für „viel”."}
+];
+const DECK_ID="mengenlehre/deck1";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, conf:conf, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+
+    let sureChoice='unsure';
+    const confrow=document.createElement('div'); confrow.className='confrow';
+    const sureBtn=document.createElement('button'); sureBtn.className='confchip sure'; sureBtn.textContent='🟢 sicher'; sureBtn.type='button';
+    const unsureBtn=document.createElement('button'); unsureBtn.className='confchip unsure'; unsureBtn.textContent='🟡 unsicher'; unsureBtn.type='button';
+    confrow.appendChild(sureBtn); confrow.appendChild(unsureBtn);
+    box.appendChild(confrow);
+
+    const optsWrap=document.createElement('div'); optsWrap.className='quizoptswrap';
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    const warn=document.createElement('div'); warn.className='quizwarn'; warn.textContent='⚠️ Genau die merken sich die 5 Fragen des Tages.';
+
+    function chooseSure(which){
+      sureChoice=which;
+      sureBtn.classList.toggle('on', which==='sure');
+      unsureBtn.classList.toggle('on', which==='unsure');
+      optsWrap.classList.add('enabled');
+    }
+    sureBtn.onclick=()=>chooseSure('sure');
+    unsureBtn.onclick=()=>chooseSure('unsure');
+
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        const ok=(oi===item.r), conf=(sureChoice==='sure');
+        optsWrap.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(!ok) b.classList.add('wrong');
+        why.classList.add('show');
+        if(conf && !ok) warn.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), ok, conf);
+        answered++; if(ok) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      optsWrap.appendChild(b);
+    });
+    box.appendChild(optsWrap);
+    box.appendChild(why);
+    box.appendChild(warn);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

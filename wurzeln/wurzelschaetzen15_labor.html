@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Wurzel-Schätzer — Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{max-width:760px;margin:0 auto;padding:18px 20px 40px;}
+  h3{margin:0 0 6px;}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  .modebar{display:flex;gap:8px;margin-bottom:14px;}
+  .modebar button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;}
+  .modebar button.on{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  .sliderrow{margin:10px 0;font-size:14px;}
+  .sliderrow input{width:100%;}
+  #svgHost{margin:14px 0;text-align:center;background:#151b24;border:1px solid var(--line);border-radius:10px;padding:10px;}
+  #resultLine{text-align:center;font-size:15px;font-weight:700;color:var(--accent);margin:8px 0;}
+  #missionBox{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:14.5px;text-align:center;}
+  #missionBox.ok{border-color:#4caf50;background:#173d28;}
+  button.resetbtn{display:block;margin:14px auto 0;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 16px;font-size:13.5px;cursor:pointer;}
+  .part{display:none;}
+  .part.show{display:block;}
+  #puzzleBox p{font-size:14.5px;}
+  #puzzleOpts{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+  #puzzleOpts button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer;text-align:left;}
+  #puzzleFeedback{margin-top:10px;font-size:14px;min-height:20px;}
+  #puzzleFeedback.ok{color:#4caf50;}
+  #puzzleFeedback.bad{color:#e05a5a;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="modebar">
+    <button id="modeMission" class="on">🎯 Missions-Modus</button>
+    <button id="modePuzzle">🕵️ Rätselmodus</button>
+  </div>
+
+  <div class="part show" id="partMission">
+    <h3>🧪 Intervallschachtelung: Fang √7!</h3>
+    <p class="hint">Verschieb die untere und obere Grenze so, dass sich das Intervall um √7 auf zwei Nachkommastellen zusammenzieht.</p>
+    <div class="sliderrow">Untere Grenze L = <span id="lVal">2,00</span><input type="range" id="lSlider" min="200" max="300" value="200" step="1"/></div>
+    <div class="sliderrow">Obere Grenze U = <span id="uVal">3,00</span><input type="range" id="uSlider" min="200" max="300" value="300" step="1"/></div>
+    <div id="svgHost"></div>
+    <div id="resultLine"></div>
+    <div id="missionBox">🎯 Mission: Schachtel √7 so ein, dass L=2,64 und U=2,65 (Abstand nur 0,01).</div>
+    <button class="resetbtn" id="resetBtn">↺ Neu starten</button>
+  </div>
+
+  <div class="part" id="partPuzzle">
+    <h3>🕵️ Welche Aussage über √7 stimmt?</h3>
+    <div id="puzzleBox">
+      <p>Drei Mitschüler behaupten etwas über √7. Welche Aussage ist richtig?</p>
+      <div id="puzzleOpts"></div>
+      <div id="puzzleFeedback"></div>
+    </div>
+  </div>
+</div>
+<script>
+const TARGET=7;
+const sqrtTarget=Math.sqrt(TARGET);
+
+function buildSquaresSVG(lVal,uVal){
+  const W=320,H=170;
+  const scale=70; // px per unit side
+  const baseY=150;
+  function sq(sideVal,cx,color,label){
+    const side=sideVal*scale/3;
+    const x=cx-side/2, y=baseY-side;
+    return '<rect x="'+x+'" y="'+y+'" width="'+side+'" height="'+side+'" fill="'+color+'" fill-opacity="0.28" stroke="'+color+'" stroke-width="1.5"/>'+
+      '<text x="'+cx+'" y="'+(baseY+16)+'" text-anchor="middle" font-size="11" fill="#9aa4b2">'+label+'</text>';
+  }
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:320px;height:auto;display:block;margin:0 auto;">';
+  s+=sq(lVal,70,'#5fd0c7','Seite L='+lVal.toFixed(2));
+  s+=sq(sqrtTarget,170,'#f2a63c','Seite √7 (Ziel)');
+  s+=sq(uVal,270,'#e05a5a','Seite U='+uVal.toFixed(2));
+  s+='</svg>';
+  return s;
+}
+
+const lSlider=document.getElementById('lSlider'), uSlider=document.getElementById('uSlider');
+const lVal=document.getElementById('lVal'), uVal=document.getElementById('uVal');
+
+function renderMission(){
+  let l=parseInt(lSlider.value)/100, u=parseInt(uSlider.value)/100;
+  if(l>u){ u=l; uSlider.value=lSlider.value; }
+  lVal.textContent=l.toFixed(2).replace('.',',');
+  uVal.textContent=u.toFixed(2).replace('.',',');
+  document.getElementById('svgHost').innerHTML=buildSquaresSVG(l,u);
+  const lsq=(l*l).toFixed(2), usq=(u*u).toFixed(2);
+  const contains = l<=sqrtTarget && sqrtTarget<=u;
+  document.getElementById('resultLine').textContent =
+    'L² = '+lsq+'   Ziel = 7   U² = '+usq+' — '+(contains?'√7 liegt im Intervall ✓':'√7 liegt NICHT im Intervall!');
+  const box=document.getElementById('missionBox');
+  const width=Math.round((u-l)*100);
+  if(contains && width<=1 && Math.round(l*100)===264 && Math.round(u*100)===265){
+    box.classList.add('ok');
+    box.innerHTML='🎉 Mission erfüllt! L=2,64 und U=2,65 — √7 ≈ 2,6458 liegt exakt eingeschachtelt.';
+    window.lwAward && window.lwAward('mission');
+  } else {
+    box.classList.remove('ok');
+    box.innerHTML='🎯 Mission: Schachtel √7 so ein, dass L=2,64 und U=2,65 (Abstand nur 0,01). Aktuell: Abstand '+(width/100).toFixed(2)+(contains?' (im Intervall)':' (√7 NICHT im Intervall!)');
+  }
+}
+lSlider.addEventListener('input', renderMission);
+uSlider.addEventListener('input', renderMission);
+document.getElementById('resetBtn').onclick=()=>{ lSlider.value=200; uSlider.value=300; renderMission(); };
+renderMission();
+
+// === Raetselmodus ===
+const PUZZLE_OPTS=[
+  {t:"√7 ist ungefähr 2,5", correct:false, why:"2,5² = 6,25 — das ist zu wenig, 2,5 ist zu klein für √7."},
+  {t:"√7 liegt zwischen 2 und 3, näher an 3", correct:true, why:"Richtig: 2²=4 und 3²=9, also 2<√7<3 — und weil 7 näher an 9 als an 4 liegt, ist √7 näher an 3 (genauer: ≈2,6458)."},
+  {t:"√7 ist eine rationale Zahl, weil 7 eine ganze Zahl ist", correct:false, why:"7 ist keine Quadratzahl (nicht 1,4,9,16,…) — deshalb ist √7 irrational, obwohl 7 selbst eine ganze Zahl ist."}
+];
+const puzzleOpts=document.getElementById('puzzleOpts'), puzzleFeedback=document.getElementById('puzzleFeedback');
+let puzzleSolved=false;
+PUZZLE_OPTS.forEach(opt=>{
+  const b=document.createElement('button');
+  b.textContent=opt.t;
+  b.onclick=()=>{
+    if(puzzleSolved) return;
+    if(opt.correct){
+      puzzleSolved=true;
+      puzzleFeedback.className='ok';
+      puzzleFeedback.textContent='✅ '+opt.why;
+    } else {
+      puzzleFeedback.className='bad';
+      puzzleFeedback.textContent='❌ '+opt.why;
+    }
+  };
+  puzzleOpts.appendChild(b);
+});
+
+// mode switch
+const modeMission=document.getElementById('modeMission'), modePuzzle=document.getElementById('modePuzzle');
+const partMission=document.getElementById('partMission'), partPuzzle=document.getElementById('partPuzzle');
+modeMission.onclick=()=>{ modeMission.classList.add('on'); modePuzzle.classList.remove('on'); partMission.classList.add('show'); partPuzzle.classList.remove('show'); };
+modePuzzle.onclick=()=>{ modePuzzle.classList.add('on'); modeMission.classList.remove('on'); partPuzzle.classList.add('show'); partMission.classList.remove('show'); };
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

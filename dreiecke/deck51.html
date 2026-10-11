@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Dreieckslehre · Satz des Pythagoras &amp; Anwendungen</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .warnbox{background:#3d1c1c;border-left:5px solid #c0392b;border-radius:8px;padding:10px 16px;font-size:min(1.9vw,16px);color:#ffd9d0;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+  .threebox{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>SATZ DES PYTHAGORAS</h1>
+    <h2>Kapitel 16 · Teil 3 — Beweis, Anwendungen &amp; Kapitel-Abschluss</h2>
+    <div class="hook" style="max-width:70ch;">Die 3-4-5-Schnur der Maurer aus Deck 1 funktioniert nicht durch Zufall — jetzt kommt der Beweis dahinter, benannt nach einem griechischen Gelehrten aus dem 6. Jahrhundert v. Chr.</div>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 16.3</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Satz des Pythagoras Merksatz -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Der Satz des Pythagoras</h2>
+      <div class="svgbox"><div id="svgBeweis"></div><div class="svgcaption">Beweisfigur: das große Quadrat (a+b)² setzt sich aus dem kleinen Quadrat c² plus vier Dreiecken zusammen</div></div>
+      <div class="defbox">In einem rechtwinkligen Dreieck ist die Summe der Quadrate über den Katheten flächengleich mit dem Quadrat über der Hypotenuse: <b>a² + b² = c²</b>.</div>
+    </div>
+  </section>
+
+  <!-- 3 Beweis Steps -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Der Beweis</h2>
+      <div class="step" id="s3_1"><b class="lbl">Schritt 1 — Flächen gleichsetzen:</b> (a+b)² = c² + 4·½·a·b (großes Quadrat = kleines Quadrat + vier Dreiecke).</div>
+      <div class="step" id="s3_2"><b class="lbl">Schritt 2 — Binom auflösen:</b> a²+2ab+b² = c²+2ab.</div>
+      <div class="step" id="s3_3"><b class="lbl">Schritt 3 — 2ab auf beiden Seiten abziehen:</b> a²+b² = c².</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="3" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 4 Beispielaufgabe Hypotenuse Setup -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Beispielaufgabe: Hypotenuse berechnen</h2>
+      <div class="defbox">In einem rechtwinkligen Dreieck sind die Katheten a=5m und b=7m lang. Berechne die Hypotenuse c.</div>
+    </div>
+  </section>
+
+  <!-- 5 Steps Hypotenuse -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Hypotenuse berechnen</h2>
+      <div class="step" id="s5_1"><b class="lbl">Schritt 1 — Satz anwenden:</b> a²+b²=c² ⟹ c=√(a²+b²).</div>
+      <div class="step" id="s5_2"><b class="lbl">Schritt 2 — einsetzen:</b> c=√(5²+7²)=√(25+49)=√74.</div>
+      <div class="step" id="s5_3"><b class="lbl">Antwort:</b> c=√74 ≈ 8,60m.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="5" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 6 Beispielaufgabe Kathete Setup -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Beispielaufgabe: Kathete berechnen</h2>
+      <div class="defbox">In einem rechtwinkligen Dreieck ist die Hypotenuse c=17m und die Kathete b=8m lang. Berechne die fehlende Kathete a.</div>
+    </div>
+  </section>
+
+  <!-- 7 Steps Kathete -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Kathete berechnen</h2>
+      <div class="step" id="s7_1"><b class="lbl">Schritt 1 — Satz nach a umstellen:</b> a²+b²=c² ⟹ a²=c²−b² ⟹ a=√(c²−b²).</div>
+      <div class="step" id="s7_2"><b class="lbl">Schritt 2 — einsetzen:</b> a=√(17²−8²)=√(289−64)=√225.</div>
+      <div class="step" id="s7_3"><b class="lbl">Antwort:</b> a=15m.</div>
+      <div class="warnbox">⚠️ Achtung: c ist immer die HYPOTENUSE — c² darf NIEMALS als Kathete in der Formel stehen, sonst kommt ein falsches (oder gar kein reelles) Ergebnis heraus.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="7" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 8 Umkehrung Rechtwinkligkeitstest -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Die Umkehrung: Rechtwinkligkeits-Test</h2>
+      <div class="defbox">Gilt in einem Dreieck mit den Seiten a, b, c (c die längste Seite) die Gleichung a²+b²=c², dann ist das Dreieck rechtwinklig — mit dem rechten Winkel gegenüber c. Genau das nutzt die 3-4-5-Schnur der Maurer aus.</div>
+    </div>
+  </section>
+
+  <!-- 9 Steps Rechtwinkligkeitstest -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Ist dieses Dreieck rechtwinklig?</h2>
+      <div class="defbox">Teste die Seitentripel 5-6-8 und 9-12-15 auf Rechtwinkligkeit.</div>
+      <div class="step" id="s9_1"><b class="lbl">Tripel 5-6-8:</b> 5²+6²=25+36=61, aber 8²=64. 61≠64 ⟹ NICHT rechtwinklig.</div>
+      <div class="step" id="s9_2"><b class="lbl">Tripel 9-12-15:</b> 9²+12²=81+144=225, und 15²=225. 225=225 ⟹ rechtwinklig!</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="9" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 10 Anwendung Leiter Setup -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Anwendung</span> Leiter an der Wand</h2>
+      <div class="defbox">Eine 5m lange Leiter lehnt an einer Hauswand. Der Fußpunkt der Leiter ist 3m von der Wand entfernt. In welcher Höhe berührt die Leiter die Wand?</div>
+    </div>
+  </section>
+
+  <!-- 11 Steps Leiter -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Leiter-Anwendung lösen</h2>
+      <div class="step" id="s11_1"><b class="lbl">Schritt 1 — Skizze deuten:</b> Leiter=Hypotenuse (5m), Fußabstand=eine Kathete (3m), gesuchte Höhe=andere Kathete h.</div>
+      <div class="step" id="s11_2"><b class="lbl">Schritt 2 — Satz umstellen:</b> h=√(c²−a²)=√(5²−3²)=√(25−9)=√16.</div>
+      <div class="step" id="s11_3"><b class="lbl">Antwort:</b> h=4m. Die Leiter berührt die Wand in 4m Höhe.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="11" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 12 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Pythagoras-Werkstatt</span><span class="sub">Flächenvergleich per Regler + Rechtwinkligkeits-Rätsel</span></div>
+    <iframe allow="autoplay" data-src="pythagoras51_labor.html"></iframe>
+  </section>
+
+  <!-- 13 Eselsbruecke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Kathete-Quadrat plus Kathete-Quadrat ergibt Hypotenuse-Quadrat." Und für die Rechtwinkligkeits-Falle: „c ist immer die LÄNGSTE Seite — steht c² auf der falschen Seite der Gleichung, stimmt schon der Ansatz nicht."</div>
+    </div>
+  </section>
+
+  <!-- 14 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Diagonale im Rechteck</h2>
+      <div class="defbox">Ein Werkstück, eine Zimmertür oder ein Bildschirm — überall wird die Diagonale eines Rechtecks aus den beiden Seitenlängen mit dem Satz des Pythagoras berechnet. In der Werkstatt prüft man so z.B., ob ein Rahmen wirklich rechtwinklig verleimt wurde: stimmen beide Diagonalen exakt überein, war die Verleimung präzise.</div>
+    </div>
+  </section>
+
+  <!-- 15 Intuitions-Regler -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Schätz mal: wie lang ist die Hypotenuse?</h2>
+      <div class="defbox">Ein rechtwinkliges Dreieck hat die Katheten a=6m und b=8m. Wie lang ist die Hypotenuse c (auf ganze Meter gerundet)?</div>
+      <div id="estPyth51"></div>
+    </div>
+  </section>
+
+  <!-- 16 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>a²+b²=c²</td><td>„Satz des Pythagoras"</td><td>gilt NUR im rechtwinkligen Dreieck, c = Hypotenuse</td></tr>
+        <tr><td>c=√(a²+b²)</td><td>—</td><td>Hypotenuse aus zwei Katheten berechnen</td></tr>
+        <tr><td>a=√(c²−b²)</td><td>—</td><td>Kathete aus Hypotenuse und anderer Kathete berechnen</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 17 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Gesucht</th><th>Formel</th></tr>
+      <tr><td>Hypotenuse c</td><td>c=√(a²+b²)</td></tr>
+      <tr><td>Kathete a oder b</td><td>a=√(c²−b²) bzw. b=√(c²−a²)</td></tr>
+      <tr><td>Rechtwinkligkeits-Test</td><td>a²+b²=c² prüfen (c = längste Seite)</td></tr>
+    </table>
+  </section>
+
+  <!-- 18 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Katheten a=9m, b=12m. Berechne die Hypotenuse c.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>c=√(81+144)=√225=15m</details>
+        </li>
+        <li style="margin-top:10px;">Hypotenuse c=25m, Kathete a=7m. Berechne die Kathete b.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>b=√(625−49)=√576=24m</details>
+        </li>
+        <li style="margin-top:10px;">Ist ein Dreieck mit den Seiten 10-24-26 rechtwinklig?
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>10²+24²=100+576=676=26² → ja, rechtwinklig</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 19 Pruefungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Mit dem Satz des Pythagoras die Hypotenuse ODER eine fehlende Kathete berechnen.</b></li>
+        <li><b>Mit der Umkehrung prüfen, ob ein gegebenes Dreieck rechtwinklig ist.</b></li>
+        <li><b>Alltagsaufgaben (Leiter, Diagonale, Dachschräge) als rechtwinkliges Dreieck erkennen und lösen.</b></li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">🏁 Damit ist der gesamte Themenbereich „Dreieckslehre" abgeschlossen — von der Bezeichnungskonvention über Trigonometrie bis zum Satz des Pythagoras. Als Nächstes folgt ein neues Themenfeld: Längen, Flächen und Volumina.</div>
+    </div>
+  </section>
+
+  <!-- 20 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+function toX51(x, ox, scale){ return ox+x*scale; }
+function toY51(y, oy, scale){ return oy-y*scale; }
+(function(){
+  const w=260,h=260;
+  const a=2.2, b=1.6;
+  const ox=30, oy=230, s=44;
+  const A=[toX51(0,ox,s),toY51(0,oy,s)], B=[toX51(a+b,ox,s),toY51(0,oy,s)], C=[toX51(a+b,ox,s),toY51(a+b,oy,s)], D=[toX51(0,ox,s),toY51(a+b,oy,s)];
+  const P=[toX51(a,ox,s),toY51(0,oy,s)], Q=[toX51(a+b,ox,s),toY51(b,oy,s)], R=[toX51(b,ox,s),toY51(a+b,oy,s)], S=[toX51(0,ox,s),toY51(a,oy,s)];
+  let sv='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;max-width:260px;height:auto;display:block;margin:0 auto;">';
+  sv+='<polygon points="'+A.join(',')+' '+B.join(',')+' '+C.join(',')+' '+D.join(',')+'" fill="none" stroke="#4a5568" stroke-width="1.5"/>';
+  sv+='<polygon points="'+P.join(',')+' '+Q.join(',')+' '+R.join(',')+' '+S.join(',')+'" fill="none" stroke="#f2a63c" stroke-width="2.4"/>';
+  sv+='<text x="'+((A[0]+P[0])/2)+'" y="'+(A[1]+16)+'" fill="#e6edf3" font-size="12" text-anchor="middle">a</text>';
+  sv+='<text x="'+((P[0]+B[0])/2)+'" y="'+(A[1]+16)+'" fill="#e6edf3" font-size="12" text-anchor="middle">b</text>';
+  sv+='<text x="'+((P[0]+S[0])/2-8)+'" y="'+((P[1]+S[1])/2-6)+'" fill="#f2a63c" font-size="12">c</text>';
+  sv+='</svg>';
+  document.getElementById('svgBeweis').innerHTML=sv;
+})();
+
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Der Satz des Pythagoras", "📐 Schritt für Schritt: Der Beweis", "Beispielaufgabe: Hypotenuse berechnen", "📐 Schritt für Schritt: Hypotenuse berechnen", "Beispielaufgabe: Kathete berechnen", "📐 Schritt für Schritt: Kathete berechnen", "Die Umkehrung: Rechtwinkligkeits-Test", "📐 Schritt für Schritt: Ist dieses Dreieck rechtwinklig?", "🔧 Anwendung: Leiter an der Wand", "📐 Schritt für Schritt: Leiter-Anwendung lösen", "🧪 Pythagoras-Werkstatt", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Diagonale im Rechteck", "Schätz mal: wie lang ist die Hypotenuse?", "Symbol-Legende", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=20;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck51_s1_Charon.mp3",txt:"Satz des Pythagoras. Die 3-4-5-Schnur der Maurer funktioniert nicht durch Zufall - jetzt kommt der Beweis dahinter, benannt nach einem griechischen Gelehrten aus dem sechsten Jahrhundert vor Christus."},
+ 2:{wav:"narration_deck51_s2_Charon.mp3",txt:"In einem rechtwinkligen Dreieck ist die Summe der Kathetenquadrate flächengleich mit dem Hypotenusenquadrat."},
+ 3:{wav:"narration_deck51_s3_Charon.mp3",txt:"Jetzt führen wir gemeinsam den Beweis durch, Schritt für Schritt."},
+ 4:{wav:"narration_deck51_s4_Charon.mp3",txt:"Jetzt berechnen wir eine Hypotenuse aus zwei gegebenen Katheten."},
+ 5:{wav:"narration_deck51_s5_Charon.mp3",txt:"Rechnen wir die Hypotenuse gemeinsam durch, Schritt für Schritt."},
+ 6:{wav:"narration_deck51_s6_Charon.mp3",txt:"Jetzt berechnen wir umgekehrt eine fehlende Kathete."},
+ 7:{wav:"narration_deck51_s7_Charon.mp3",txt:"Rechnen wir die fehlende Kathete gemeinsam durch, Schritt für Schritt."},
+ 8:{wav:"narration_deck51_s8_Charon.mp3",txt:"Die Umkehrung des Satzes erlaubt, ganz ohne Winkelmesser zu prüfen, ob ein Dreieck rechtwinklig ist."},
+ 9:{wav:"narration_deck51_s9_Charon.mp3",txt:"Testen wir gemeinsam zwei Seitentripel auf Rechtwinkligkeit, Schritt für Schritt."},
+ 10:{wav:"narration_deck51_s10_Charon.mp3",txt:"Jetzt wenden wir den Satz des Pythagoras auf eine Leiter an einer Hauswand an."},
+ 11:{wav:"narration_deck51_s11_Charon.mp3",txt:"Lösen wir die Leiter-Aufgabe gemeinsam, Schritt für Schritt."},
+ 12:{wav:"narration_deck51_s12_Charon.mp3",txt:"Jetzt bist du dran: vergleiche die Flächen per Regler und löse das Rechtwinkligkeits-Rätsel."},
+ 13:{wav:"narration_deck51_s13_Charon.mp3",txt:"Kathete-Quadrat plus Kathete-Quadrat ergibt Hypotenuse-Quadrat."},
+ 14:{wav:"narration_deck51_s14_Charon.mp3",txt:"Auch beim Prüfen von Werkstücken und Rahmen kommt der Satz des Pythagoras über die Diagonale zum Einsatz."},
+ 15:{wav:"narration_deck51_s15_Charon.mp3",txt:"Bevor du ins Labor gehst: schätz doch mal, wie lang die Hypotenuse bei diesem Dreieck ist."},
+ 16:{wav:"narration_deck51_s16_Charon.mp3",txt:"Hier noch mal alle Symbole rund um den Satz des Pythagoras im Überblick."},
+ 17:{wav:"narration_deck51_s17_Charon.mp3",txt:"Fassen wir zusammen, welche Formel zu welcher Fragestellung passt."},
+ 18:{wav:"narration_deck51_s18_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben rund um den Satz des Pythagoras."},
+ 19:{wav:"narration_deck51_s19_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst - damit ist der gesamte Themenbereich Dreieckslehre geschafft."},
+ 20:{wav:"narration_deck51_s20_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"Katheten a=6m und b=8m. Wie lang ist die Hypotenuse c?",
+  a:["14m","10m","√14m","48m"],r:1,
+  why:"c=√(36+64)=√100=10m."},
+ {q:"Ein Schüler setzt in die Formel a²+b²=c² für c die LÄNGSTE Kathete statt der Hypotenuse ein. Was ist das Problem?",
+  a:["Nichts, das ist egal","c muss immer die Hypotenuse sein — die dem rechten Winkel gegenüberliegende Seite, nicht irgendeine Kathete","Kathete und Hypotenuse sind austauschbar","Der Satz gilt dann für ein anderes Dreieck"],r:1,
+  why:"Der Satz des Pythagoras gilt nur mit c als Hypotenuse — wird stattdessen eine Kathete für c eingesetzt, entsteht ein falsches Ergebnis."},
+ {q:"Seiten 5, 6, 8 — ist das Dreieck rechtwinklig?",
+  a:["Ja, 5²+6²=8²","Nein, 5²+6²=61 aber 8²=64 — die Werte stimmen nicht überein","Ja, weil alle drei Zahlen unterschiedlich sind","Das lässt sich ohne Winkelmesser nicht sagen"],r:1,
+  why:"61≠64 — der Rechtwinkligkeits-Test schlägt fehl, das Dreieck ist NICHT rechtwinklig, obwohl die Zahlen plausibel aussehen."},
+ {q:"Hypotenuse c=13m, Kathete a=5m. Wie lang ist die andere Kathete b?",
+  a:["8m","12m","18m","√194m"],r:1,
+  why:"b=√(13²−5²)=√(169−25)=√144=12m."},
+ {q:"Eine 10m lange Leiter lehnt an einer Wand, ihr Fuß ist 6m von der Wand entfernt. In welcher Höhe berührt sie die Wand?",
+  a:["4m","8m","6m","16m"],r:1,
+  why:"h=√(10²−6²)=√(100−36)=√64=8m."}
+];
+const DECK_ID="dreiecke/deck51";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), oi===item.r);
+        answered++; if(oi===item.r) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estPyth51', {
+    frage: 'Ein rechtwinkliges Dreieck hat die Katheten a=6m und b=8m. Wie lang ist die Hypotenuse c (auf ganze Meter gerundet)?',
+    min: 0, max: 20, korrekt: 10, toleranz: 0,
+    begruendung: 'c=√(6²+8²)=√(36+64)=√100=10m — ein klassisches Pythagoräisches Zahlentripel.'
+  });
+});
+</script>
+</body>
+</html>

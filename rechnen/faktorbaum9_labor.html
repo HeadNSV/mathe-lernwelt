@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Faktorbaum-Werkstatt</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:14px 18px;height:100%;overflow-y:auto;}
+  h3{margin:0 0 8px;font-size:18px;color:var(--accent);}
+  .hint{font-size:12.5px;color:var(--muted);margin:4px 0 12px;}
+  #svgHost{margin:10px 0;text-align:center;}
+  .primerow{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;justify-content:center;}
+  .primechip{background:#1f2630;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:8px 16px;font-size:16px;font-weight:700;cursor:pointer;}
+  .primechip:disabled{opacity:0.35;cursor:default;}
+  #feedback{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:10px 16px;font-size:14.5px;text-align:center;min-height:22px;}
+  #feedback.ok{border-color:#4caf50;}
+  #feedback.bad{border-color:#c0392b;}
+  #missionBox{margin-top:12px;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:14.5px;text-align:center;}
+  #missionBox.ok{border-color:#4caf50;background:#173d28;}
+  button.resetbtn{display:block;margin:14px auto 0;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 16px;font-size:13.5px;cursor:pointer;}
+  .selhint{text-align:center;font-size:13px;color:var(--muted);margin-top:6px;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h3>🧪 Faktorbaum-Werkstatt</h3>
+  <p class="hint">Klick auf eine noch unzerlegte (orange) Zahl im Baum, dann auf eine Primzahl, durch die sie teilbar ist.</p>
+  <div id="svgHost"></div>
+  <div class="selhint" id="selHint">Noch keine Zahl ausgewählt.</div>
+  <div class="primerow" id="primeRow"></div>
+  <div id="feedback">Wähle eine Zahl im Baum aus.</div>
+  <div id="missionBox">🎯 Mission: Zerlege 84 vollständig in Primfaktoren.</div>
+  <button class="resetbtn" id="resetBtn">↺ Neu starten</button>
+</div>
+<script>
+const TARGET=84;
+const PRIMES=[2,3,5,7,11,13];
+function isPrime(n){
+  if(n<2) return false;
+  for(let i=2;i*i<=n;i++){ if(n%i===0) return false; }
+  return true;
+}
+let tree={value:TARGET, left:null, right:null};
+let selected=null; // reference to selected node
+
+function allLeaves(node, arr){
+  arr=arr||[];
+  if(!node.left && !node.right){ arr.push(node); return arr; }
+  allLeaves(node.left, arr);
+  allLeaves(node.right, arr);
+  return arr;
+}
+function missionDone(){
+  return allLeaves(tree).every(n=>isPrime(n.value));
+}
+
+function layout(node, depth, counter, depthMax){
+  if(!node.left && !node.right){
+    node._x = counter.v; counter.v += 1;
+    node._y = depth;
+    return;
+  }
+  layout(node.left, depth+1, counter, depthMax);
+  layout(node.right, depth+1, counter, depthMax);
+  node._x = (node.left._x + node.right._x)/2;
+  node._y = depth;
+}
+
+function render(){
+  const counter={v:0};
+  layout(tree, 0, counter);
+  const leafCount=Math.max(1,counter.v);
+  const spacingX=64, spacingY=60, padX=40, padY=30;
+  const W=padX*2 + (leafCount-1)*spacingX + 40;
+  const maxDepth = (function maxD(n){ if(!n.left&&!n.right) return n._y; return Math.max(maxD(n.left), maxD(n.right)); })(tree);
+  const H=padY*2 + maxDepth*spacingY + 20;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:'+Math.min(560,W)+'px;height:auto;">';
+  function xOf(nx){ return padX + nx*spacingX + 20; }
+  function yOf(ny){ return padY + ny*spacingY; }
+  // edges first
+  (function drawEdges(node){
+    if(node.left){
+      s+='<line x1="'+xOf(node._x)+'" y1="'+(yOf(node._y)+18)+'" x2="'+xOf(node.left._x)+'" y2="'+(yOf(node.left._y)-18)+'" stroke="#4a5568" stroke-width="1.5"/>';
+      drawEdges(node.left);
+    }
+    if(node.right){
+      s+='<line x1="'+xOf(node._x)+'" y1="'+(yOf(node._y)+18)+'" x2="'+xOf(node.right._x)+'" y2="'+(yOf(node.right._y)-18)+'" stroke="#4a5568" stroke-width="1.5"/>';
+      drawEdges(node.right);
+    }
+  })(tree);
+  // nodes
+  const nodeList=[];
+  (function collect(node){ nodeList.push(node); if(node.left) collect(node.left); if(node.right) collect(node.right); })(tree);
+  nodeList.forEach(node=>{
+    const leaf = !node.left && !node.right;
+    const prime = leaf && isPrime(node.value);
+    const isSel = (selected===node);
+    let fill, stroke, textColor;
+    if(prime){ fill='rgba(76,175,80,0.22)'; stroke='#4caf50'; textColor='#8adf9c'; }
+    else if(leaf){ fill='rgba(242,166,60,0.18)'; stroke='#f2a63c'; textColor='#f2a63c'; }
+    else { fill='#151b24'; stroke='#4a5568'; textColor='#9aa4b2'; }
+    if(isSel){ stroke='#5fd0c7'; }
+    const cx=xOf(node._x), cy=yOf(node._y);
+    node._cx=cx; node._cy=cy; node._clickable = leaf && !prime;
+    s+='<circle data-clickable="'+(node._clickable?'1':'0')+'" cx="'+cx+'" cy="'+cy+'" r="20" fill="'+fill+'" stroke="'+stroke+'" stroke-width="'+(isSel?3:2)+'"/>';
+    s+='<text x="'+cx+'" y="'+(cy+5)+'" text-anchor="middle" font-size="15" font-weight="700" fill="'+textColor+'" style="pointer-events:none;">'+node.value+'</text>';
+  });
+  s+='</svg>';
+  document.getElementById('svgHost').innerHTML=s;
+
+  // attach click handlers via SVG circle elements (order matches nodeList)
+  const svgEl=document.getElementById('svgHost').querySelector('svg');
+  const circles=[...svgEl.querySelectorAll('circle')];
+  circles.forEach((c,i)=>{
+    const node=nodeList[i];
+    if(node._clickable){
+      c.style.cursor='pointer';
+      c.addEventListener('click', ()=>{ selected=node; updateSelHint(); renderPrimeRow(); render(); });
+    }
+  });
+
+  updateMissionBox();
+}
+function updateSelHint(){
+  const el=document.getElementById('selHint');
+  el.textContent = selected? ('Ausgewählt: '+selected.value+' — jetzt eine Primzahl wählen, die sie teilt.') : 'Noch keine Zahl ausgewählt.';
+}
+function renderPrimeRow(){
+  const row=document.getElementById('primeRow');
+  row.innerHTML='';
+  PRIMES.forEach(p=>{
+    const b=document.createElement('button');
+    b.className='primechip';
+    b.textContent=p;
+    b.disabled = !selected;
+    b.onclick=()=>trySplit(p);
+    row.appendChild(b);
+  });
+}
+function trySplit(p){
+  const fb=document.getElementById('feedback');
+  if(!selected){ return; }
+  if(selected.value % p !== 0){
+    fb.className='bad';
+    fb.textContent='❌ '+p+' teilt '+selected.value+' nicht ohne Rest. Versuch eine andere Primzahl.';
+    return;
+  }
+  const quotient = selected.value / p;
+  selected.left = {value:p, left:null, right:null};
+  selected.right = {value:quotient, left:null, right:null};
+  fb.className='ok';
+  fb.textContent='✅ '+selected.value+' = '+p+' · '+quotient+'.';
+  selected = null;
+  updateSelHint();
+  renderPrimeRow();
+  render();
+}
+function updateMissionBox(){
+  const box=document.getElementById('missionBox');
+  if(missionDone()){
+    const leaves=allLeaves(tree).map(n=>n.value).sort((a,b)=>a-b);
+    box.classList.add('ok');
+    box.innerHTML='🎉 Mission erfüllt! '+TARGET+' = '+leaves.join(' · ')+' — alle Blätter sind Primzahlen.';
+    window.lwAward && window.lwAward('mission');
+  } else {
+    box.classList.remove('ok');
+    box.innerHTML='🎯 Mission: Zerlege '+TARGET+' vollständig in Primfaktoren.';
+  }
+}
+document.getElementById('resetBtn').onclick=()=>{
+  tree={value:TARGET, left:null, right:null};
+  selected=null;
+  document.getElementById('feedback').className='';
+  document.getElementById('feedback').textContent='Wähle eine Zahl im Baum aus.';
+  updateSelHint();
+  renderPrimeRow();
+  render();
+};
+renderPrimeRow();
+render();
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Formel-Umsteller — Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{max-width:760px;margin:0 auto;padding:18px 20px 40px;}
+  h3{margin:0 0 6px;}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  .formulabar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .formulabar button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;}
+  .formulabar button.on{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  .formulabar button.done{border-color:#4caf50;}
+  #desc{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:14px;color:var(--muted);margin-bottom:10px;}
+  #eqBox{font-size:24px;color:var(--accent);text-align:center;font-weight:700;margin:14px 0;}
+  #targetLabel{text-align:center;font-size:13px;color:var(--muted);margin-bottom:8px;}
+  #tileRow{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:10px;}
+  #tileRow button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px 16px;font-size:14.5px;cursor:pointer;}
+  #tileRow button.wrong{border-color:#c0392b;opacity:0.7;}
+  #feedback{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:14.5px;text-align:center;min-height:24px;}
+  #feedback.ok{border-color:#4caf50;background:#173d28;}
+  #feedback.bad{border-color:#c0392b;background:#3d1c1c;}
+  #progress{font-size:14px;color:var(--muted);text-align:center;margin-top:10px;}
+  #missionDone{display:none;background:#173d28;border:1px solid #4caf50;border-radius:8px;padding:14px 18px;font-size:15px;color:#dff3df;text-align:center;margin-top:10px;}
+  #missionDone.show{display:block;}
+  button.resetbtn{display:block;margin:14px auto 0;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 16px;font-size:13.5px;cursor:pointer;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h3>🔧 Formel-Umsteller</h3>
+  <p class="hint">Wähle eine Zielvariable/Formel, dann klick die passenden Umformungs-Kacheln in der richtigen Reihenfolge.</p>
+  <div class="formulabar" id="formulabar"></div>
+  <div id="desc"></div>
+  <div id="targetLabel"></div>
+  <div id="eqBox"></div>
+  <div id="tileRow"></div>
+  <div id="feedback">Wähle den ersten Umformungsschritt.</div>
+  <div id="progress"></div>
+  <div id="missionDone"></div>
+  <button class="resetbtn" id="resetBtn">↺ Formel neu starten</button>
+</div>
+<script>
+const FORMULAS=[
+  {
+    id:'maler', chip:'🎨 Maler', target:'h',
+    desc:'Materialbedarf: M = a·h + r → nach h umstellen. Werte: M=14 (Liter Farbe), a=3 (Liter je Wand), r=2 (Liter Reserve).',
+    start:'14 = 3·h + 2',
+    steps:[
+      {correct:'|−2  (beide Seiten)', trap:'|−3  (beide Seiten)', after:'12 = 3·h', trapWhy:'Die 2 ist die additive Reserve — die muss zuerst weg. Die 3 ist der Koeffizient von h, den braucht man erst im nächsten Schritt zum Teilen.'},
+      {correct:'|:3  (beide Seiten)', trap:'|:2  (beide Seiten)', after:'h = 4', trapWhy:'2 war schon in Schritt 1 entfernt — jetzt muss durch den Koeffizienten 3 geteilt werden, um h ganz zu isolieren.'}
+    ]
+  },
+  {
+    id:'event', chip:'🎉 Eventmanager', target:'e',
+    desc:'Gesamtkosten: K = g + n·e → nach e umstellen. Werte: K=800€ (Gesamtkosten), g=200€ (Grundgebühr), n=30 (Anzahl Gäste).',
+    start:'800 = 200 + 30·e',
+    steps:[
+      {correct:'|−200  (beide Seiten)', trap:'|−30  (beide Seiten)', after:'600 = 30·e', trapWhy:'200 ist die additive Grundgebühr — die muss zuerst weg. Die 30 ist der Koeffizient von e, den braucht man erst zum Teilen.'},
+      {correct:'|:30  (beide Seiten)', trap:'|:200  (beide Seiten)', after:'e = 20', trapWhy:'200 war schon in Schritt 1 entfernt — jetzt muss durch den Koeffizienten 30 geteilt werden.'}
+    ]
+  },
+  {
+    id:'baecker', chip:'🥐 Bäckerin', target:'m',
+    desc:'Standeinnahmen: P = s + m·k → nach m umstellen. Werte: P=140€ (Gesamteinnahmen), s=20€ (Standgebühr), k=3€ (Preis je Stück).',
+    start:'140 = 20 + m·3',
+    steps:[
+      {correct:'|−20  (beide Seiten)', trap:'|−3  (beide Seiten)', after:'120 = m·3', trapWhy:'20 ist die additive Standgebühr — die muss zuerst weg. Die 3 ist der Preis je Stück, der Koeffizient von m.'},
+      {correct:'|:3  (beide Seiten)', trap:'|:20  (beide Seiten)', after:'m = 40', trapWhy:'20 war schon in Schritt 1 entfernt — jetzt muss durch den Koeffizienten 3 geteilt werden.'}
+    ]
+  }
+];
+let curIdx=0, stepIdx=0, doneSet=new Set();
+
+function shuffle2(a,b){ return Math.random()<0.5 ? [a,b] : [b,a]; }
+
+function renderBar(){
+  const bar=document.getElementById('formulabar');
+  bar.innerHTML='';
+  FORMULAS.forEach((f,i)=>{
+    const b=document.createElement('button');
+    b.textContent=f.chip;
+    if(i===curIdx) b.classList.add('on');
+    if(doneSet.has(f.id)) b.classList.add('done');
+    b.onclick=()=>{ curIdx=i; stepIdx=0; render(); };
+    bar.appendChild(b);
+  });
+}
+function render(){
+  renderBar();
+  const f=FORMULAS[curIdx];
+  document.getElementById('desc').textContent=f.desc;
+  document.getElementById('targetLabel').textContent='Zielvariable: '+f.target;
+  const eqBox=document.getElementById('eqBox');
+  const tileRow=document.getElementById('tileRow');
+  tileRow.innerHTML='';
+  if(stepIdx>=f.steps.length){
+    eqBox.textContent=f.steps[f.steps.length-1].after;
+    tileRow.style.display='none';
+    document.getElementById('progress').textContent='Formel umgestellt ✓';
+    return;
+  }
+  eqBox.textContent = stepIdx===0 ? f.start : f.steps[stepIdx-1].after;
+  tileRow.style.display='flex';
+  const step=f.steps[stepIdx];
+  const [first,second]=shuffle2({label:step.correct,ok:true},{label:step.trap,ok:false});
+  [first,second].forEach(opt=>{
+    const b=document.createElement('button');
+    b.textContent=opt.label;
+    b.onclick=()=>pickTile(opt,b,step);
+    tileRow.appendChild(b);
+  });
+  document.getElementById('progress').textContent='Schritt '+(stepIdx+1)+' / '+f.steps.length;
+}
+function pickTile(opt,btn,step){
+  const fb=document.getElementById('feedback');
+  if(!opt.ok){
+    btn.classList.add('wrong');
+    fb.className='bad';
+    fb.textContent='❌ '+step.trapWhy;
+    return;
+  }
+  fb.className='ok';
+  fb.textContent='✅ '+opt.label+' angewendet: '+step.after;
+  stepIdx++;
+  const f=FORMULAS[curIdx];
+  if(stepIdx>=f.steps.length){
+    doneSet.add(f.id);
+    if(doneSet.size===FORMULAS.length){
+      document.getElementById('missionDone').classList.add('show');
+      document.getElementById('missionDone').textContent='🎉 Alle 3 Berufs-Formeln umgestellt!';
+      window.lwAward && window.lwAward('mission');
+    }
+  }
+  render();
+}
+document.getElementById('resetBtn').onclick=()=>{
+  stepIdx=0;
+  document.getElementById('feedback').className='';
+  document.getElementById('feedback').textContent='Wähle den ersten Umformungsschritt.';
+  render();
+};
+render();
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Anwendungen &amp; das große Finale</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .warnbox{background:#3d1c1c;border-left:5px solid #c0392b;border-radius:8px;padding:10px 16px;font-size:min(1.9vw,16px);color:#ffd9d0;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+  .timeline{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+  .tlrow{display:flex;align-items:center;gap:12px;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:8px 14px;}
+  .tlnum{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;min-width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+  .tltxt{font-size:min(1.9vw,16px);}
+  .tltxt b{color:var(--accent);}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>DAS GROSSE FINALE</h1>
+    <h2>Kapitel 19 · Teil 3 — Anwendungen &amp; Rückblick</h2>
+    <div class="hook" style="max-width:70ch;">Zinseszins, Abschreibung, Halbwertszeit — dieselbe Formel taucht überall auf, wo etwas gleichmäßig wächst oder schrumpft. Und am Ende dieses Teils schauen wir gemeinsam zurück auf die ganze Lernwelt.</div>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 19.3</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Konzept Zinseszinsformel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Die Zinseszinsformel</h2>
+      <div class="defbox">Kn=K0·(1+p/100)ⁿ berechnet das Kapital nach n Jahren bei Zinssatz p und jährlicher Verzinsung MIT Zinseszins. Mit q=1+p/100 vereinfacht sich das zu Kn=K0·qⁿ — genau die Wachstumsfunktion aus Teil 1!</div>
+    </div>
+  </section>
+
+  <!-- 3 Steps eigenes Zinseszinsbeispiel -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Zinseszins berechnen</h2>
+      <div class="defbox">Startkapital K0=2.000€, Zinssatz p=4% pro Jahr, Laufzeit n=10 Jahre.</div>
+      <div class="step" id="s3_1"><b class="lbl">Wachstumsfaktor:</b> q=1+4/100=1,04.</div>
+      <div class="step" id="s3_2"><b class="lbl">Formel anwenden:</b> K10=2.000€·1,04¹⁰.</div>
+      <div class="step" id="s3_3"><b class="lbl">Ergebnis:</b> K10≈2.960,49€ — der Zinsertrag beträgt 960,49€.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="3" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 4 Konzept Abschreibung -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Degressive Abschreibung</h2>
+      <div class="defbox">Kn=K0·(1−p/100)ⁿ beschreibt den Buchwert einer Maschine nach n Jahren, wenn jährlich p% vom RESTWERT abgeschrieben werden. Mit q=1−p/100 (0&lt;q&lt;1) ist das eine Zerfallsfunktion — genau wie in Teil 1!</div>
+    </div>
+  </section>
+
+  <!-- 5 Steps eigenes Abschreibungsbeispiel -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Abschreibung berechnen</h2>
+      <div class="defbox">Eine Werkstatt kauft eine CNC-Fräse für 15.000€, degressiver Abschreibungssatz 15% pro Jahr. Buchwert nach 6 Jahren?</div>
+      <div class="step" id="s5_1"><b class="lbl">Zerfallsfaktor:</b> q=1−15/100=0,85.</div>
+      <div class="step" id="s5_2"><b class="lbl">Formel anwenden:</b> K6=15.000€·0,85⁶.</div>
+      <div class="step" id="s5_3"><b class="lbl">Ergebnis:</b> K6≈5.655,74€ Buchwert nach 6 Jahren.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="5" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 6 Konzept e-Funktion + Halbwertszeit -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Die Eulersche Zahl e &amp; die Halbwertszeit</h2>
+      <div class="defbox">Verzinst man ein Kapital in immer kürzeren Abständen (stetige Verzinsung), nähert sich der Wachstumsfaktor der <b>Eulerschen Zahl</b> e≈2,71828 an. Die e-Funktion f(x)=b·eᶜˣ ist Wachstum (c&gt;0) oder Zerfall (c&lt;0).</div>
+      <div class="defbox">Die <b>Halbwertszeit</b> T₁/₂ ist die Zeitspanne, nach der sich eine abklingende Größe halbiert: N(t)=N0·(1/2)^(t/T₁/₂). Sie lässt sich berechnen mit T₁/₂=ln(0,5)/ln(a).</div>
+    </div>
+  </section>
+
+  <!-- 7 Steps eigenes Halbwertszeit-Beispiel -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Halbwertszeit im Körper</h2>
+      <div class="defbox">Koffein hat im menschlichen Körper eine Halbwertszeit von etwa 5 Stunden. Startmenge N0=200mg. Wie viel ist nach 15 Stunden noch vorhanden?</div>
+      <div class="step" id="s7_1"><b class="lbl">Formel:</b> N(t)=200mg·(1/2)^(t/5).</div>
+      <div class="step" id="s7_2"><b class="lbl">Einsetzen:</b> N(15)=200mg·(1/2)^(15/5)=200mg·(1/2)³.</div>
+      <div class="step" id="s7_3"><b class="lbl">Ergebnis:</b> N(15)=200mg·0,125=25mg — nach drei Halbwertszeiten ist nur noch 1/8 übrig.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="7" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 8 Grafik Abklingkurve -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Der Abklingprozess von Koffein</h2>
+      <div class="svgbox"><div id="svgKoffein"></div><div class="svgcaption">N(t)=200mg·(1/2)^(t/5) — nach je 5 Stunden halbiert sich die Menge</div></div>
+    </div>
+  </section>
+
+  <!-- 9 Konzept Verdopplungszeit -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Verdopplungszeit — die Kehrseite der Halbwertszeit</h2>
+      <div class="defbox">Analog zur Halbwertszeit gibt die <b>Verdopplungszeit</b> T2=ln(2)/ln(a) an, nach welcher Zeit sich eine wachsende Größe verdoppelt. Beispiel: eine Bakterienkultur wächst um 8% pro Stunde (a=1,08). T2=ln(2)/ln(1,08)≈0,693/0,077≈9,01 Stunden.</div>
+    </div>
+  </section>
+
+  <!-- 10 Konzept Modellgrenzen -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Modellgrenzen — nichts wächst ewig</h2>
+      <div class="defbox">Exponentielles Wachstum ist ein nützliches MODELL, aber in der Realität stößt es immer an Grenzen: begrenzte Ressourcen, Marktsättigung, Platzmangel. Eine Bakterienkultur wächst nicht unendlich weiter, ein Unternehmen kann seinen Absatz nicht ewig verdoppeln. Beim Bewerten einer Modellrechnung gehört diese Einschränkung immer dazu.</div>
+    </div>
+  </section>
+
+  <!-- 11 Distraktor Warnbox -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">⚠️ Vorsicht Falle</span> Halbwertszeit missverstanden</h2>
+      <div class="warnbox">„Halbwertszeit 5 Stunden" bedeutet NICHT, dass nach 10 Stunden alles weg ist! Nach jeder weiteren Halbwertszeit halbiert sich der RESTBESTAND erneut: nach 5h → 50%, nach 10h → 25%, nach 15h → 12,5% — nie exakt 0%.</div>
+    </div>
+  </section>
+
+  <!-- 12 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Zinseszins-Rechner</span><span class="sub">Kapitalkurve vs. lineares Sparen</span></div>
+    <iframe allow="autoplay" data-src="zinseszins60_labor.html"></iframe>
+  </section>
+
+  <!-- 13 Eselsbruecke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Zinseszins, Abschreibung, Halbwertszeit — immer dieselbe Formel Kn=K0·qⁿ, nur mit q&gt;1 (Wachstum) oder 0&lt;q&lt;1 (Zerfall)."</div>
+    </div>
+  </section>
+
+  <!-- 14 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Werkstatt-Investitionen bewerten</h2>
+      <div class="defbox">Bevor eine Werkstatt eine neue Maschine kauft, lohnt sich die degressive Abschreibung — der Buchwert sinkt am Anfang schneller, was steuerlich attraktiv sein kann. Die Zinseszinsformel hilft parallel dabei, die Finanzierungskosten über die Laufzeit realistisch einzuschätzen.</div>
+    </div>
+  </section>
+
+  <!-- 15 Intuitions-Regler -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Schätz mal: wie hoch ist K5?</h2>
+      <div class="defbox">K0=1.000€, Zinssatz 10% pro Jahr, Zinseszins. Wie hoch ist K5 (gerundet auf ganze Euro)?</div>
+      <div id="estWachstum60"></div>
+    </div>
+  </section>
+
+  <!-- 16 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>Kn=K0·qⁿ</td><td>—</td><td>Kapital/Bestand nach n Perioden bei Faktor q</td></tr>
+        <tr><td>e≈2,71828</td><td>„Eulersche Zahl"</td><td>Basis der natürlichen Exponentialfunktion</td></tr>
+        <tr><td>T₁/₂, T2</td><td>„Halbwertszeit", „Verdopplungszeit"</td><td>Zeit bis Halbierung bzw. Verdopplung</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 17 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Anwendung</th><th>Formel</th></tr>
+      <tr><td>Zinseszins</td><td>Kn=K0·(1+p/100)ⁿ</td></tr>
+      <tr><td>Abschreibung</td><td>Kn=K0·(1−p/100)ⁿ</td></tr>
+      <tr><td>Halbwertszeit / Verdopplungszeit</td><td>T=ln(0,5)/ln(a) bzw. T=ln(2)/ln(a)</td></tr>
+    </table>
+  </section>
+
+  <!-- 18 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>K0=500€, p=6%, n=3 Jahre. Berechne K3.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>K3=500·1,06³≈595,51€</details>
+        </li>
+        <li style="margin-top:10px;">Eine Maschine kostet 8.000€, degressive Abschreibung 20%/Jahr. Buchwert nach 3 Jahren?
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>K3=8.000·0,8³=8.000·0,512=4.096€</details>
+        </li>
+        <li style="margin-top:10px;">Ein Stoff hat Halbwertszeit 4 Tage, Startmenge 80g. Wie viel ist nach 12 Tagen übrig?
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>N(12)=80·(1/2)^(12/4)=80·(1/2)³=80·0,125=10g</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 19 LERNWELT-FINALE Zeitleiste -->
+  <section class="slide explain scroll">
+    <div class="ebox">
+      <h2>🏁 Der rote Faden — die ganze Lernwelt im Rückblick</h2>
+      <div class="defbox">Von der ersten Menge bis zur Exponentialfunktion: ein durchgehender Bogen. Kein neuer Stoff hier — nur ein ehrlicher Blick zurück, worauf du dich die ganze Zeit verlassen konntest.</div>
+      <div class="timeline">
+        <div class="tlrow"><div class="tlnum">1</div><div class="tltxt"><b>Mengen</b> — Ω, Teilmengen, ∩/∪/Gegenereignis kehrten in Kapitel 18 zurück</div></div>
+        <div class="tlrow"><div class="tlnum">2</div><div class="tltxt"><b>Zahlen &amp; Rechnen</b> — Brüche wurden zu relativer Häufigkeit, Potenzen zu Exponentialfunktionen</div></div>
+        <div class="tlrow"><div class="tlnum">3</div><div class="tltxt"><b>Terme</b> — Umformen, Faktorisieren, Wurzeln als Umkehrung von x²</div></div>
+        <div class="tlrow"><div class="tlnum">4</div><div class="tltxt"><b>Gleichungen</b> — Äquivalenzumformungen, dieselbe Denkfigur wie beim Logarithmieren</div></div>
+        <div class="tlrow"><div class="tlnum">5</div><div class="tltxt"><b>Funktionen</b> — vom y-Achsenabschnitt t zum Startwert b, von der Parabel zur Exponentialkurve</div></div>
+        <div class="tlrow"><div class="tlnum">6</div><div class="tltxt"><b>Geometrie</b> — Dreieckslehre, Längen/Flächen/Volumina</div></div>
+        <div class="tlrow"><div class="tlnum">7</div><div class="tltxt"><b>Zufall &amp; Wahrscheinlichkeit</b> — Ereignis-Mengen, Baumdiagramm, Pfadregeln</div></div>
+        <div class="tlrow"><div class="tlnum">8</div><div class="tltxt"><b>Wachstum &amp; Zerfall</b> — hier, jetzt, das Finale</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 20 Pruefungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Zinseszins- und Abschreibungsaufgaben mit Kn=K0·qⁿ lösen.</b></li>
+        <li><b>Halbwertszeit- und Verdopplungszeit-Aufgaben berechnen.</b></li>
+        <li><b>Modellgrenzen exponentieller Prozesse in eigenen Worten erklären.</b></li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">🏁 Damit ist der gesamte Lehrplanstoff — alle acht Themenbereiche von Mengen bis Wachstum — vollständig in dieser Lernwelt abgebildet.</div>
+    </div>
+  </section>
+
+  <!-- 21 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+(function(){
+  let s='<svg viewBox="0 0 300 200" style="width:100%;max-width:340px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="20" y1="180" x2="280" y2="180" stroke="#4a5568" stroke-width="1.5"/>';
+  s+='<line x1="20" y1="10" x2="20" y2="190" stroke="#4a5568" stroke-width="1.5"/>';
+  let curve='';
+  for(let t=0; t<=20; t+=0.5){ const n=200*Math.pow(0.5, t/5); const sx=20+t*13, sy=180-n*0.8; curve+=sx+','+sy+' '; }
+  s+='<polyline points="'+curve.trim()+'" fill="none" stroke="#5fd0c7" stroke-width="2.5"/>';
+  [5,10,15].forEach(t=>{
+    const n=200*Math.pow(0.5, t/5);
+    const sx=20+t*13, sy=180-n*0.8;
+    s+='<circle cx="'+sx+'" cy="'+sy+'" r="3" fill="#f2a63c"/>';
+    s+='<text x="'+sx+'" y="'+(sy-8)+'" fill="#f2a63c" font-size="10" text-anchor="middle">'+Math.round(n)+'mg</text>';
+  });
+  s+='<text x="150" y="195" fill="#9aa4b2" font-size="11" text-anchor="middle">Zeit t (Stunden)</text>';
+  s+='</svg>';
+  document.getElementById('svgKoffein').innerHTML=s;
+})();
+
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Die Zinseszinsformel", "📐 Schritt für Schritt: Zinseszins berechnen", "Degressive Abschreibung", "📐 Schritt für Schritt: Abschreibung berechnen", "Die Eulersche Zahl e & die Halbwertszeit", "📐 Schritt für Schritt: Halbwertszeit im Körper", "Der Abklingprozess von Koffein", "Verdopplungszeit — die Kehrseite der Halbwertszeit", "Modellgrenzen — nichts wächst ewig", "⚠️ Vorsicht Falle: Halbwertszeit missverstanden", "🧪 Zinseszins-Rechner", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Werkstatt-Investitionen bewerten", "Schätz mal: wie hoch ist K5?", "Symbol-Legende", "Zusammenfassung", "✏️ Stift & Papier", "🏁 Der rote Faden — die ganze Lernwelt im Rückblick", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=21;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck60_s1_Charon.mp3",txt:"Das große Finale. Zinseszins, Abschreibung, Halbwertszeit - dieselbe Formel taucht überall auf, wo etwas gleichmäßig wächst oder schrumpft. Und am Ende schauen wir gemeinsam zurück auf die ganze Lernwelt."},
+ 2:{wav:"narration_deck60_s2_Charon.mp3",txt:"Die Zinseszinsformel berechnet das Kapital nach n Jahren - genau die Wachstumsfunktion aus Teil eins."},
+ 3:{wav:"narration_deck60_s3_Charon.mp3",txt:"Jetzt berechnen wir gemeinsam ein echtes Zinseszins-Beispiel, Schritt für Schritt."},
+ 4:{wav:"narration_deck60_s4_Charon.mp3",txt:"Die degressive Abschreibung beschreibt, wie der Buchwert einer Maschine mit der Zeit abnimmt."},
+ 5:{wav:"narration_deck60_s5_Charon.mp3",txt:"Jetzt berechnen wir gemeinsam eine echte Abschreibung, Schritt für Schritt."},
+ 6:{wav:"narration_deck60_s6_Charon.mp3",txt:"Die Eulersche Zahl e entsteht bei immer häufigerer Verzinsung - und die Halbwertszeit beschreibt, wann sich eine Größe halbiert."},
+ 7:{wav:"narration_deck60_s7_Charon.mp3",txt:"Jetzt berechnen wir gemeinsam eine Halbwertszeit im menschlichen Körper, Schritt für Schritt."},
+ 8:{wav:"narration_deck60_s8_Charon.mp3",txt:"Hier siehst du den Abklingprozess grafisch dargestellt."},
+ 9:{wav:"narration_deck60_s9_Charon.mp3",txt:"Die Verdopplungszeit ist die Kehrseite der Halbwertszeit - für wachsende statt abklingende Prozesse."},
+ 10:{wav:"narration_deck60_s10_Charon.mp3",txt:"Kein Modell gilt ewig - exponentielles Wachstum stößt in der Realität immer an Grenzen."},
+ 11:{wav:"narration_deck60_s11_Charon.mp3",txt:"Vorsicht: nach der doppelten Halbwertszeit ist NICHT alles weg, sondern nur ein Viertel übrig."},
+ 12:{wav:"narration_deck60_s12_Charon.mp3",txt:"Jetzt bist du dran: stelle Startkapital, Zinssatz und Laufzeit ein und vergleiche mit linearem Sparen."},
+ 13:{wav:"narration_deck60_s13_Charon.mp3",txt:"Zinseszins, Abschreibung, Halbwertszeit - immer dieselbe Formel, nur mit anderem Faktor q."},
+ 14:{wav:"narration_deck60_s14_Charon.mp3",txt:"Auch bei Werkstatt-Investitionen helfen diese Formeln bei der Entscheidung."},
+ 15:{wav:"narration_deck60_s15_Charon.mp3",txt:"Bevor es weitergeht: schätz doch mal, wie hoch dieses Kapital nach fünf Jahren ist."},
+ 16:{wav:"narration_deck60_s16_Charon.mp3",txt:"Hier noch mal alle Symbole rund um Wachstumsanwendungen im Überblick."},
+ 17:{wav:"narration_deck60_s17_Charon.mp3",txt:"Fassen wir zusammen: Zinseszins, Abschreibung und Halbwertszeit im Vergleich."},
+ 18:{wav:"narration_deck60_s18_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben rund um Wachstumsanwendungen."},
+ 19:{wav:"narration_deck60_s19_Charon.mp3",txt:"Und jetzt der große Rückblick: der rote Faden durch alle acht Themenbereiche dieser Lernwelt."},
+ 20:{wav:"narration_deck60_s20_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst - damit ist der gesamte Lehrplanstoff vollständig abgebildet."},
+ 21:{wav:"narration_deck60_s21_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"K0=1.000€, p=5%, n=2 Jahre Zinseszins. Wie hoch ist K2?",
+  a:["1.100€","1.102,50€","1.050€","1.200€"],r:1,
+  why:"K2=1.000·1,05²=1.000·1,1025=1.102,50€."},
+ {q:"Eine Maschine (10.000€) wird degressiv mit 10%/Jahr abgeschrieben. Wie hoch ist der Buchwert nach 1 Jahr?",
+  a:["9.000€","1.000€","9.900€","10.100€"],r:0,
+  why:"K1=10.000·(1−10/100)=10.000·0,9=9.000€."},
+ {q:"Ein Stoff hat Halbwertszeit 3 Tage. Wie viel Prozent sind nach 9 Tagen noch vorhanden?",
+  a:["50%","25%","12,5%","0%"],r:2,
+  why:"9 Tage = 3 Halbwertszeiten: 100%→50%→25%→12,5%."},
+ {q:"Was ist an der Aussage „nach doppelter Halbwertszeit ist alles weg“ falsch?",
+  a:["Nichts, das stimmt","Nach der doppelten Halbwertszeit ist noch ein VIERTEL vorhanden, nicht null","Es müsste die dreifache Halbwertszeit sein","Halbwertszeit gilt nur für radioaktive Stoffe"],r:1,
+  why:"Nach jeder Halbwertszeit halbiert sich der RESTBESTAND erneut — nach der doppelten Halbwertszeit bleibt 1/4, nicht 0."},
+ {q:"Welche der acht Themenbereiche dieser Lernwelt kommt VOR den Funktionen?",
+  a:["Zufall & Wahrscheinlichkeit","Wachstum & Zerfall","Terme","Geometrie"],r:2,
+  why:"Die Reihenfolge war: Mengen, Zahlen & Rechnen, Terme, Gleichungen, Funktionen, Geometrie, Zufall, Wachstum — Terme kam klar vor den Funktionen."}
+];
+const DECK_ID="wachstum/deck60";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), oi===item.r);
+        answered++; if(oi===item.r) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estWachstum60', {
+    frage: 'K0=1.000€, Zinssatz 10% pro Jahr, Zinseszins — wie hoch ist K5 (gerundet)?',
+    min: 1000, max: 2000, korrekt: 1611, toleranz: 20,
+    begruendung: 'K5=1.000·1,1⁵≈1.610,51€.'
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Schnitt-Jäger — Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{max-width:640px;margin:0 auto;padding:18px 20px 40px;}
+  h3{margin:0 0 6px;}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  #progress{font-size:13px;color:var(--muted);margin-bottom:8px;}
+  #missionText{font-size:15px;color:var(--accent);text-align:center;font-weight:700;margin-bottom:10px;}
+  .controls{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin-bottom:12px;}
+  .row{display:flex;align-items:center;gap:12px;margin:8px 0;}
+  .row label{font-size:14px;color:var(--muted);min-width:70px;}
+  input[type=range]{flex:1;}
+  .valbox{background:#1f2630;border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:14px;font-weight:700;color:var(--accent);min-width:40px;text-align:center;}
+  #svgHost{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;}
+  #liveLage{text-align:center;font-size:14px;color:#5fd0c7;min-height:20px;margin:8px 0;}
+  #confirmBtn{display:block;margin:8px auto 0;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 20px;font-size:14px;cursor:pointer;}
+  #feedback{text-align:center;font-size:14px;min-height:20px;margin-top:6px;color:var(--fg);}
+  #nextBtn{display:none;margin:10px auto 0;background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:9px 18px;font-size:14px;cursor:pointer;}
+  #doneBox{text-align:center;font-size:16px;color:var(--accent);font-weight:700;margin-top:16px;display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h3>✂️ Schnitt-Jäger</h3>
+  <p class="hint">g1(x)=x+2 ist fest. Stelle g2 über m und t so ein, dass die geforderte Lagebeziehung entsteht.</p>
+  <div id="progress">Mission 1 / 3</div>
+  <div id="missionText"></div>
+  <div class="controls">
+    <div class="row"><label for="mSlider">m (g2)</label><input type="range" id="mSlider" min="-3" max="3" step="1" value="0"/><span class="valbox" id="mVal">0</span></div>
+    <div class="row"><label for="tSlider">t (g2)</label><input type="range" id="tSlider" min="-2" max="7" step="1" value="0"/><span class="valbox" id="tVal">0</span></div>
+  </div>
+  <div id="eqLabel" style="text-align:center;font-size:14px;color:var(--muted);"></div>
+  <div id="svgHost"></div>
+  <div id="liveLage"></div>
+  <button id="confirmBtn">✅ Lagebeziehung bestätigen</button>
+  <div id="feedback"></div>
+  <button id="nextBtn">Nächste Mission ▸</button>
+  <div id="doneBox">✅ Alle drei Lagebeziehungen erzeugt — du siehst Geraden jetzt mit anderen Augen!</div>
+</div>
+<script>
+const M1=1, T1=2; // g1(x) = x + 2, fest
+const MISSIONS=[
+  {label:"Erzeuge eine SCHNEIDENDE Gerade", m:-1, t:6, lage:"schneidend"},
+  {label:"Erzeuge eine ECHT PARALLELE Gerade", m:1, t:5, lage:"parallel"},
+  {label:"Erzeuge eine IDENTISCHE Gerade", m:1, t:2, lage:"identisch"}
+];
+let mi=0, m2=0, t2=0, missionSolved=[false,false,false];
+
+function toX(x){ return 150+x*20; }
+function toY(y){ return 150-y*20; }
+function classify(m,t){
+  if(Math.abs(m-M1)>0.001) return "schneidend";
+  if(Math.abs(t-T1)>0.001) return "parallel";
+  return "identisch";
+}
+function lageText(l, m, t){
+  if(l==="schneidend"){
+    const xs=(t-T1)/(M1-m);
+    const ys=M1*xs+T1;
+    return "Schneidend — Schnittpunkt S("+xs.toFixed(1)+"|"+ys.toFixed(1)+")";
+  }
+  if(l==="parallel") return "Echt parallel — kein gemeinsamer Punkt";
+  return "Identisch — unendlich viele gemeinsame Punkte";
+}
+function buildSVG(m,t){
+  let s='<svg viewBox="0 0 300 300" style="width:100%;max-width:320px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="0" y1="150" x2="300" y2="150" stroke="#9aa4b2" stroke-width="1"/>';
+  s+='<line x1="150" y1="0" x2="150" y2="300" stroke="#9aa4b2" stroke-width="1"/>';
+  const x1=-7, x2=7;
+  s+='<line x1="'+toX(x1)+'" y1="'+toY(M1*x1+T1)+'" x2="'+toX(x2)+'" y2="'+toY(M1*x2+T1)+'" stroke="#f2a63c" stroke-width="2.5"/>';
+  s+='<line x1="'+toX(x1)+'" y1="'+toY(m*x1+t)+'" x2="'+toX(x2)+'" y2="'+toY(m*x2+t)+'" stroke="#5fd0c7" stroke-width="2.5" stroke-dasharray="'+(classify(m,t)==="identisch"?"5,4":"0")+'"/>';
+  s+='</svg>';
+  return s;
+}
+function render(){
+  document.getElementById('progress').textContent='Mission '+(mi+1)+' / '+MISSIONS.length;
+  document.getElementById('missionText').textContent=MISSIONS[mi].label;
+  document.getElementById('feedback').textContent='';
+  document.getElementById('nextBtn').style.display='none';
+  updateDisplay();
+}
+function updateDisplay(){
+  document.getElementById('mVal').textContent=m2;
+  document.getElementById('tVal').textContent=t2;
+  document.getElementById('eqLabel').textContent='g1(x) = x + 2  (fest, orange)   ·   g2(x) = '+m2+'x '+(t2>=0?'+ '+t2:'− '+Math.abs(t2))+' (blau)';
+  document.getElementById('svgHost').innerHTML=buildSVG(m2,t2);
+  const l=classify(m2,t2);
+  document.getElementById('liveLage').textContent=lageText(l,m2,t2);
+}
+document.getElementById('mSlider').addEventListener('input', e=>{ m2=parseInt(e.target.value); updateDisplay(); });
+document.getElementById('tSlider').addEventListener('input', e=>{ t2=parseInt(e.target.value); updateDisplay(); });
+document.getElementById('confirmBtn').onclick=()=>{
+  if(missionSolved[mi]) return;
+  const target=MISSIONS[mi];
+  if(Math.abs(m2-target.m)<0.01 && Math.abs(t2-target.t)<0.01){
+    missionSolved[mi]=true;
+    document.getElementById('feedback').textContent='✅ Richtig eingestellt: '+lageText(target.lage,m2,t2);
+    window.lwAward && window.lwAward('mission', 'mission'+(mi+1));
+    document.getElementById('nextBtn').style.display = (mi<MISSIONS.length-1) ? 'block' : 'none';
+    checkAllDone();
+  } else {
+    document.getElementById('feedback').textContent='Noch nicht ganz — passe m und t weiter an.';
+  }
+};
+document.getElementById('nextBtn').onclick=()=>{
+  if(mi<MISSIONS.length-1){ mi++; m2=0; t2=0; document.getElementById('mSlider').value=0; document.getElementById('tSlider').value=0; render(); }
+};
+function checkAllDone(){
+  if(missionSolved.every(Boolean)){
+    document.getElementById('doneBox').style.display='block';
+    window.lwAward && window.lwAward('mission', 'schnittjaeger_komplett');
+  }
+}
+render();
+
+// Test-Hook fuer Playwright-Verifikation
+window.LAB = {
+  state: () => ({ mission: mi, m2: m2, t2: t2, missionSolved: missionSolved.slice(), liveLage: classify(m2,t2) }),
+  setM: (v) => { m2=v; document.getElementById('mSlider').value=v; updateDisplay(); },
+  setT: (v) => { t2=v; document.getElementById('tSlider').value=v; updateDisplay(); },
+  confirm: () => document.getElementById('confirmBtn').click(),
+  nextMission: () => document.getElementById('nextBtn').click()
+};
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Gauß-Stufen</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:16px 22px 40px;max-width:760px;margin:0 auto;}
+  h2{margin:0 0 4px;font-size:22px;}
+  .lead{color:var(--muted);font-size:15px;margin:0 0 14px;}
+  .panel{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:14px;}
+  .matrix{display:inline-block;font-family:"Courier New",monospace;font-size:20px;background:#0e131b;border:1px solid var(--line);border-radius:8px;padding:16px 22px;margin:0 auto;}
+  .matrixwrap{text-align:center;margin-bottom:14px;}
+  .mrow{display:flex;gap:14px;justify-content:center;padding:3px 0;}
+  .mcell{min-width:34px;text-align:center;}
+  .mcell.zeroed{color:#4caf50;font-weight:700;}
+  .mcell.diag{color:#f2a63c;font-weight:700;}
+  .bar{width:1px;background:var(--line);align-self:stretch;}
+  .opts{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+  .optbtn{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px 16px;font-size:15px;cursor:pointer;text-align:left;}
+  .optbtn:hover{background:#283041;}
+  .optbtn.correct{background:#1c3d24;border-color:#4caf50;}
+  .optbtn.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .feedback{margin-top:8px;font-size:14px;color:var(--muted);}
+  .banner{background:#1c3d24;border-left:5px solid #4caf50;border-radius:8px;padding:10px 16px;margin-top:10px;font-size:15px;}
+  .revealrow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .revealbtn{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;}
+  .revealbtn:hover{background:#283041;}
+  .revealbtn:disabled{opacity:0.5;cursor:default;}
+  .revealed{color:var(--accent);font-weight:700;}
+  .mission{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:10px 16px;margin-top:10px;font-size:15px;}
+  .mission.solved{background:#1c3d24;border-left-color:#4caf50;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h2>🧪 Gauß-Stufen</h2>
+  <p class="lead">Bring das 3×3-System per Klick auf Dreiecksform, dann setze rückwärts ein.</p>
+  <div class="panel">
+    <div class="matrixwrap"><div id="matrixHost"></div></div>
+    <div id="optsHost"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="banner" id="triangleBanner" style="display:none;">✅ Dreiecksform erreicht! Unterhalb der Hauptdiagonalen stehen nur noch Nullen.</div>
+    <div id="backsubHost" style="display:none;">
+      <div class="revealrow">
+        <button class="revealbtn" id="btnZ">z aufdecken</button>
+        <button class="revealbtn" id="btnY" disabled>y aufdecken</button>
+        <button class="revealbtn" id="btnX" disabled>x aufdecken</button>
+      </div>
+      <div id="backsubResult" style="margin-top:8px;font-size:15px;"></div>
+    </div>
+    <div class="mission" id="mission">🎯 Mission: Bring die Matrix auf Dreiecksform und decke z, y und x per Rückwärtseinsetzen auf.</div>
+  </div>
+</div>
+
+<script>
+let M = [[1,1,1,6],[1,-1,2,5],[1,2,-1,2]];
+let step = 0; // 0,1,2 = pending ops; 3 = triangle reached
+let triangleReached = false;
+let revealed = {z:false, y:false, x:false};
+
+function renderMatrix(){
+  let html='';
+  M.forEach((row,ri)=>{
+    html+='<div class="mrow">';
+    row.forEach((val,ci)=>{
+      let cls='mcell';
+      if(ci===ri) cls+=' diag';
+      else if(ci<3 && val===0 && ci<ri) cls+=' zeroed';
+      if(ci===3) html+='<div class="bar"></div>';
+      html+='<div class="'+cls+'">'+val+'</div>';
+    });
+    html+='</div>';
+  });
+  document.getElementById('matrixHost').innerHTML=html;
+}
+
+function rowOp(fn){
+  M = M.map(r=>r.slice());
+  fn(M);
+  step++;
+  renderMatrix();
+  renderOpts();
+}
+
+const STEPS_DEF = [
+  { label:'Schritt 1: Spalte 1 unter der Diagonalen leeren',
+    correct:{ text:'R2 := R2 − R1', fn:(m)=>{ m[1]=m[1].map((v,i)=>v-m[0][i]); } },
+    wrong:{ text:'R2 := R2 + R1', why:'Das entfernt die 1 in Zeile 2 NICHT — Addieren vergrößert den Wert statt ihn zu Null zu machen.' } },
+  { label:'Schritt 2: auch Zeile 3 in Spalte 1 leeren',
+    correct:{ text:'R3 := R3 − R1', fn:(m)=>{ m[2]=m[2].map((v,i)=>v-m[0][i]); } },
+    wrong:{ text:'R3 := R3 + R1', why:'Auch hier gilt: Subtrahieren erzeugt die Null in Spalte 1, Addieren nicht.' } },
+  { label:'Schritt 3: Spalte 2 unter der Diagonalen leeren',
+    correct:{ text:'R3 := 2·R3 + R2', fn:(m)=>{ m[2]=m[2].map((v,i)=>2*v+m[1][i]); } },
+    wrong:{ text:'R3 := R3 − R2', why:'Das liefert keine Null in Spalte 2 — die Faktoren passen so nicht zueinander.' } }
+];
+
+function renderOpts(){
+  const host=document.getElementById('optsHost');
+  const fb=document.getElementById('feedback');
+  fb.textContent='';
+  if(step>=STEPS_DEF.length){
+    host.innerHTML='';
+    triangleReached=true;
+    document.getElementById('triangleBanner').style.display='block';
+    document.getElementById('backsubHost').style.display='block';
+    updateMission();
+    return;
+  }
+  const def=STEPS_DEF[step];
+  host.innerHTML='<div style="font-size:14px;color:var(--muted);margin-bottom:6px;">'+def.label+'</div><div class="opts"></div>';
+  const opts=host.querySelector('.opts');
+  const choices=[def.correct, def.wrong].sort(()=>Math.random()-0.5);
+  choices.forEach(c=>{
+    const b=document.createElement('button'); b.className='optbtn'; b.textContent=c.text;
+    b.onclick=()=>{
+      opts.querySelectorAll('.optbtn').forEach(x=>x.disabled=true);
+      if(c===def.correct){
+        b.classList.add('correct');
+        rowOp(def.correct.fn);
+      } else {
+        b.classList.add('wrong');
+        fb.textContent='❌ '+c.why+' Versuch es nochmal.';
+        setTimeout(()=>{ renderOpts(); }, 900);
+      }
+    };
+    opts.appendChild(b);
+  });
+}
+
+document.getElementById('btnZ').onclick=()=>{
+  revealed.z=true;
+  document.getElementById('backsubResult').innerHTML='<span class="revealed">z = 3</span> (aus −3z=−9)';
+  document.getElementById('btnZ').disabled=true;
+  document.getElementById('btnY').disabled=false;
+  updateMission();
+};
+document.getElementById('btnY').onclick=()=>{
+  revealed.y=true;
+  document.getElementById('backsubResult').innerHTML='<span class="revealed">z = 3, y = 2</span> (aus −2y+3=−1)';
+  document.getElementById('btnY').disabled=true;
+  document.getElementById('btnX').disabled=false;
+  updateMission();
+};
+document.getElementById('btnX').onclick=()=>{
+  revealed.x=true;
+  document.getElementById('backsubResult').innerHTML='<span class="revealed">x = 1, y = 2, z = 3</span> → L={(1|2|3)}';
+  document.getElementById('btnX').disabled=true;
+  updateMission();
+};
+
+function updateMission(){
+  const box=document.getElementById('mission');
+  const done = triangleReached && revealed.z && revealed.y && revealed.x;
+  if(done){
+    box.classList.add('solved');
+    box.innerHTML='✅ Mission erfüllt: Dreiecksform erreicht und alle drei Variablen per Rückwärtseinsetzen bestimmt — L={(1|2|3)}.';
+  } else {
+    box.classList.remove('solved');
+    box.innerHTML='🎯 Mission: Bring die Matrix auf Dreiecksform und decke z, y und x per Rückwärtseinsetzen auf.';
+  }
+}
+
+renderMatrix();
+renderOpts();
+
+window.LAB={
+  state(){
+    return {
+      step: step,
+      triangleReached: triangleReached,
+      revealed: Object.assign({}, revealed),
+      matrix: M.map(r=>r.slice()),
+      missionSolved: triangleReached && revealed.z && revealed.y && revealed.x
+    };
+  },
+  clickCorrect(){
+    if(step>=STEPS_DEF.length) return;
+    const opts=document.querySelectorAll('#optsHost .optbtn');
+    const def=STEPS_DEF[step];
+    opts.forEach(b=>{ if(b.textContent===def.correct.text) b.click(); });
+  },
+  clickWrong(){
+    if(step>=STEPS_DEF.length) return;
+    const opts=document.querySelectorAll('#optsHost .optbtn');
+    const def=STEPS_DEF[step];
+    opts.forEach(b=>{ if(b.textContent===def.wrong.text) b.click(); });
+  },
+  revealZ(){ document.getElementById('btnZ').click(); },
+  revealY(){ document.getElementById('btnY').click(); },
+  revealX(){ document.getElementById('btnX').click(); }
+};
+</script>
+</body>
+</html>

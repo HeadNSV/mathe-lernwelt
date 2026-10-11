@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Zahlenstrahl-Rechner</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:14px 18px;height:100%;overflow-y:auto;}
+  h3{margin:0 0 8px;font-size:18px;color:var(--accent);}
+  .hint{font-size:12.5px;color:var(--muted);margin:4px 0 12px;}
+  .rowlabel{font-size:13.5px;color:var(--muted);margin:10px 0 4px;}
+  .chiprow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+  .jchip{background:#1f2630;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:6px 12px;font-size:14px;cursor:pointer;min-width:44px;text-align:center;}
+  .jchip.neg{color:#ff9d8a;}
+  .jchip.pos{color:#8adf9c;}
+  .jchip.active{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  #svgHost{margin:14px 0;}
+  #result{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:16px;}
+  #missionBox{margin-top:12px;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:14.5px;}
+  #missionBox.ok{border-color:#4caf50;background:#173d28;}
+  button.resetbtn{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 14px;font-size:13.5px;cursor:pointer;margin-top:10px;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h3>🧪 Zahlenstrahl-Rechner</h3>
+  <p class="hint">Wähle Sprung 1 und Sprung 2 — die Pfeile zeigen live, wo du auf dem Zahlenstrahl landest.</p>
+  <div class="rowlabel">Sprung 1 (Start bei 0):</div>
+  <div class="chiprow" id="row1"></div>
+  <div class="rowlabel">Sprung 2 (ab Ende von Sprung 1):</div>
+  <div class="chiprow" id="row2"></div>
+  <div id="svgHost"></div>
+  <div id="result">Wähle zwei Sprünge, um das Ergebnis zu sehen.</div>
+  <div id="missionBox">🎯 Mission: Lande mit genau zwei Sprüngen exakt auf <b>−3</b>.</div>
+  <button class="resetbtn" id="resetBtn">↺ Zurücksetzen</button>
+</div>
+<script>
+const JUMPS=[-8,-6,-5,-4,-3,-2,-1,1,2,3,4,5,6,7,8];
+let sel1=null, sel2=null;
+
+function renderChips(containerId, selectedRef){
+  const el=document.getElementById(containerId);
+  el.innerHTML='';
+  JUMPS.forEach(v=>{
+    const b=document.createElement('button');
+    b.className='jchip '+(v<0?'neg':'pos')+(selectedRef.val===v?' active':'');
+    b.textContent=(v>0?'+':'')+v;
+    b.onclick=()=>{ selectedRef.val=v; renderAll(); };
+    el.appendChild(b);
+  });
+}
+const ref1={val:null}, ref2={val:null};
+
+function buildArrowLineSVG(min, max, arrows){
+  const stepPx=26, x0=22;
+  const rows=arrows.length, rowH=24;
+  const lineY=20+rows*rowH+14;
+  const width=x0+(max-min)*stepPx+20;
+  const height=lineY+30;
+  const xOf=v=>x0+(v-min)*stepPx;
+  let s='<svg viewBox="0 0 '+width+' '+height+'" style="width:100%;max-width:'+Math.min(620,width)+'px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="'+(x0-12)+'" y1="'+lineY+'" x2="'+(width-10)+'" y2="'+lineY+'" stroke="#4a5568" stroke-width="2"/>';
+  s+='<polygon points="'+(width-10)+','+lineY+' '+(width-18)+','+(lineY-5)+' '+(width-18)+','+(lineY+5)+'" fill="#4a5568"/>';
+  for(let v=min;v<=max;v++){
+    const x=xOf(v);
+    s+='<line x1="'+x+'" y1="'+(lineY-5)+'" x2="'+x+'" y2="'+(lineY+5)+'" stroke="#4a5568" stroke-width="1.2"/>';
+    s+='<text x="'+x+'" y="'+(lineY+20)+'" text-anchor="middle" font-size="11" fill="#9aa4b2">'+v+'</text>';
+  }
+  arrows.forEach((a,i)=>{
+    const y=lineY-14-i*rowH;
+    const x1=xOf(a.from), x2=xOf(a.to);
+    const dir=(x2>x1)?1:-1;
+    s+='<line x1="'+x1+'" y1="'+y+'" x2="'+x2+'" y2="'+y+'" stroke="'+a.color+'" stroke-width="2.2"/>';
+    s+='<polygon points="'+x2+','+y+' '+(x2-dir*7)+','+(y-4)+' '+(x2-dir*7)+','+(y+4)+'" fill="'+a.color+'"/>';
+    s+='<circle cx="'+x1+'" cy="'+y+'" r="2.5" fill="'+a.color+'"/>';
+    s+='<text x="'+((x1+x2)/2)+'" y="'+(y-6)+'" text-anchor="middle" font-size="12" fill="'+a.color+'">'+a.label+'</text>';
+  });
+  s+='</svg>';
+  return s;
+}
+
+function renderAll(){
+  renderChips('row1', ref1);
+  renderChips('row2', ref2);
+  const host=document.getElementById('svgHost');
+  const result=document.getElementById('result');
+  const missionBox=document.getElementById('missionBox');
+  if(ref1.val===null){
+    host.innerHTML='';
+    result.textContent='Wähle zwei Sprünge, um das Ergebnis zu sehen.';
+    missionBox.classList.remove('ok');
+    missionBox.innerHTML='🎯 Mission: Lande mit genau zwei Sprüngen exakt auf <b>−3</b>.';
+    return;
+  }
+  const p1=ref1.val;
+  const p2=(ref2.val===null)?null:ref1.val+ref2.val;
+  const min=Math.min(-10, p1-2, (p2!==null?p2-2:0));
+  const max=Math.max(10, p1+2, (p2!==null?p2+2:0));
+  const arrows=[];
+  if(p2!==null){
+    arrows.push({from:0,to:p2,color:'#f2a63c',label:'Ergebnis: '+p2});
+  }
+  arrows.push({from:0,to:p1,color:'#5fd0c7',label:'Sprung 1: '+(p1>0?'+':'')+p1});
+  if(ref2.val!==null){
+    arrows.push({from:p1,to:p2,color:'#6fcf6f',label:'Sprung 2: '+(ref2.val>0?'+':'')+ref2.val});
+  }
+  host.innerHTML=buildArrowLineSVG(min,max,arrows);
+  if(p2===null){
+    result.textContent='Nach Sprung 1 stehst du bei '+p1+'. Wähle jetzt Sprung 2.';
+  } else {
+    result.textContent='0 '+(p1>=0?'+':'')+' '+p1+' '+(ref2.val>=0?'+ ':'− ')+Math.abs(ref2.val)+' = '+p2;
+    if(p2===-3){
+      missionBox.classList.add('ok');
+      missionBox.innerHTML='🎉 Mission erfüllt! Du bist genau auf −3 gelandet.';
+      window.lwAward && window.lwAward('mission');
+    } else {
+      missionBox.classList.remove('ok');
+      missionBox.innerHTML='🎯 Mission: Lande mit genau zwei Sprüngen exakt auf <b>−3</b>. (Aktuell: '+p2+')';
+    }
+  }
+}
+document.getElementById('resetBtn').onclick=()=>{ ref1.val=null; ref2.val=null; renderAll(); };
+renderAll();
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

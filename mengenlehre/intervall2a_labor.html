@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Intervall-Labor — Zahlenstrahl live einstellen</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:14px 18px;height:100%;overflow-y:auto;}
+  h3{margin:0 0 8px;font-size:18px;color:var(--accent);}
+  .modebar{display:flex;gap:8px;margin-bottom:14px;}
+  .modebar button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 16px;font-size:13.5px;cursor:pointer;}
+  .modebar button.on{background:var(--accent);color:#12100a;font-weight:700;}
+  .part{display:none;}
+  .part.show{display:block;}
+  .sliderrow{display:flex;align-items:center;gap:10px;margin:8px 0;}
+  .sliderrow label{width:110px;font-size:14px;color:var(--muted);}
+  .sliderrow input[type=range]{flex:1;}
+  .sliderrow .val{width:34px;text-align:center;font-weight:700;color:var(--accent);}
+  .togglerow{display:flex;gap:10px;margin:10px 0;}
+  .toggle{background:#1f2630;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;}
+  .toggle.on{background:#1c3d24;border-color:#4caf50;color:#dff3df;}
+  #svgHost{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:10px;margin:12px 0;}
+  #notation{font-size:20px;color:var(--accent);text-align:center;margin:8px 0;}
+  #missionBox{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin-top:10px;font-size:14.5px;}
+  #missionBox.ok{border-color:#4caf50;background:#173d28;}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:6px;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="modebar">
+    <button id="modeExplore" class="on">🔍 Erkunden</button>
+    <button id="modeMission">🎯 Mission</button>
+  </div>
+
+  <div class="part show" id="partExplore">
+    <h3>Intervall-Labor</h3>
+    <p class="hint">Stell mit den Reglern die Grenzen a und b ein, und wähle mit den Knöpfen, ob jede Grenze zum Intervall gehört (Klammer zeigt HIN) oder nicht (Klammer zeigt WEG).</p>
+    <div class="sliderrow"><label>Grenze a</label><input type="range" id="sliderA" min="0" max="14" value="2"/><span class="val" id="valA">2</span></div>
+    <div class="sliderrow"><label>Grenze b</label><input type="range" id="sliderB" min="0" max="14" value="8"/><span class="val" id="valB">8</span></div>
+    <div class="togglerow">
+      <button class="toggle" id="toggleLeft">linke Grenze: NICHT dabei ]</button>
+      <button class="toggle" id="toggleRight">rechte Grenze: NICHT dabei [</button>
+    </div>
+    <div id="svgHost"></div>
+    <div id="notation"></div>
+  </div>
+
+  <div class="part" id="partMission">
+    <h3>🎯 Mission</h3>
+    <p class="hint">Stelle mit den Reglern (oben in „Erkunden" oder direkt hier) ein Intervall ein, das GENAU die Menge {3; 4; 5; 6; 7} enthält — egal mit welcher Klammerkombination.</p>
+    <div class="sliderrow"><label>Grenze a</label><input type="range" id="sliderA2" min="0" max="14" value="2"/><span class="val" id="valA2">2</span></div>
+    <div class="sliderrow"><label>Grenze b</label><input type="range" id="sliderB2" min="0" max="14" value="8"/><span class="val" id="valB2">8</span></div>
+    <div class="togglerow">
+      <button class="toggle" id="toggleLeft2">linke Grenze: NICHT dabei ]</button>
+      <button class="toggle" id="toggleRight2">rechte Grenze: NICHT dabei [</button>
+    </div>
+    <div id="svgHost2"></div>
+    <div id="notation2"></div>
+    <div id="missionBox">Noch nicht erreicht. Ziel: {3; 4; 5; 6; 7}</div>
+  </div>
+</div>
+<script>
+function buildNumberLineSVG(min,max,included,leftVal,leftChar,rightVal,rightChar){
+  const stepPx=28, x0=25, y=36;
+  const xOf=v=>x0+(v-min)*stepPx;
+  const width=x0+(max-min)*stepPx+25;
+  let s='<svg viewBox="0 0 '+width+' 74" style="width:100%;max-width:620px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="8" y1="'+y+'" x2="'+(width-10)+'" y2="'+y+'" stroke="#4a5568" stroke-width="2"/>';
+  s+='<polygon points="'+(width-10)+','+y+' '+(width-18)+','+(y-5)+' '+(width-18)+','+(y+5)+'" fill="#4a5568"/>';
+  for(let v=min;v<=max;v++){
+    const x=xOf(v);
+    const isIn=included.indexOf(v)!==-1;
+    s+='<line x1="'+x+'" y1="'+(y-6)+'" x2="'+x+'" y2="'+(y+6)+'" stroke="#4a5568" stroke-width="1.5"/>';
+    s+='<circle cx="'+x+'" cy="'+y+'" r="6" fill="'+(isIn?'#f2a63c':'#0b0e13')+'" stroke="'+(isIn?'#f2a63c':'#4a5568')+'" stroke-width="2"/>';
+    s+='<text x="'+x+'" y="'+(y+24)+'" text-anchor="middle" font-size="11" fill="#9aa4b2">'+v+'</text>';
+  }
+  if(leftVal!=null){ s+='<text x="'+xOf(leftVal)+'" y="'+(y-12)+'" text-anchor="middle" font-size="22" font-weight="700" fill="#f2a63c">'+leftChar+'</text>'; }
+  if(rightVal!=null){ s+='<text x="'+xOf(rightVal)+'" y="'+(y-12)+'" text-anchor="middle" font-size="22" font-weight="700" fill="#f2a63c">'+rightChar+'</text>'; }
+  s+='</svg>';
+  return s;
+}
+function computeSet(a,b,leftIncl,rightIncl){
+  const lo=Math.min(a,b), hi=Math.max(a,b);
+  const res=[];
+  for(let x=lo;x<=hi;x++){
+    const okLeft = leftIncl ? x>=lo : x>lo;
+    const okRight = rightIncl ? x<=hi : x<hi;
+    if(okLeft && okRight) res.push(x);
+  }
+  return res;
+}
+function notationStr(a,b,leftIncl,rightIncl,set){
+  const lo=Math.min(a,b), hi=Math.max(a,b);
+  const lc = leftIncl ? '[' : ']';
+  const rc = rightIncl ? ']' : '[';
+  const setStr = set.length? '{'+set.join('; ')+'}' : '{ }';
+  return lc+lo+';'+hi+rc+'ℕ = '+setStr;
+}
+
+// === Erkunden ===
+let leftIncl=false, rightIncl=false;
+const sliderA=document.getElementById('sliderA'), sliderB=document.getElementById('sliderB');
+const valA=document.getElementById('valA'), valB=document.getElementById('valB');
+const toggleLeft=document.getElementById('toggleLeft'), toggleRight=document.getElementById('toggleRight');
+function renderExplore(){
+  const a=parseInt(sliderA.value), b=parseInt(sliderB.value);
+  valA.textContent=a; valB.textContent=b;
+  const lo=Math.min(a,b), hi=Math.max(a,b);
+  const set=computeSet(a,b,leftIncl,rightIncl);
+  document.getElementById('svgHost').innerHTML=buildNumberLineSVG(Math.max(0,lo-2),hi+2,set,lo,leftIncl?'[':']',hi,rightIncl?']':'[');
+  document.getElementById('notation').textContent=notationStr(a,b,leftIncl,rightIncl,set);
+}
+sliderA.oninput=renderExplore; sliderB.oninput=renderExplore;
+toggleLeft.onclick=()=>{ leftIncl=!leftIncl; toggleLeft.textContent='linke Grenze: '+(leftIncl?'dabei [':'NICHT dabei ]'); toggleLeft.classList.toggle('on',leftIncl); renderExplore(); };
+toggleRight.onclick=()=>{ rightIncl=!rightIncl; toggleRight.textContent='rechte Grenze: '+(rightIncl?'dabei ]':'NICHT dabei ['); toggleRight.classList.toggle('on',rightIncl); renderExplore(); };
+renderExplore();
+
+// === Mission ===
+let leftIncl2=false, rightIncl2=false;
+const TARGET=[3,4,5,6,7];
+const sliderA2=document.getElementById('sliderA2'), sliderB2=document.getElementById('sliderB2');
+const valA2=document.getElementById('valA2'), valB2=document.getElementById('valB2');
+const toggleLeft2=document.getElementById('toggleLeft2'), toggleRight2=document.getElementById('toggleRight2');
+function sameSet(a,b){ return a.length===b.length && a.every((x,i)=>x===b[i]); }
+function renderMission(){
+  const a=parseInt(sliderA2.value), b=parseInt(sliderB2.value);
+  valA2.textContent=a; valB2.textContent=b;
+  const lo=Math.min(a,b), hi=Math.max(a,b);
+  const set=computeSet(a,b,leftIncl2,rightIncl2);
+  document.getElementById('svgHost2').innerHTML=buildNumberLineSVG(Math.max(0,lo-2),hi+2,set,lo,leftIncl2?'[':']',hi,rightIncl2?']':'[');
+  document.getElementById('notation2').textContent=notationStr(a,b,leftIncl2,rightIncl2,set);
+  const box=document.getElementById('missionBox');
+  if(sameSet(set,TARGET)){
+    box.className='ok';
+    box.textContent='🎉 Mission erfüllt! Deine Einstellung ergibt genau {3; 4; 5; 6; 7}.';
+    window.lwAward && window.lwAward('mission');
+  } else {
+    box.className='';
+    box.textContent='Noch nicht erreicht. Ziel: {3; 4; 5; 6; 7} — aktuell: '+(set.length?'{'+set.join('; ')+'}':'{ }');
+  }
+}
+sliderA2.oninput=renderMission; sliderB2.oninput=renderMission;
+toggleLeft2.onclick=()=>{ leftIncl2=!leftIncl2; toggleLeft2.textContent='linke Grenze: '+(leftIncl2?'dabei [':'NICHT dabei ]'); toggleLeft2.classList.toggle('on',leftIncl2); renderMission(); };
+toggleRight2.onclick=()=>{ rightIncl2=!rightIncl2; toggleRight2.textContent='rechte Grenze: '+(rightIncl2?'dabei ]':'NICHT dabei ['); toggleRight2.classList.toggle('on',rightIncl2); renderMission(); };
+renderMission();
+
+// mode switch
+const modeExplore=document.getElementById('modeExplore'), modeMission=document.getElementById('modeMission');
+const partExplore=document.getElementById('partExplore'), partMission=document.getElementById('partMission');
+modeExplore.onclick=()=>{ modeExplore.classList.add('on'); modeMission.classList.remove('on'); partExplore.classList.add('show'); partMission.classList.remove('show'); };
+modeMission.onclick=()=>{ modeMission.classList.add('on'); modeExplore.classList.remove('on'); partMission.classList.add('show'); partExplore.classList.remove('show'); };
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

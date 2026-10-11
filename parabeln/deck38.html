@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Quadratische Funktionen · Teil 1 — Die Normalparabel &amp; ihre Verschiebungen</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .warnbox{background:#3d1c1c;border-left:5px solid #c0392b;border-radius:8px;padding:10px 16px;font-size:min(1.9vw,16px);color:#ffd9d0;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>QUADRATISCHE FUNKTIONEN <span class="accent">· Teil 1</span></h1>
+    <h2>Die Normalparabel &amp; ihre Verschiebungen</h2>
+    <div class="hook" style="max-width:70ch;">Warum ist der Wasserstrahl aus einem Gartenschlauch eine gebogene Kurve statt einer Geraden? Weil die Schwerkraft ihn nach unten zieht, während er nach vorne fliegt — genau diese Kurvenform nennt man Parabel.</div>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 13.1</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Quadratische Funktion Merksatz -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Was ist eine quadratische Funktion?</h2>
+      <div class="defbox">Eine Funktion, deren Funktionsterm sich in der Form <b>f(x) = ax² + bx + c</b> mit <b>a≠0</b> darstellen lässt, heißt <b>quadratische Funktion</b>. Der Graph einer quadratischen Funktion ist eine <b>Parabel</b>.</div>
+      <div class="defbox">Beispiel: f(x) = 2x² − 3x + 1 mit a=2, b=−3, c=1.</div>
+    </div>
+  </section>
+
+  <!-- 3 Normalparabel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Die Normalparabel</h2>
+      <div class="svgbox"><div id="svgNormalparabel"></div></div>
+      <div class="defbox">Die einfachste aller Parabeln ist die <b>Normalparabel</b>: y = x². Ihr Scheitelpunkt liegt bei S(0|0), sie ist nach oben geöffnet und <b>achsensymmetrisch zur y-Achse</b> — spiegelt man den Teil rechts der y-Achse, erhält man exakt den Teil links davon.</div>
+    </div>
+  </section>
+
+  <!-- 4 Bruecke Oeffnung -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🌉 Ausblick</span> Öffnung nach oben oder unten</h2>
+      <div class="defbox">Jede Parabel hat einen <b>Scheitelpunkt</b> — den tiefsten Punkt bei einer nach OBEN geöffneten Parabel, den höchsten Punkt bei einer nach UNTEN geöffneten. Ob eine Parabel nach oben oder unten geöffnet ist, entscheidet das Vorzeichen von a — mehr dazu im nächsten Deck.</div>
+    </div>
+  </section>
+
+  <!-- 5 Horizontale Verschiebung -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Horizontale Verschiebung</h2>
+      <div class="svgbox"><div id="svgHorizontal"></div></div>
+      <div class="defbox">Allgemein lautet der Funktionsterm einer horizontal verschobenen Normalparabel: <b>f(x) = (x−x<sub>s</sub>)²</b>. Der Scheitelpunkt liegt bei S(x<sub>s</sub>|0). Ist x<sub>s</sub>&gt;0, liegt eine Verschiebung nach RECHTS vor; ist x<sub>s</sub>&lt;0, eine Verschiebung nach LINKS.</div>
+    </div>
+  </section>
+
+  <!-- 6 Schritt horizontale Verschiebung -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Horizontale Verschiebung anwenden</h2>
+      <div class="defbox">Aufgabe: Bestimme den Scheitelpunkt von f(x)=(x−3)² und g(x)=(x+1)².</div>
+      <div class="step" id="s6_1"><b class="lbl">f(x)=(x−3)²:</b> x<sub>s</sub>=3 (positiv) → Scheitel S(3|0), 3 Einheiten nach RECHTS verschoben.</div>
+      <div class="step" id="s6_2"><b class="lbl">g(x)=(x+1)² = (x−(−1))²:</b> x<sub>s</sub>=−1 (negativ) → Scheitel S(−1|0), 1 Einheit nach LINKS verschoben.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="6" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 7 Vertikale Verschiebung -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Vertikale Verschiebung</h2>
+      <div class="svgbox"><div id="svgVertikal"></div></div>
+      <div class="defbox">Allgemein lautet der Funktionsterm einer vertikal verschobenen Normalparabel: <b>f(x) = x² + y<sub>s</sub></b>. Der Scheitelpunkt liegt bei S(0|y<sub>s</sub>). Ist y<sub>s</sub>&gt;0, liegt eine Verschiebung nach OBEN vor; ist y<sub>s</sub>&lt;0, eine Verschiebung nach UNTEN.</div>
+    </div>
+  </section>
+
+  <!-- 8 Schritt vertikale Verschiebung -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Vertikale Verschiebung anwenden</h2>
+      <div class="defbox">Aufgabe: Bestimme den Scheitelpunkt von f(x)=x²+4 und g(x)=x²−1.</div>
+      <div class="step" id="s8_1"><b class="lbl">f(x)=x²+4:</b> y<sub>s</sub>=4 (positiv) → Scheitel S(0|4), 4 Einheiten nach OBEN verschoben.</div>
+      <div class="step" id="s8_2"><b class="lbl">g(x)=x²−1:</b> y<sub>s</sub>=−1 (negativ) → Scheitel S(0|−1), 1 Einheit nach UNTEN verschoben.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="8" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 9 Kombination -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Kombination beider Verschiebungen</h2>
+      <div class="defbox">Verschiebt man horizontal UND vertikal, lautet der Funktionsterm allgemein: <b>y = a·(x−b)² + c</b>, mit Scheitelpunkt S(b|c). Der Faktor a bestimmt zusätzlich, wie stark die Parabel gestreckt oder gestaucht ist.</div>
+      <div class="defbox">Beispiel: y = 2·(x−1)²+3 → Scheitelpunkt S(1|3).</div>
+      <div class="warnbox">⚠️ Diese Form hat einen eigenen Namen — die <b>Scheitelpunktform</b>. Im nächsten Deck lernst du sie im Detail kennen.</div>
+    </div>
+  </section>
+
+  <!-- 10 Eselsbruecke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Minus im Klammerpaket schiebt nach RECHTS — die Klammer lügt über die Richtung." (x−3)² sieht nach „minus" aus, verschiebt aber nach PLUS-Richtung (rechts)! Und: „Was hinten in der Klammer mit x steht (x_s), gehört zur y-Achse: bei y_s dagegen kein Klammer-Trick nötig — Vorzeichen = Richtung."</div>
+    </div>
+  </section>
+
+  <!-- 11 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Der Sprung aus dem Startblock</h2>
+      <div class="defbox">Ein Schwimmer, der vom Startblock abspringt, folgt bis zum Eintauchen einer Parabelbahn — die Startposition entspricht einer horizontalen Verschiebung, die Absprunghöhe einer vertikalen. Trainer nutzen genau dieses Modell, um die optimale Absprungtechnik zu analysieren.</div>
+    </div>
+  </section>
+
+  <!-- 12 Intuitions-Regler -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Schätz mal: wo liegt der Scheitelpunkt?</h2>
+      <div class="defbox">f(x) = (x−5)². Bei welchem x-Wert liegt der Scheitelpunkt dieser Parabel?</div>
+      <div id="estScheitel38"></div>
+    </div>
+  </section>
+
+  <!-- 13 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>f(x)=ax²+bx+c</td><td>„allgemeine Darstellungsform"</td><td>Funktionsterm einer quadratischen Funktion</td></tr>
+        <tr><td>S(x<sub>s</sub>|y<sub>s</sub>)</td><td>„S von x-s, y-s"</td><td>Scheitelpunkt der Parabel</td></tr>
+        <tr><td>y=x²</td><td>„Normalparabel"</td><td>einfachste Parabel, Scheitel im Ursprung</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 14 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Parabel-Schieber</span><span class="sub">Verschiebe-Regler live steuern</span></div>
+    <iframe allow="autoplay" data-src="parabelschieber38_labor.html"></iframe>
+  </section>
+
+  <!-- 15 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Form</th><th>Scheitelpunkt</th></tr>
+      <tr><td>y=x² (Normalparabel)</td><td>S(0|0)</td></tr>
+      <tr><td>y=(x−x<sub>s</sub>)²</td><td>S(x<sub>s</sub>|0) — horizontal verschoben</td></tr>
+      <tr><td>y=x²+y<sub>s</sub></td><td>S(0|y<sub>s</sub>) — vertikal verschoben</td></tr>
+      <tr><td>y=a(x−b)²+c</td><td>S(b|c) — kombiniert + gestreckt/gestaucht</td></tr>
+    </table>
+  </section>
+
+  <!-- 16 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Nenne den Scheitelpunkt von f(x)=(x+4)².
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>x<sub>s</sub>=−4 → S(−4|0)</details>
+        </li>
+        <li style="margin-top:10px;">Nenne den Scheitelpunkt von g(x)=x²−7.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>y<sub>s</sub>=−7 → S(0|−7)</details>
+        </li>
+        <li style="margin-top:10px;">Gib den Funktionsterm einer Parabel an, die aus der Normalparabel durch Verschiebung um 2 nach links und 5 nach oben entsteht.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>y=(x+2)²+5</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 17 Pruefungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Scheitelpunkt aus horizontal/vertikal verschobener Normalparabel ablesen.</b></li>
+        <li><b>Vorzeichen-Falle bei der horizontalen Verschiebung durchschauen</b> — (x−x_s) mit x_s&gt;0 heißt RECHTS.</li>
+        <li><b>Beide Verschiebungen kombinieren</b> — y=a(x−b)²+c mit Scheitel S(b|c).</li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">Kapitel-Brücke zum nächsten Deck: <i>„Die Form y=a(x−b)²+c hat einen eigenen Namen und noch mehr Geheimnisse."</i> Genau darum geht es im nächsten Deck: die Scheitelpunktform.</div>
+    </div>
+  </section>
+
+  <!-- 18 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+function toX38(x, ox, scale){ return ox+x*scale; }
+function toY38(y, oy, scale){ return oy-y*scale; }
+function buildParabolaSVG(fns, ox, oy, scale, xr, labels){
+  let s='<svg viewBox="0 0 340 260" style="width:100%;max-width:400px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="0" y1="'+oy+'" x2="340" y2="'+oy+'" stroke="#9aa4b2" stroke-width="1"/>';
+  s+='<line x1="'+ox+'" y1="0" x2="'+ox+'" y2="260" stroke="#9aa4b2" stroke-width="1"/>';
+  const colors=['#5fd0c7','#f2a63c','#c0392b'];
+  fns.forEach((fn,i)=>{
+    let pts=[];
+    for(let x=xr[0]; x<=xr[1]+0.001; x+=0.15){
+      const y=fn(x);
+      if(toY38(y,oy,scale)>-10 && toY38(y,oy,scale)<270) pts.push(toX38(x,ox,scale)+","+toY38(y,oy,scale));
+    }
+    s+='<polyline points="'+pts.join(" ")+'" fill="none" stroke="'+colors[i%3]+'" stroke-width="2.2"/>';
+  });
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgNormalparabel').innerHTML=buildParabolaSVG([x=>x*x], 170, 230, 20, [-3,3]);
+document.getElementById('svgHorizontal').innerHTML=buildParabolaSVG([x=>x*x, x=>(x-3)*(x-3), x=>(x+1)*(x+1)], 90, 230, 18, [-4,6]);
+document.getElementById('svgVertikal').innerHTML=buildParabolaSVG([x=>x*x, x=>x*x+4, x=>x*x-1], 170, 230, 18, [-3,3]);
+
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Was ist eine quadratische Funktion?", "Die Normalparabel", "🌉 Ausblick: Öffnung nach oben oder unten", "Horizontale Verschiebung", "📐 Schritt für Schritt: Horizontale Verschiebung anwenden", "Vertikale Verschiebung", "📐 Schritt für Schritt: Vertikale Verschiebung anwenden", "Kombination beider Verschiebungen", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Der Sprung aus dem Startblock", "Schätz mal: wo liegt der Scheitelpunkt?", "Symbol-Legende", "🧪 Parabel-Schieber", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=18;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck38_s1_Charon.mp3",txt:"Quadratische Funktionen, Teil eins. Warum ist der Wasserstrahl aus einem Gartenschlauch eine gebogene Kurve statt einer Geraden? Weil die Schwerkraft ihn nach unten zieht, während er nach vorne fliegt - genau diese Kurvenform nennt man Parabel."},
+ 2:{wav:"narration_deck38_s2_Charon.mp3",txt:"Eine Funktion, deren Term sich in der Form a x Quadrat plus b x plus c darstellen lässt, heißt quadratische Funktion. Ihr Graph ist eine Parabel."},
+ 3:{wav:"narration_deck38_s3_Charon.mp3",txt:"Die einfachste aller Parabeln ist die Normalparabel: y gleich x Quadrat, mit Scheitelpunkt im Ursprung."},
+ 4:{wav:"narration_deck38_s4_Charon.mp3",txt:"Jede Parabel hat einen Scheitelpunkt - ob sie nach oben oder unten geöffnet ist, entscheidet das Vorzeichen von a."},
+ 5:{wav:"narration_deck38_s5_Charon.mp3",txt:"Bei der horizontalen Verschiebung verrät der Wert im Klammerausdruck, wie weit und in welche Richtung die Parabel wandert."},
+ 6:{wav:"narration_deck38_s6_Charon.mp3",txt:"Jetzt bestimmen wir gemeinsam zwei Scheitelpunkte bei horizontaler Verschiebung, Schritt für Schritt."},
+ 7:{wav:"narration_deck38_s7_Charon.mp3",txt:"Bei der vertikalen Verschiebung ist die Richtung intuitiver: positiv heißt nach oben, negativ heißt nach unten."},
+ 8:{wav:"narration_deck38_s8_Charon.mp3",txt:"Jetzt bestimmen wir gemeinsam zwei Scheitelpunkte bei vertikaler Verschiebung, Schritt für Schritt."},
+ 9:{wav:"narration_deck38_s9_Charon.mp3",txt:"Kombiniert man beide Verschiebungen und einen Streckfaktor, entsteht eine besondere Form mit eigenem Namen."},
+ 10:{wav:"narration_deck38_s10_Charon.mp3",txt:"Minus im Klammerpaket schiebt nach rechts - die Klammer lügt über die Richtung."},
+ 11:{wav:"narration_deck38_s11_Charon.mp3",txt:"Auch beim Sprung vom Startblock folgt ein Schwimmer einer Parabelbahn - Trainer nutzen genau dieses Modell."},
+ 12:{wav:"narration_deck38_s12_Charon.mp3",txt:"Bevor du ins Labor gehst: schätz doch mal, wo der Scheitelpunkt dieser Parabel liegt."},
+ 13:{wav:"narration_deck38_s13_Charon.mp3",txt:"Hier noch mal alle Symbole rund um Parabeln im Überblick, bevor du selbst im Labor experimentierst."},
+ 14:{wav:"narration_deck38_s14_Charon.mp3",txt:"Jetzt bist du dran: steuere die Verschiebe-Regler und beobachte live, wie die Parabel und ihre Gleichung sich verändern."},
+ 15:{wav:"narration_deck38_s15_Charon.mp3",txt:"Fassen wir zusammen, welcher Scheitelpunkt zu welcher Verschiebungsform gehört."},
+ 16:{wav:"narration_deck38_s16_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben rund um Parabel-Verschiebungen."},
+ 17:{wav:"narration_deck38_s17_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst - und einen Ausblick auf das nächste Thema: die Scheitelpunktform."},
+ 18:{wav:"narration_deck38_s18_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"f(x)=ax²+bx+c — welche Bedingung muss a erfüllen, damit es sich um eine quadratische Funktion handelt?",
+  a:["a=0","a≠0","a=1","a muss negativ sein"],r:1,
+  why:"Wäre a=0, gäbe es kein x² mehr — dann wäre es keine quadratische, sondern eine lineare Funktion."},
+ {q:"f(x)=(x−6)² — wohin ist die Normalparabel verschoben?",
+  a:["6 Einheiten nach links","6 Einheiten nach rechts","6 Einheiten nach oben","6 Einheiten nach unten"],r:1,
+  why:"x_s=6 ist positiv → Verschiebung nach RECHTS. Der Scheitelpunkt liegt bei S(6|0)."},
+ {q:"g(x)=x²+9 — wo liegt der Scheitelpunkt?",
+  a:["S(9|0)","S(0|9)","S(−9|0)","S(0|−9)"],r:1,
+  why:"y_s=9 ist positiv → Verschiebung nach oben, Scheitelpunkt S(0|9)."},
+ {q:"Welche Aussage zur Normalparabel y=x² ist richtig?",
+  a:["Sie ist nach unten geöffnet","Ihr Scheitelpunkt liegt bei S(1|1)","Sie ist achsensymmetrisch zur y-Achse","Sie hat keinen Scheitelpunkt"],r:2,
+  why:"Die Normalparabel ist nach oben geöffnet, hat Scheitel S(0|0) und ist achsensymmetrisch zur y-Achse."},
+ {q:"y=(x+5)²−2 — welcher Scheitelpunkt gehört zu dieser Parabel?",
+  a:["S(5|−2)","S(−5|−2)","S(−5|2)","S(5|2)"],r:1,
+  why:"(x+5)²=(x−(−5))² → x_s=−5. Und y_s=−2 direkt ablesbar. Scheitelpunkt: S(−5|−2)."}
+];
+const DECK_ID="parabeln/deck38";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), oi===item.r);
+        answered++; if(oi===item.r) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estScheitel38', {
+    frage: 'f(x) = (x−5)². Bei welchem x-Wert liegt der Scheitelpunkt dieser Parabel?',
+    min: -10, max: 15, korrekt: 5, toleranz: 0,
+    begruendung: 'x_s=5 ist direkt aus dem Klammerausdruck (x−5)² ablesbar — Scheitelpunkt S(5|0).'
+  });
+});
+</script>
+</body>
+</html>

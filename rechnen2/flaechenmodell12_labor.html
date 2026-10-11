@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Flächenmodell-Werkstatt</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{display:flex;height:100%;padding:14px 18px;gap:20px;}
+  #left{flex:0 0 min(42vw,400px);display:flex;flex-direction:column;align-items:center;}
+  #right{flex:1;display:flex;flex-direction:column;gap:10px;padding-top:6px;overflow-y:auto;}
+  h3{margin:0 0 6px;font-size:18px;color:var(--accent);}
+  .modebar{display:flex;gap:8px;margin-bottom:10px;}
+  .modebar button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 14px;font-size:13.5px;cursor:pointer;}
+  .modebar button.on{background:var(--accent);color:#12100a;font-weight:700;}
+  #svgHost{margin:8px 0;text-align:center;}
+  .ctrlrow{display:flex;align-items:center;gap:8px;justify-content:center;margin:6px 0;font-size:14px;}
+  .ctrlrow button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:6px;width:28px;height:28px;font-size:16px;cursor:pointer;}
+  .ctrlrow .val{min-width:26px;text-align:center;font-weight:700;color:var(--accent);}
+  #resultLine{text-align:center;font-size:16px;font-weight:700;color:var(--accent);margin:10px 0;}
+  #missionBox{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:14px;text-align:center;}
+  #missionBox.ok{border-color:#4caf50;background:#173d28;}
+  .part{display:none;}
+  .part.show{display:block;width:100%;}
+  #puzzleOpts{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+  .puzzleopt{background:#1f2630;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:9px 14px;font-size:14.5px;cursor:pointer;text-align:left;}
+  .puzzleopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .puzzleopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  #puzzleFeedback{margin-top:10px;font-size:14px;text-align:center;min-height:20px;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="left">
+    <div class="modebar">
+      <button id="modeExplore" class="on">🔧 Explorer</button>
+      <button id="modePuzzle">🕵️ Rätsel-Modus</button>
+    </div>
+    <div id="svgHost"></div>
+    <div id="resultLine">= 1/2</div>
+  </div>
+  <div id="right">
+    <div class="part show" id="partExplore">
+      <h3>Flächenmodell: Bruch · Bruch</h3>
+      <p style="font-size:12.5px;color:var(--muted);">Stell zwei Brüche ein — die gestrichelt umrandete Fläche ist ihr Produkt.</p>
+      <div class="ctrlrow">Bruch A — Zähler <button id="aNumMinus">−</button><span class="val" id="aNumVal">2</span><button id="aNumPlus">+</button>
+        &nbsp;/&nbsp; Nenner <button id="aDenMinus">−</button><span class="val" id="aDenVal">3</span><button id="aDenPlus">+</button></div>
+      <div class="ctrlrow">Bruch B — Zähler <button id="bNumMinus">−</button><span class="val" id="bNumVal">3</span><button id="bNumPlus">+</button>
+        &nbsp;/&nbsp; Nenner <button id="bDenMinus">−</button><span class="val" id="bDenVal">4</span><button id="bDenPlus">+</button></div>
+      <div id="missionBox">🎯 Mission: Stelle zwei Brüche ein, deren Produkt genau 1/2 ergibt.</div>
+    </div>
+    <div class="part" id="partPuzzle">
+      <h3>🕵️ Welche Multiplikation zeigt dieses Bild?</h3>
+      <p style="font-size:12.5px;color:var(--muted);">Das Flächenmodell links zeigt eine feste Aufgabe — klick die passende Multiplikation an.</p>
+      <div id="puzzleOpts"></div>
+      <div id="puzzleFeedback"></div>
+    </div>
+  </div>
+</div>
+<script>
+function gcd(a,b){ return b===0? a : gcd(b,a%b); }
+
+function buildRectModelSVG(numA,denA,numB,denB,gridW,gridH){
+  gridW=gridW||210; gridH=gridH||150;
+  const x0=14, y0=30, gw=gridW, gh=gridH;
+  const W=x0+gw+16, H=y0+gh+34;
+  const colW=gw/denA, rowH=gh/denB;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:280px;height:auto;display:block;margin:0 auto;">';
+  s+='<text x="'+x0+'" y="18" font-size="13" font-weight="700" fill="#f2a63c">Zeilen: '+numB+'/'+denB+'</text>';
+  s+='<rect x="'+x0+'" y="'+y0+'" width="'+gw+'" height="'+gh+'" fill="none" stroke="#2a3038" stroke-width="1.5"/>';
+  s+='<rect x="'+x0+'" y="'+y0+'" width="'+(colW*numA)+'" height="'+gh+'" fill="rgba(95,208,199,0.22)"/>';
+  s+='<rect x="'+x0+'" y="'+y0+'" width="'+gw+'" height="'+(rowH*numB)+'" fill="rgba(242,166,60,0.22)"/>';
+  s+='<rect x="'+x0+'" y="'+y0+'" width="'+(colW*numA)+'" height="'+(rowH*numB)+'" fill="none" stroke="#4caf50" stroke-width="2.4" stroke-dasharray="4,3"/>';
+  for(let i=1;i<denA;i++){ const x=x0+i*colW; s+='<line x1="'+x+'" y1="'+y0+'" x2="'+x+'" y2="'+(y0+gh)+'" stroke="#2a3038" stroke-width="1"/>'; }
+  for(let j=1;j<denB;j++){ const y=y0+j*rowH; s+='<line x1="'+x0+'" y1="'+y+'" x2="'+(x0+gw)+'" y2="'+y+'" stroke="#2a3038" stroke-width="1"/>'; }
+  s+='<text x="'+(x0+gw/2)+'" y="'+(y0+gh+18)+'" text-anchor="middle" font-size="13" font-weight="700" fill="#5fd0c7">Spalten: '+numA+'/'+denA+'</text>';
+  s+='</svg>';
+  return s;
+}
+
+// === Explorer ===
+let aNum=2, aDen=3, bNum=3, bDen=4;
+function clampVal(v,lo,hi){ return v<lo?lo:(v>hi?hi:v); }
+function renderExplore(){
+  document.getElementById('aNumVal').textContent=aNum;
+  document.getElementById('aDenVal').textContent=aDen;
+  document.getElementById('bNumVal').textContent=bNum;
+  document.getElementById('bDenVal').textContent=bDen;
+  document.getElementById('svgHost').innerHTML=buildRectModelSVG(aNum,aDen,bNum,bDen);
+  const prodNum=aNum*bNum, prodDen=aDen*bDen;
+  const g=gcd(prodNum,prodDen);
+  const redNum=prodNum/g, redDen=prodDen/g;
+  document.getElementById('resultLine').textContent = aNum+'/'+aDen+' · '+bNum+'/'+bDen+' = '+prodNum+'/'+prodDen+(g>1?' = '+redNum+'/'+redDen:'');
+  const box=document.getElementById('missionBox');
+  if(redNum===1 && redDen===2){
+    box.classList.add('ok');
+    box.innerHTML='🎉 Mission erfüllt! '+aNum+'/'+aDen+' · '+bNum+'/'+bDen+' = 1/2.';
+    window.lwAward && window.lwAward('mission');
+  } else {
+    box.classList.remove('ok');
+    box.innerHTML='🎯 Mission: Stelle zwei Brüche ein, deren Produkt genau 1/2 ergibt. (Aktuell: '+redNum+'/'+redDen+')';
+  }
+}
+document.getElementById('aNumMinus').onclick=()=>{ aNum=clampVal(aNum-1,1,aDen-1); renderExplore(); };
+document.getElementById('aNumPlus').onclick=()=>{ aNum=clampVal(aNum+1,1,aDen-1); renderExplore(); };
+document.getElementById('aDenMinus').onclick=()=>{ aDen=clampVal(aDen-1,2,6); aNum=clampVal(aNum,1,aDen-1); renderExplore(); };
+document.getElementById('aDenPlus').onclick=()=>{ aDen=clampVal(aDen+1,2,6); aNum=clampVal(aNum,1,aDen-1); renderExplore(); };
+document.getElementById('bNumMinus').onclick=()=>{ bNum=clampVal(bNum-1,1,bDen-1); renderExplore(); };
+document.getElementById('bNumPlus').onclick=()=>{ bNum=clampVal(bNum+1,1,bDen-1); renderExplore(); };
+document.getElementById('bDenMinus').onclick=()=>{ bDen=clampVal(bDen-1,2,6); bNum=clampVal(bNum,1,bDen-1); renderExplore(); };
+document.getElementById('bDenPlus').onclick=()=>{ bDen=clampVal(bDen+1,2,6); bNum=clampVal(bNum,1,bDen-1); renderExplore(); };
+renderExplore();
+
+// === Rätsel-Modus ===
+const PUZZLE={numA:2, denA:3, numB:1, denB:2, correct:"2/3 · 1/2", opts:["2/3 · 1/2","1/3 · 1/2","2/3 · 1/3","3/4 · 1/2"]};
+function renderPuzzleSVG(){
+  document.getElementById('svgHost').innerHTML=buildRectModelSVG(PUZZLE.numA,PUZZLE.denA,PUZZLE.numB,PUZZLE.denB);
+  document.getElementById('resultLine').textContent='? · ? = ' + (PUZZLE.numA*PUZZLE.numB)+'/'+(PUZZLE.denA*PUZZLE.denB);
+}
+function renderPuzzleOpts(){
+  const wrap=document.getElementById('puzzleOpts');
+  wrap.innerHTML='';
+  PUZZLE.opts.forEach(opt=>{
+    const b=document.createElement('button');
+    b.className='puzzleopt';
+    b.textContent=opt;
+    b.onclick=()=>{
+      const fb=document.getElementById('puzzleFeedback');
+      wrap.querySelectorAll('.puzzleopt').forEach(x=>x.disabled=true);
+      if(opt===PUZZLE.correct){
+        b.classList.add('correct');
+        fb.textContent='✅ Richtig! '+PUZZLE.correct+' passt genau zu diesem Flächenmodell.';
+      } else {
+        b.classList.add('wrong');
+        wrap.querySelectorAll('.puzzleopt').forEach(x=>{ if(x.textContent===PUZZLE.correct) x.classList.add('correct'); });
+        fb.textContent='❌ Nicht ganz — richtig wäre '+PUZZLE.correct+'.';
+      }
+    };
+    wrap.appendChild(b);
+  });
+  document.getElementById('puzzleFeedback').textContent='';
+}
+
+const modeExplore=document.getElementById('modeExplore'), modePuzzle=document.getElementById('modePuzzle');
+const partExplore=document.getElementById('partExplore'), partPuzzle=document.getElementById('partPuzzle');
+modeExplore.onclick=()=>{
+  modeExplore.classList.add('on'); modePuzzle.classList.remove('on');
+  partExplore.classList.add('show'); partPuzzle.classList.remove('show');
+  renderExplore();
+};
+modePuzzle.onclick=()=>{
+  modePuzzle.classList.add('on'); modeExplore.classList.remove('on');
+  partPuzzle.classList.add('show'); partExplore.classList.remove('show');
+  renderPuzzleSVG();
+  renderPuzzleOpts();
+};
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

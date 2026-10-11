@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Aussagenlogik · Kapitel-Mischquiz</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  .wrap{max-width:820px;margin:0 auto;padding:24px 18px 60px;}
+  h1{font-size:min(6vw,30px);margin:0 0 6px;}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 20px;}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0 20px;}
+  button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 16px;font-size:14px;cursor:pointer;}
+  button:hover{background:#283041;}
+  button.primary{background:var(--accent);color:#12100a;font-weight:700;border:0;}
+  .quizq{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq .deckTag{display:inline-block;background:#1b222c;color:var(--accent);font-size:11.5px;font-weight:600;border-radius:999px;padding:3px 10px;margin-bottom:8px;}
+  .quizq p.qtext{font-size:min(2.3vw,19px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2vw,16px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(1.8vw,14.5px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #result{display:none;}
+  #result.show{display:block;}
+  .scoreBig{font-size:min(6vw,36px);color:var(--accent);text-align:center;margin:10px 0;}
+  .deckRow{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 16px;margin:6px 0;font-size:14.5px;}
+  .deckRow a{color:var(--accent);text-decoration:none;font-size:13px;}
+  .deckRow a:hover{text-decoration:underline;}
+  .weak{border-left:4px solid #e05a5a;}
+  .strong{border-left:4px solid #3dbb7a;}
+  #startScreen .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:16px 20px;font-size:15px;color:#f6e7cf;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔀 Kapitel-Mischquiz — Aussagenlogik</h1>
+  <p class="sub">12 zufällig gemischte Fragen aus beiden Teilen — Interleaving statt Blockübung.</p>
+
+  <div id="startScreen">
+    <div class="defbox">Dieses Quiz zieht bei jedem Start 12 Fragen zufällig aus dem gesamten Kapitel Aussagenlogik — quer durch Aussage/Aussageform, die vier Verknüpfungen ¬/∧/∨/⇒, die Gesetze der Aussagenlogik und die Brücke zur Mengenlehre. Am Ende siehst du, bei welchem Teil du nochmal reinschauen solltest.</div>
+    <div class="bar">
+      <button class="primary" id="startBtn">▶ Quiz starten (12 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+
+  <div id="quizArea"></div>
+  <div id="result">
+    <div class="scoreBig" id="scoreBig"></div>
+    <h2 style="font-size:18px;">Auswertung pro Teil</h2>
+    <div id="deckBreakdown"></div>
+    <div class="bar">
+      <button class="primary" id="againBtn">🔁 Nochmal (neue 12 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;align-self:center;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+</div>
+<script>
+// === Fragenpool: kopiert aus den QUIZ-Arrays beider Decks (deck-Feld + Ruecksprung-Link) ===
+const POOL = [
+// --- deck5.html: Aussage, Aussageform & Verknuepfungen ---
+{deck:"Teil 1 — Aussage & Verknüpfungen", link:"deck5.html", q:"Ist »x ist eine gerade Zahl.« eine Aussage im mathematischen Sinne?",
+ a:["Ja, sie ist wahr","Ja, sie ist falsch","Nein, es ist eine Aussageform (x ist eine Variable)","Nein, das ist überhaupt kein mathematischer Satz"],r:2,
+ why:"Solange x nicht durch einen konkreten Wert ersetzt ist, hat der Satz keinen festen Wahrheitswert — er ist eine Aussageform."},
+{deck:"Teil 1 — Aussage & Verknüpfungen", link:"deck5.html", q:"A: »3 ist eine Primzahl.« (wahr). B: »4 ist eine Primzahl.« (falsch). Was gilt für A ∧ B?",
+ a:["wahr","falsch","weder noch","kommt darauf an"],r:1,
+ why:"Konjunktion ist nur wahr, wenn BEIDE Teilaussagen wahr sind."},
+{deck:"Teil 1 — Aussage & Verknüpfungen", link:"deck5.html", q:"A: »3 ist eine Primzahl.« (wahr). B: »4 ist eine Primzahl.« (falsch). Was gilt für A ∨ B?",
+ a:["wahr","falsch","weder noch","kommt darauf an"],r:0,
+ why:"Disjunktion ist schon wahr, wenn mindestens eine Teilaussage wahr ist."},
+{deck:"Teil 1 — Aussage & Verknüpfungen", link:"deck5.html", q:"Ist die Implikation »Wenn 5 < 3 ist, dann ist Berlin die Hauptstadt von Frankreich.« wahr oder falsch?",
+ a:["wahr, weil die Voraussetzung falsch ist","falsch, weil die Folgerung falsch ist","weder wahr noch falsch, das ist unentscheidbar","falsch, weil beide Teile falsch sind"],r:0,
+ why:"Die Voraussetzung ist falsch — dann gilt die Implikation automatisch als wahr."},
+{deck:"Teil 1 — Aussage & Verknüpfungen", link:"deck5.html", q:"Wann genau ist A ⇒ B falsch?",
+ a:["Immer wenn A falsch ist","Immer wenn B falsch ist","Nur wenn A wahr UND B falsch ist","Nur wenn A und B beide falsch sind"],r:2,
+ why:"Die Implikation ist ausschließlich in genau einem Fall falsch: wahre Voraussetzung, falsche Folgerung."},
+{deck:"Teil 1 — Aussage & Verknüpfungen", link:"deck5.html", q:"»Ich nehme Kaffee ODER Tee« — im Alltag meinst du damit meist »entweder oder«. Ist das dieselbe Bedeutung wie das mathematische ∨?",
+ a:["Ja, exakt dasselbe","Nein — mathematisches ∨ erlaubt auch, dass beides gleichzeitig zutrifft","Nein — mathematisches ∨ bedeutet immer NUR eins von beiden","Das lässt sich nicht vergleichen"],r:1,
+ why:"Das mathematische ∨ (Disjunktion) schließt »beide gleichzeitig wahr« NICHT aus."},
+
+// --- deck6.html: Gesetze & Verbindung zur Mengenlehre ---
+{deck:"Teil 2 — Gesetze & Mengenlehre-Brücke", link:"deck6.html", q:"Welches Gesetz beschreibt A∧B ⇔ B∧A?",
+ a:["Assoziativgesetz","Kommutativgesetz","Distributivgesetz","Es ist gar kein Gesetz, sondern Zufall"],r:1,
+ why:"Das Kommutativgesetz erlaubt das Vertauschen der Reihenfolge bei Konjunktion und Disjunktion."},
+{deck:"Teil 2 — Gesetze & Mengenlehre-Brücke", link:"deck6.html", q:"Was ergibt sich, wenn man ¬(A∨B) mithilfe der Gesetze umformt?",
+ a:["A∨B","A∧B","A̅∧B̅","A̅∨B̅"],r:2,
+ why:"Die Verneinung einer Disjunktion wird zur Konjunktion der einzeln negierten Teile."},
+{deck:"Teil 2 — Gesetze & Mengenlehre-Brücke", link:"deck6.html", q:"Was gilt für A̿ (doppelt negiertes A)?",
+ a:["A̿ ⇔ A̅","A̿ ⇔ A","A̿ ist immer wahr","A̿ ist immer falsch"],r:1,
+ why:"Doppelte Negation hebt sich auf — A̿ ist äquivalent zu A selbst."},
+{deck:"Teil 2 — Gesetze & Mengenlehre-Brücke", link:"deck6.html", q:"Wie lässt sich A⇒B äquivalent als Disjunktion schreiben?",
+ a:["A∨B","A̅∨B","A∧B̅","A̅∧B"],r:1,
+ why:"A⇒B ⇔ A̅∨B — die Implikation ist genau dann wahr, wenn A falsch ODER B wahr ist."},
+{deck:"Teil 2 — Gesetze & Mengenlehre-Brücke", link:"deck6.html", q:"Welche Verknüpfung steckt in der Definition A∩B = {x | x∈A ∧ x∈B}?",
+ a:["Negation","Disjunktion","Konjunktion","Implikation"],r:2,
+ why:"Das Zeichen ∧ in der Definition ist die Konjunktion."},
+{deck:"Teil 2 — Gesetze & Mengenlehre-Brücke", link:"deck6.html", q:"Nach dem Distributivgesetz ist A∧(B∨C) äquivalent zu …",
+ a:["(A∧B)∨(A∧C)","(A∨B)∧(A∨C)","A∨(B∧C)","(A∧B)∧C"],r:0,
+ why:"A∧(B∨C) ⇔ (A∧B)∨(A∧C) — die Konjunktion wird über die Disjunktion verteilt."}
+];
+
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+let current=[];
+let deckStats={};
+
+function startQuiz(){
+  current = shuffle(POOL).slice(0,12);
+  deckStats={};
+  document.getElementById('startScreen').style.display='none';
+  document.getElementById('result').classList.remove('show');
+  const area=document.getElementById('quizArea');
+  area.innerHTML='';
+  let answered=0, score=0;
+  current.forEach((item,qi)=>{
+    if(!deckStats[item.deck]) deckStats[item.deck]={right:0,total:0,link:item.link};
+    deckStats[item.deck].total++;
+    const box=document.createElement('div'); box.className='quizq';
+    const tag=document.createElement('span'); tag.className='deckTag'; tag.textContent=item.deck; box.appendChild(tag);
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        answered++;
+        if(oi===item.r){ score++; deckStats[item.deck].right++; }
+        if(answered===current.length) showResult(score);
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    area.appendChild(box);
+  });
+}
+
+function showResult(score){
+  const res=document.getElementById('result');
+  res.classList.add('show');
+  document.getElementById('scoreBig').textContent='Ergebnis: '+score+' / '+current.length+' — '+
+    (score>=current.length*0.8?'stark! 💪':(score>=current.length*0.5?'solide, ein paar Themen nochmal ansehen':'lohnt sich, mehrere Teile zu wiederholen'));
+  const bd=document.getElementById('deckBreakdown');
+  bd.innerHTML='';
+  Object.keys(deckStats).sort().forEach(deck=>{
+    const s=deckStats[deck];
+    const row=document.createElement('div');
+    const pct=s.right/s.total;
+    row.className='deckRow '+(pct<0.5?'weak':(pct===1?'strong':''));
+    row.innerHTML='<span>'+deck+': '+s.right+' / '+s.total+' richtig'+(pct<0.6?' — nochmal ansehen empfohlen':'')+'</span><a href="'+s.link+'">Teil öffnen →</a>';
+    bd.appendChild(row);
+  });
+  res.scrollIntoView({behavior:'smooth'});
+}
+
+document.getElementById('startBtn').onclick=startQuiz;
+document.getElementById('againBtn').onclick=startQuiz;
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

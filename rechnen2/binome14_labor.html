@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Flächen-Puzzle — Binomische Formeln</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{display:flex;height:100%;padding:14px 18px;gap:20px;}
+  #left{flex:0 0 min(42vw,380px);display:flex;flex-direction:column;align-items:center;}
+  #right{flex:1;display:flex;flex-direction:column;gap:10px;padding-top:6px;overflow-y:auto;}
+  h3{margin:0 0 6px;font-size:18px;color:var(--accent);}
+  .modebar{display:flex;gap:8px;margin-bottom:10px;}
+  .modebar button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 14px;font-size:13.5px;cursor:pointer;}
+  .modebar button.on{background:var(--accent);color:#12100a;font-weight:700;}
+  #svgHost{margin:8px 0;text-align:center;}
+  .sliderrow{width:100%;margin:8px 0;font-size:14px;}
+  .sliderrow input{width:100%;}
+  #resultLine{text-align:center;font-size:15px;font-weight:700;color:var(--accent);margin:8px 0;}
+  #missionBox{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:14px;text-align:center;}
+  #missionBox.ok{border-color:#4caf50;background:#173d28;}
+  .part{display:none;}
+  .part.show{display:block;width:100%;}
+  #puzzleOpts{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+  .puzzleopt{background:#1f2630;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:9px 14px;font-size:14.5px;cursor:pointer;text-align:left;}
+  .puzzleopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .puzzleopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  #puzzleFeedback{margin-top:10px;font-size:14px;text-align:center;min-height:20px;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="left">
+    <div class="modebar">
+      <button id="modeExplore" class="on">🔧 Explorer</button>
+      <button id="modePuzzle">🕵️ Rätsel-Modus</button>
+    </div>
+    <div id="svgHost"></div>
+    <div id="resultLine"></div>
+  </div>
+  <div id="right">
+    <div class="part show" id="partExplore">
+      <h3>Flächen-Puzzle: (a+b)²</h3>
+      <p style="font-size:12.5px;color:var(--muted);">Verschieb die Regler für a und b — die vier Teilflächen beschriften sich live mit ihren echten Werten.</p>
+      <div class="sliderrow">a = <span id="aVal">4</span><input type="range" id="aSlider" min="1" max="8" value="4"/></div>
+      <div class="sliderrow">b = <span id="bVal">3</span><input type="range" id="bSlider" min="1" max="8" value="3"/></div>
+      <div id="missionBox">🎯 Mission: Stelle a und b so ein, dass a+b genau 10 ergibt (also (a+b)² = 100).</div>
+    </div>
+    <div class="part" id="partPuzzle">
+      <h3>🕵️ Welche Formel zeigt dieses Bild?</h3>
+      <p style="font-size:12.5px;color:var(--muted);">Links siehst du ein festes Flächenbild — welche binomische Formel passt dazu?</p>
+      <div id="puzzleOpts"></div>
+      <div id="puzzleFeedback"></div>
+    </div>
+  </div>
+</div>
+<script>
+function buildSquareSVG(a,b,W){
+  W=W||260;
+  const x0=16,y0=16;
+  const total=a+b;
+  const scale=(W-2*x0-40)/total;
+  const aw=a*scale, bw=b*scale;
+  const H=y0+aw+bw+40;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:'+W+'px;height:auto;display:block;margin:0 auto;">';
+  s+='<rect x="'+x0+'" y="'+y0+'" width="'+aw+'" height="'+aw+'" fill="rgba(76,175,80,0.30)" stroke="#4caf50" stroke-width="1.5"/>';
+  s+='<text x="'+(x0+aw/2)+'" y="'+(y0+aw/2+5)+'" text-anchor="middle" font-size="'+Math.min(16,aw/3)+'" font-weight="700" fill="#8adf9c">'+(a*a)+'</text>';
+  s+='<rect x="'+(x0+aw)+'" y="'+y0+'" width="'+bw+'" height="'+aw+'" fill="rgba(242,166,60,0.28)" stroke="#f2a63c" stroke-width="1.5"/>';
+  if(bw>14) s+='<text x="'+(x0+aw+bw/2)+'" y="'+(y0+aw/2+5)+'" text-anchor="middle" font-size="'+Math.min(14,bw/2)+'" font-weight="700" fill="#f2a63c">'+(a*b)+'</text>';
+  s+='<rect x="'+x0+'" y="'+(y0+aw)+'" width="'+aw+'" height="'+bw+'" fill="rgba(242,166,60,0.28)" stroke="#f2a63c" stroke-width="1.5"/>';
+  if(bw>14) s+='<text x="'+(x0+aw/2)+'" y="'+(y0+aw+bw/2+5)+'" text-anchor="middle" font-size="'+Math.min(14,bw/2)+'" font-weight="700" fill="#f2a63c">'+(a*b)+'</text>';
+  s+='<rect x="'+(x0+aw)+'" y="'+(y0+aw)+'" width="'+bw+'" height="'+bw+'" fill="rgba(95,208,199,0.30)" stroke="#5fd0c7" stroke-width="1.5"/>';
+  if(bw>10) s+='<text x="'+(x0+aw+bw/2)+'" y="'+(y0+aw+bw/2+5)+'" text-anchor="middle" font-size="'+Math.min(13,bw/2)+'" font-weight="700" fill="#5fd0c7">'+(b*b)+'</text>';
+  s+='<text x="'+(x0+(aw+bw)/2)+'" y="'+(y0+aw+bw+22)+'" text-anchor="middle" font-size="12" fill="#9aa4b2">a+b = '+total+'</text>';
+  s+='</svg>';
+  return s;
+}
+
+let aV=4, bV=3;
+function renderExplore(){
+  document.getElementById('aVal').textContent=aV;
+  document.getElementById('bVal').textContent=bV;
+  document.getElementById('svgHost').innerHTML=buildSquareSVG(aV,bV);
+  const total=aV+bV, sq=total*total;
+  document.getElementById('resultLine').textContent='(a+b)² = '+total+'² = '+sq+' = '+(aV*aV)+' + 2·'+(aV*bV)+' + '+(bV*bV);
+  const box=document.getElementById('missionBox');
+  if(total===10){
+    box.classList.add('ok');
+    box.innerHTML='🎉 Mission erfüllt! a+b = 10, also (a+b)² = 100.';
+    window.lwAward && window.lwAward('mission');
+  } else {
+    box.classList.remove('ok');
+    box.innerHTML='🎯 Mission: Stelle a und b so ein, dass a+b genau 10 ergibt. (Aktuell: a+b = '+total+')';
+  }
+}
+document.getElementById('aSlider').addEventListener('input', e=>{ aV=parseInt(e.target.value); renderExplore(); });
+document.getElementById('bSlider').addEventListener('input', e=>{ bV=parseInt(e.target.value); renderExplore(); });
+renderExplore();
+
+// === Raetsel-Modus ===
+const PUZZLE_A=5, PUZZLE_B=2;
+function buildPuzzleSVG(){
+  return buildSquareSVG(PUZZLE_A,PUZZLE_B,240);
+}
+const PUZZLE_OPTS=["(a+b)² = a²+2ab+b²","(a−b)² = a²−2ab+b²","(a−b)(a+b) = a²−b²"];
+const PUZZLE_CORRECT=0;
+function renderPuzzle(){
+  document.getElementById('svgHost').innerHTML=buildPuzzleSVG();
+  document.getElementById('resultLine').textContent='a='+PUZZLE_A+', b='+PUZZLE_B+' — welche Formel passt zu diesem Bild?';
+  const wrap=document.getElementById('puzzleOpts');
+  wrap.innerHTML='';
+  PUZZLE_OPTS.forEach((opt,i)=>{
+    const b=document.createElement('button');
+    b.className='puzzleopt';
+    b.textContent=opt;
+    b.onclick=()=>{
+      const fb=document.getElementById('puzzleFeedback');
+      wrap.querySelectorAll('.puzzleopt').forEach(x=>x.disabled=true);
+      if(i===PUZZLE_CORRECT){
+        b.classList.add('correct');
+        fb.textContent='✅ Richtig! Vier positive Teilflächen (a², zwei mal ab, b²) — das ist die erste Binomische Formel.';
+      } else {
+        b.classList.add('wrong');
+        wrap.querySelectorAll('.puzzleopt')[PUZZLE_CORRECT].classList.add('correct');
+        fb.textContent='❌ Nicht ganz — das Bild zeigt vier ADDIERTE positive Teilflächen, das ist (a+b)² = a²+2ab+b².';
+      }
+    };
+    wrap.appendChild(b);
+  });
+  document.getElementById('puzzleFeedback').textContent='';
+}
+
+const modeExplore=document.getElementById('modeExplore'), modePuzzle=document.getElementById('modePuzzle');
+const partExplore=document.getElementById('partExplore'), partPuzzle=document.getElementById('partPuzzle');
+modeExplore.onclick=()=>{
+  modeExplore.classList.add('on'); modePuzzle.classList.remove('on');
+  partExplore.classList.add('show'); partPuzzle.classList.remove('show');
+  renderExplore();
+};
+modePuzzle.onclick=()=>{
+  modePuzzle.classList.add('on'); modeExplore.classList.remove('on');
+  partPuzzle.classList.add('show'); partExplore.classList.remove('show');
+  renderPuzzle();
+};
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

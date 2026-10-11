@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Parabel-Schieber — Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{max-width:640px;margin:0 auto;padding:18px 20px 40px;}
+  h3{margin:0 0 6px;}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  #progress{font-size:13px;color:var(--muted);margin-bottom:8px;}
+  #missionText{font-size:15px;color:var(--accent);text-align:center;font-weight:700;margin-bottom:10px;}
+  .controls{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin-bottom:12px;}
+  .row{display:flex;align-items:center;gap:12px;margin:8px 0;}
+  .row label{font-size:14px;color:var(--muted);min-width:60px;}
+  input[type=range]{flex:1;}
+  .valbox{background:#1f2630;border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:14px;font-weight:700;color:var(--accent);min-width:40px;text-align:center;}
+  #svgHost{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;}
+  #eqLabel{text-align:center;font-size:15px;color:var(--fg);margin:8px 0;}
+  #feedback{text-align:center;font-size:14px;min-height:20px;margin-top:6px;color:#5fd0c7;}
+  #nextBtn{display:none;margin:10px auto 0;background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:9px 18px;font-size:14px;cursor:pointer;}
+  #doneBox{text-align:center;font-size:16px;color:var(--accent);font-weight:700;margin-top:16px;display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h3>🎚️ Parabel-Schieber</h3>
+  <p class="hint">Verschiebe die Parabel mit x_s und y_s, bis der Scheitelpunkt genau auf dem Zielpunkt liegt.</p>
+  <div id="progress">Mission 1 / 3</div>
+  <div id="missionText"></div>
+  <div class="controls">
+    <div class="row"><label for="xsSlider">x_s</label><input type="range" id="xsSlider" min="-6" max="6" step="1" value="0"/><span class="valbox" id="xsVal">0</span></div>
+    <div class="row"><label for="ysSlider">y_s</label><input type="range" id="ysSlider" min="-6" max="6" step="1" value="0"/><span class="valbox" id="ysVal">0</span></div>
+  </div>
+  <div id="eqLabel"></div>
+  <div id="svgHost"></div>
+  <div id="feedback"></div>
+  <button id="nextBtn">Nächste Mission ▸</button>
+  <div id="doneBox">✅ Alle drei Scheitelpunkte getroffen — Verschiebungen sitzen!</div>
+</div>
+<script>
+const MISSIONS=[
+  {target:[2,-3]},
+  {target:[-4,1]},
+  {target:[0,5]}
+];
+let mi=0, xs=0, ys=0, missionSolved=[false,false,false];
+
+function toX(x){ return 150+x*20; }
+function toY(y){ return 150-y*20; }
+function buildSVG(){
+  const m=MISSIONS[mi];
+  let s='<svg viewBox="0 0 300 300" style="width:100%;max-width:320px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="0" y1="150" x2="300" y2="150" stroke="#9aa4b2" stroke-width="1"/>';
+  s+='<line x1="150" y1="0" x2="150" y2="300" stroke="#9aa4b2" stroke-width="1"/>';
+  let pts=[];
+  for(let x=-7; x<=7.001; x+=0.15){
+    const y=(x-xs)*(x-xs)+ys;
+    const py=toY(y);
+    if(py>-10 && py<310) pts.push(toX(x)+","+py);
+  }
+  s+='<polyline points="'+pts.join(" ")+'" fill="none" stroke="#f2a63c" stroke-width="2.5"/>';
+  s+='<circle cx="'+toX(m.target[0])+'" cy="'+toY(m.target[1])+'" r="6" fill="none" stroke="#4caf50" stroke-width="2"/>';
+  s+='<text x="'+(toX(m.target[0])+9)+'" y="'+(toY(m.target[1])-9)+'" font-size="11" fill="#4caf50">Ziel('+m.target[0]+'|'+m.target[1]+')</text>';
+  s+='</svg>';
+  return s;
+}
+function render(){
+  const m=MISSIONS[mi];
+  document.getElementById('progress').textContent='Mission '+(mi+1)+' / '+MISSIONS.length;
+  document.getElementById('missionText').textContent='Bring den Scheitel nach ('+m.target[0]+'|'+m.target[1]+')';
+  document.getElementById('feedback').textContent='';
+  document.getElementById('nextBtn').style.display='none';
+  xs=0; ys=0;
+  document.getElementById('xsSlider').value=0;
+  document.getElementById('ysSlider').value=0;
+  updateDisplay();
+}
+function updateDisplay(){
+  document.getElementById('xsVal').textContent=xs;
+  document.getElementById('ysVal').textContent=ys;
+  document.getElementById('eqLabel').textContent='y = (x '+(xs>=0?'− '+xs:'+ '+Math.abs(xs))+')² '+(ys>=0?'+ '+ys:'− '+Math.abs(ys));
+  document.getElementById('svgHost').innerHTML=buildSVG();
+  checkHit();
+}
+function checkHit(){
+  if(missionSolved[mi]) return;
+  const m=MISSIONS[mi];
+  if(xs===m.target[0] && ys===m.target[1]){
+    missionSolved[mi]=true;
+    document.getElementById('feedback').textContent='✅ Getroffen! Scheitelpunkt S('+xs+'|'+ys+')';
+    window.lwAward && window.lwAward('mission', 'mission'+(mi+1));
+    document.getElementById('nextBtn').style.display = (mi<MISSIONS.length-1) ? 'block' : 'none';
+    checkAllDone();
+  }
+}
+document.getElementById('xsSlider').addEventListener('input', e=>{ xs=parseInt(e.target.value); updateDisplay(); });
+document.getElementById('ysSlider').addEventListener('input', e=>{ ys=parseInt(e.target.value); updateDisplay(); });
+document.getElementById('nextBtn').onclick=()=>{
+  if(mi<MISSIONS.length-1){ mi++; render(); }
+};
+function checkAllDone(){
+  if(missionSolved.every(Boolean)){
+    document.getElementById('doneBox').style.display='block';
+    window.lwAward && window.lwAward('mission', 'parabelschieber_komplett');
+  }
+}
+render();
+
+// Test-Hook fuer Playwright-Verifikation
+window.LAB = {
+  state: () => ({ mission: mi, xs: xs, ys: ys, missionSolved: missionSolved.slice() }),
+  setXs: (v) => { xs=v; document.getElementById('xsSlider').value=v; updateDisplay(); },
+  setYs: (v) => { ys=v; document.getElementById('ysSlider').value=v; updateDisplay(); },
+  nextMission: () => document.getElementById('nextBtn').click()
+};
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

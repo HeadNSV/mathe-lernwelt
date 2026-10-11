@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Mathe-Lernwelt — FOS/BOS Vorklasse</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038;
+         --ok:#3dbb7a; --bau:#e8b93e; --offen:#4a5568; }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  .wrap{max-width:1150px;margin:0 auto;padding:26px 18px 60px;}
+  h1{font-size:clamp(26px,4vw,40px);margin:6px 0 2px;letter-spacing:0.5px;}
+  h1 .a{color:var(--accent);}
+  .sub{color:var(--muted);margin:0 0 6px;font-size:15px;}
+  .src{color:#5f6b7c;font-size:12.5px;margin-bottom:22px;}
+  .prog{display:flex;align-items:center;gap:12px;margin:14px 0 26px;}
+  .pbar{flex:1;height:10px;background:#182028;border-radius:99px;overflow:hidden;border:1px solid var(--line);}
+  .pfill{height:100%;background:linear-gradient(90deg,#2e7d5b,var(--ok));border-radius:99px;transition:width .4s;}
+  .pnum{font-size:14px;color:var(--muted);white-space:nowrap;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(480px,1fr));gap:18px;}
+  @media (max-width:560px){ .grid{grid-template-columns:1fr;} }
+  .kap{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;}
+  .kap h2{margin:0 0 3px;font-size:21px;display:flex;align-items:center;gap:10px;}
+  .knr{background:var(--accent);color:#141008;font-weight:800;border-radius:8px;padding:2px 10px;font-size:16px;}
+  .kap .pages{color:#5f6b7c;font-size:12.5px;margin-bottom:12px;}
+  ul.th{list-style:none;margin:0;padding:0;}
+  ul.th li{display:flex;align-items:baseline;gap:10px;padding:5.5px 4px;border-radius:8px;font-size:14.5px;line-height:1.35;}
+  ul.th li:hover{background:#1b2330;}
+  .dot{flex:0 0 10px;width:10px;height:10px;border-radius:50%;position:relative;top:1px;}
+  .dot.ok{background:var(--ok);box-shadow:0 0 6px rgba(61,187,122,.6);}
+  .dot.bau{background:var(--bau);box-shadow:0 0 6px rgba(232,185,62,.5);}
+  .dot.offen{background:var(--offen);}
+  .nr{color:var(--muted);font-variant-numeric:tabular-nums;flex:0 0 40px;font-size:13px;}
+  .badge{margin-left:auto;font-size:11.5px;color:#0f1a12;background:var(--ok);border-radius:99px;padding:1.5px 9px;font-weight:700;white-space:nowrap;}
+  .badge.b{background:var(--bau);color:#241d06;}
+  .badge.o{background:var(--offen);color:#dbe2ea;}
+  a.badge{text-decoration:none;}
+  .time{color:#7f8ea0;font-size:11px;white-space:nowrap;margin-left:8px;font-variant-numeric:tabular-nums;}
+  .legend{display:flex;gap:18px;margin:24px 4px 0;color:var(--muted);font-size:13.5px;align-items:center;flex-wrap:wrap;}
+  .legend .dot{top:0;}
+  .foot{margin-top:26px;color:#5f6b7c;font-size:12.5px;line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>MATHE-<span class="a">LERNWELT</span></h1>
+  <p class="sub">FOS/BOS Vorklasse Bayern — interaktive Kapitel mit Laboren, Klick-Quiz &amp; Sprecher</p>
+  <p class="src">Stoffauswahl orientiert am LehrplanPLUS Bayern (FOS/BOS Vorklasse): Mengenlehre, Aussagenlogik, Rechnen mit ganzen Zahlen, Rechnen mit Brüchen (inkl. Potenzgesetze &amp; Binomische Formeln), Reelle Zahlen &amp; Wurzeln, Termumformungen</p>
+
+  <div class="prog"><div class="pbar"><div class="pfill" id="pfill"></div></div><span class="pnum" id="pnum"></span></div>
+
+  <a href="fuenf_fragen.html" id="ffCard" style="text-decoration:none;color:inherit;display:block;background:linear-gradient(135deg,#2a2110,#151b24);border:1px solid var(--accent);border-radius:16px;padding:16px 20px;margin-bottom:22px;">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <div style="font-size:28px;">🎯</div>
+      <div style="flex:1;min-width:200px;">
+        <div style="font-weight:700;font-size:17px;">5 Fragen des Tages</div>
+        <div style="color:var(--muted);font-size:13px;margin-top:2px;">Aufwärmen wie am Stundenanfang · Fragen + Rechen-Drills · dein Verlauf als Kurve</div>
+      </div>
+      <div id="ffBadge" style="background:var(--accent);color:#141008;font-weight:800;border-radius:99px;padding:4px 14px;font-size:13.5px;white-space:nowrap;">heute offen</div>
+    </div>
+  </a>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="legend">
+    <span><span class="dot ok" style="display:inline-block"></span> fertig</span>
+    <span><span class="dot bau" style="display:inline-block"></span> in Arbeit / teilweise</span>
+    <span><span class="dot offen" style="display:inline-block"></span> offen</span>
+  </div>
+
+  <div class="foot" id="lizenzfoot" style="margin-top:10px;">Diese Lernwelt ist frei verfügbar unter <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.de" style="color:#7ec3e0;">CC BY-NC-SA 4.0</a> — nutzen und verbessern erlaubt, kommerzielle Nutzung nicht.</div>
+  <div class="foot">
+    Jedes Thema wird im bewährten Muster gebaut: Erklär-Folien → Schritt-für-Schritt-Rechnungen → 🧪 Labor → Klick-Quiz.<br/>
+    Fertige Themen öffnen sich als eigenes Deck (Pfeiltasten, F = Vollbild). Alles läuft 100&nbsp;% offline.<br/>
+Kapitel 1–8 sind komplett und vollständig vertont — <b>Lernbereich 1 (Mengenlehre bis Termumformungen) ist damit vollständig in der Lernwelt abgebildet!</b> <b>🏁 Mit Kapitel 19 (Wachstum &amp; Zerfall) ist jetzt der GESAMTE Lehrplanstoff in dieser Lernwelt abgebildet</b> — Exponentialfunktion, Logarithmus, Zinseszins und ein Rückblick auf alle acht Themenbereiche von Mengen bis Wachstum. Kapitel 9–19 warten noch auf die nächtliche Vertonung.
+  </div>
+</div>
+
+<script>
+const KAPITEL=[
+ {nr:1, titel:"Mengenlehre", bereich:"Mengenbegriff, Zahlenmengen & Mengenoperationen", themen:[
+   {id:"1.1", t:"Was ist eine Menge? Begriff & Darstellungsformen", s:"ok", link:"mengenlehre/deck1.html", note:"Muster-Deck: Notation, Symbol-Legende, Klick-Quiz", min:12},
+   {id:"1.2a", t:"Zahlenmengen I — ℕ, Zahlenstrahl & Intervalle", s:"ok", link:"mengenlehre/deck2a.html", note:"+ Intervall-Labor", min:18},
+   {id:"1.2b", t:"Zahlenmengen II — ℤ, ℚ, ℝ & die Zahlen-Zwiebel", s:"ok", link:"mengenlehre/deck2b.html", note:"+ Zahlen-Sortierer-Labor", min:18},
+   {id:"1.3", t:"Mengen vergleichen & verknüpfen (Teilmenge, ∩, ∪, \\, Komplement)", s:"ok", link:"mengenlehre/deck3.html", note:"+ Venn-Labor", min:18},
+   {id:"1.4", t:"Produktmenge & Mengen-Kombinationen", s:"ok", link:"mengenlehre/deck4.html", note:"+ Kombi-Maschine-Labor", min:18},
+   {id:"1.5", t:"Kapitel-Mischquiz — gemischt quer durch alle Themen", s:"ok", link:"mengenlehre/mischquiz.html", note:"15 Fragen, Auswertung pro Teil", min:15},
+ ]},
+ {nr:2, titel:"Aussagenlogik", bereich:"Aussagen, Verknüpfungen & Gesetze der Aussagenlogik", themen:[
+   {id:"2.1", t:"Aussage, Aussageform & Verknüpfungen (¬, ∧, ∨, ⇒)", s:"ok", link:"aussagenlogik/deck5.html", note:"+ Wahrheitstafel-Labor", min:15},
+   {id:"2.2", t:"Gesetze der Aussagenlogik & Brücke zur Mengenlehre", s:"ok", link:"aussagenlogik/deck6.html", note:"Kommutativ/Assoziativ/Distributiv, ∩↔∧ ∪↔∨", min:19},
+   {id:"2.3", t:"Kapitel-Mischquiz — gemischt quer durch beide Teile", s:"ok", link:"aussagenlogik/mischquiz.html", note:"12 Fragen, Auswertung pro Teil", min:12},
+ ]},
+ {nr:3, titel:"Rechnen mit ganzen Zahlen", bereich:"Grundrechenarten, Potenzen & Primfaktoren in ℤ", themen:[
+   {id:"3.1", t:"Addition & Subtraktion in ℤ (Terme, Klammern auflösen)", s:"ok", link:"rechnen/deck7.html", note:"+ Zahlenstrahl-Rechner-Labor", min:17},
+   {id:"3.2", t:"Multiplikation, Potenz & Division", s:"ok", link:"rechnen/deck8.html", note:"+ Vorzeichen-Maschine-Labor", min:19},
+   {id:"3.3", t:"Primfaktoren, ggT & kgV", s:"ok", link:"rechnen/deck9.html", note:"+ Faktorbaum-Werkstatt-Labor", min:17},
+   {id:"3.4", t:"Kapitel-Mischquiz — gemischt quer durch alle drei Teile", s:"ok", link:"rechnen/mischquiz.html", note:"15 Fragen, Auswertung pro Teil", min:15},
+ ]},
+ {nr:4, titel:"Rechnen mit Brüchen", bereich:"Bruchrechnen, Potenzgesetze & Binomische Formeln", themen:[
+   {id:"4.1", t:"Kürzen, Erweitern & Vergleichen", s:"ok", link:"rechnen2/deck10.html", note:"+ Bruchstreifen-Werkstatt-Labor", min:16},
+   {id:"4.2", t:"Brüche addieren & subtrahieren", s:"ok", link:"rechnen2/deck11.html", note:"+ Hauptnenner-Maschine-Labor", min:16},
+   {id:"4.3", t:"Multiplizieren, Dividieren & Dezimalzahlen", s:"ok", link:"rechnen2/deck12.html", note:"+ Flächenmodell-Werkstatt-Labor", min:17},
+   {id:"4.4", t:"Rechnen mit Potenzen", s:"ok", link:"rechnen2/deck13.html", note:"+ Gesetz-Sortierer-Labor", min:18},
+   {id:"4.5", t:"Binomische Formeln", s:"ok", link:"rechnen2/deck14.html", note:"+ Flächen-Puzzle-Labor", min:19},
+   {id:"4.6", t:"Kapitel-Mischquiz — gemischt quer durch alle fünf Teile", s:"ok", link:"rechnen2/mischquiz.html", note:"15 Fragen, Auswertung pro Teil", min:15},
+ ]},
+ {nr:5, titel:"Reelle Zahlen & Wurzeln", bereich:"Quadratwurzel, Rechengesetze mit Wurzeln & Nenner rational machen", themen:[
+   {id:"5.1", t:"Die Quadratwurzel & reelle Zahlen", s:"ok", link:"wurzeln/deck15.html", note:"+ Wurzel-Schätzer-Labor", min:17},
+   {id:"5.2", t:"Rechnen mit Wurzeln", s:"ok", link:"wurzeln/deck16.html", note:"+ Wurzelgesetz-Anwender-Labor", min:19},
+   {id:"5.3", t:"Kapitel-Mischquiz — gemischt quer durch beide Teile", s:"ok", link:"wurzeln/mischquiz.html", note:"14 Fragen, Auswertung pro Teil", min:14},
+ ]},
+ {nr:6, titel:"Termumformungen", bereich:"Ausklammern, Bruchterme & Terme mit Potenzen/Wurzeln — 🏁 Lernbereich 1 komplett", themen:[
+   {id:"6.1", t:"Ausklammern & Faktorisieren", s:"ok", link:"terme/deck17.html", note:"+ Faktor-Jäger-Labor", min:17},
+   {id:"6.2a", t:"Bruchterme — Grundlagen", s:"ok", link:"terme/deck18a.html", note:"+ Kürzungs-Richter-Labor", min:17},
+   {id:"6.2b", t:"Bruchterme — Multiplikation & Doppelbrüche", s:"ok", link:"terme/deck18b.html", note:"Vorzeichentrick, Rechenvorteile, Doppelbrüche", min:16},
+   {id:"6.3", t:"Terme mit Potenzen & Wurzeln", s:"ok", link:"terme/deck19.html", note:"🏁 Meilenstein: Lernbereich 1 komplett!", min:17},
+   {id:"6.4", t:"Kapitel-Mischquiz — gemischt quer durch alle vier Teile", s:"ok", link:"terme/mischquiz.html", note:"20 Fragen, Auswertung pro Teil", min:18},
+ ]},
+ {nr:7, titel:"Lineare Gleichungen", bereich:"Äquivalenzumformungen, Sonderfälle & Formvariablen — 🚀 Start Lernbereich 2", themen:[
+   {id:"7.1", t:"Äquivalenzumformungen — Was ist eine Gleichung?", s:"ok", link:"gleichungen/deck20.html", note:"+ Gleichungs-Waage-Labor", min:18},
+   {id:"7.2", t:"Sonderfälle & Anwendungen", s:"ok", link:"gleichungen/deck21.html", note:"+ Text→Gleichung-Übersetzer-Labor", min:16},
+   {id:"7.3", t:"Formvariablen", s:"ok", link:"gleichungen/deck22.html", note:"+ Formel-Umsteller-Labor", min:17},
+   {id:"7.4", t:"Kapitel-Mischquiz — gemischt quer durch alle drei Teile", s:"ok", link:"gleichungen/mischquiz.html", note:"20 Fragen, Auswertung pro Teil", min:18},
+ ]},
+ {nr:8, titel:"Lineare Ungleichungen", bereich:"Der Zeichen-Dreher, Formvariablen & Beträge", themen:[
+   {id:"8.1", t:"Ungleichungen lösen & der Zeichen-Dreher", s:"ok", link:"ungleichungen/deck23.html", note:"+ Ungleichungs-Umformer-Labor", min:17},
+   {id:"8.2", t:"Formvariablen & Beträge", s:"ok", link:"ungleichungen/deck24.html", note:"+ Betrags-Band-Labor", min:18},
+   {id:"8.3", t:"Kapitel-Mischquiz — gemischt quer durch beide Teile", s:"ok", link:"ungleichungen/mischquiz.html", note:"15 Fragen, Auswertung pro Teil", min:15},
+ ]},
+ {nr:9, titel:"Quadratische Gleichungen", bereich:"Lösungswege, Lösbarkeit & Formvariable", themen:[
+   {id:"9.1", t:"Quadratische Gleichungen lösen", s:"ok", link:"quadratische/deck25.html", note:"+ Lösungsweg-Navigator-Labor", min:18},
+   {id:"9.2", t:"Lösbarkeit & Anwendung", s:"ok", link:"quadratische/deck26.html", note:"+ Diskriminanten-Detektor-Labor", min:15},
+   {id:"9.3", t:"Formvariable & Geschichte", s:"ok", link:"quadratische/deck27.html", note:"+ Quadrat-Vervollständiger-Labor", min:16},
+   {id:"9.4", t:"Kapitel-Mischquiz — gemischt quer durch alle drei Teile", s:"ok", link:"quadratische/mischquiz.html", note:"20 Fragen, Auswertung pro Teil", min:18},
+ ]},
+ {nr:10, titel:"Faktorisieren & Bruchgleichungen", bereich:"Ausklammern, Binome rückwärts, Satz von Vieta & Bruchgleichungen", themen:[
+   {id:"10.1", t:"Ausklammern & Binome rückwärts", s:"ok", link:"faktorisieren/deck28.html", note:"+ Faktor-Detektiv-Labor", min:18},
+   {id:"10.2", t:"Satz von Vieta & Faktorisieren anwenden", s:"ok", link:"faktorisieren/deck29.html", note:"+ Zahlenpaar-Sucher-Labor", min:17},
+   {id:"10.3", t:"Bruchgleichungen", s:"ok", link:"faktorisieren/deck30.html", note:"+ Scheinlösungs-Falle-Labor", min:18},
+   {id:"10.4", t:"Kapitel-Mischquiz — gemischt quer durch alle drei Teile", s:"ok", link:"faktorisieren/mischquiz.html", note:"16 Fragen, Auswertung pro Teil", min:16},
+ ]},
+ {nr:11, titel:"Funktionen", bereich:"Funktionsbegriff & lineare Funktionen — Start des Themas Funktionen", themen:[
+   {id:"11.1", t:"Was ist eine Funktion?", s:"ok", link:"funktionen/deck31.html", note:"+ Funktions-Detektor-Labor", min:19},
+   {id:"11.2", t:"Die lineare Funktion & Geraden zeichnen", s:"ok", link:"funktionen/deck32.html", note:"+ Geraden-Trainer-Labor", min:17},
+   {id:"11.3", t:"Geraden aufstellen & Nullstellen", s:"ok", link:"funktionen/deck33.html", note:"+ Geraden-Bauer-Labor", min:16},
+   {id:"11.4", t:"Geraden im Duett & Sonderfälle", s:"ok", link:"funktionen/deck34.html", note:"+ Schnitt-Jäger-Labor", min:19},
+   {id:"11.5", t:"Lineare Funktionen im Einsatz", s:"ok", link:"funktionen/deck35.html", note:"Anwendungsaufgaben mit Antwortsatz-Disziplin", min:17},
+   {id:"11.6", t:"Kapitel-Mischquiz — gemischt quer durch alle fünf Teile", s:"ok", link:"funktionen/mischquiz.html", note:"20 Fragen, Auswertung pro Teil", min:18},
+ ]},
+ {nr:12, titel:"Funktionenscharen", bereich:"Parameter, Büschelpunkte & Fallunterscheidung bei linearen Funktionenscharen", themen:[
+   {id:"12.1", t:"Was ist eine Funktionenschar?", s:"ok", link:"scharen/deck36.html", note:"+ Schar-Generator-Labor", min:17},
+   {id:"12.2", t:"Fallunterscheidung & Schnittpunkte", s:"ok", link:"scharen/deck37.html", note:"+ Büschelpunkt-Jäger-Labor", min:19},
+   {id:"12.3", t:"Kapitel-Mischquiz — gemischt quer durch beide Teile", s:"ok", link:"scharen/mischquiz.html", note:"12 Fragen, Auswertung pro Teil", min:14},
+ ]},
+ {nr:13, titel:"Quadratische Funktionen", bereich:"Parabeln — von der Normalparabel bis zur offenen Anwendungsaufgabe", themen:[
+   {id:"13.1", t:"Die Normalparabel & ihre Verschiebungen", s:"ok", link:"parabeln/deck38.html", note:"+ Parabel-Schieber-Labor", min:18},
+   {id:"13.2", t:"Scheitelpunktform & allgemeine Form", s:"ok", link:"parabeln/deck39.html", note:"+ Form-Wandler-Labor", min:18},
+   {id:"13.3", t:"Nullstellen & Linearfaktoren", s:"ok", link:"parabeln/deck40.html", note:"+ Nullstellen-Jäger-Labor", min:19},
+   {id:"13.4", t:"Parabel trifft Gerade & Funktionsgleichungen aufstellen", s:"ok", link:"parabeln/deck41.html", note:"+ Parabel-Geraden-Duell-Labor", min:18},
+   {id:"13.5", t:"Wertemenge & Anwendung", s:"ok", link:"parabeln/deck42.html", note:"Offene Anwendungsaufgabe: der Torbogen", min:17},
+   {id:"13.6", t:"Kapitel-Mischquiz — gemischt quer durch alle fünf Teile", s:"ok", link:"parabeln/mischquiz.html", note:"24 Fragen, Auswertung pro Teil", min:20},
+ ]},
+ {nr:14, titel:"Parabelscharen, Symmetrie & grafisches Lösen", bereich:"Themenbereich-Finale »Funktionen« — Parameter bei Parabeln, Symmetrie von Graphen, Ungleichungen grafisch", themen:[
+   {id:"14.1", t:"Parabelscharen", s:"ok", link:"graphen/deck43.html", note:"+ Parabelschar-Generator-Labor", min:18},
+   {id:"14.2", t:"Symmetrie von Funktionsgraphen", s:"ok", link:"graphen/deck44.html", note:"+ Symmetrie-Spiegel-Labor", min:16},
+   {id:"14.3", t:"Grafisches Lösen von Ungleichungen + Themenbereich-Abschluss-Check", s:"ok", link:"graphen/deck45.html", note:"+ Graph-Vergleich-Labor", min:19},
+   {id:"14.4", t:"Kapitel-Mischquiz — gemischt quer durch alle drei Teile", s:"ok", link:"graphen/mischquiz.html", note:"15 Fragen, Auswertung pro Teil", min:16},
+ ]},
+ {nr:15, titel:"Lineare Gleichungssysteme", bereich:"Einsetzen, Gleichsetzen, Addieren & Gauß-Verfahren für mehrere Unbekannte", themen:[
+   {id:"15.1", t:"Was ist ein LGS? Einsetzen & Gleichsetzen", s:"ok", link:"lgs/deck46.html", note:"+ Schnitt-Finder-Labor", min:18},
+   {id:"15.2", t:"Additionsverfahren & Verfahrens-Wahl", s:"ok", link:"lgs/deck47.html", note:"+ Verfahrens-Wahl-Labor", min:15},
+   {id:"15.3", t:"3 Variablen, Gauß-Verfahren & Anwendungen", s:"ok", link:"lgs/deck48.html", note:"+ Gauß-Stufen-Labor", min:20},
+   {id:"15.4", t:"Kapitel-Mischquiz — gemischt quer durch alle drei Teile", s:"ok", link:"lgs/mischquiz.html", note:"15 Fragen, Auswertung pro Teil", min:16},
+ ]},
+ {nr:16, titel:"Dreieckslehre", bereich:"Begriffe, Winkelsumme, Trigonometrie & Satz des Pythagoras — erstes Geometrie-Kapitel", themen:[
+   {id:"16.1", t:"Begriffe, Winkelsumme & Ähnlichkeit", s:"ok", link:"dreiecke/deck49.html", note:"+ Winkelsumme-Werkstatt-Labor", min:17},
+   {id:"16.2", t:"Trigonometrie im rechtwinkligen Dreieck", s:"ok", link:"dreiecke/deck50.html", note:"+ Winkelfunktionen-Labor", min:19},
+   {id:"16.3", t:"Satz des Pythagoras & Anwendungen", s:"ok", link:"dreiecke/deck51.html", note:"+ Pythagoras-Werkstatt-Labor", min:20},
+   {id:"16.4", t:"Kapitel-Mischquiz — gemischt quer durch alle drei Teile", s:"ok", link:"dreiecke/mischquiz.html", note:"15 Fragen, Auswertung pro Teil", min:16},
+ ]},
+ {nr:17, titel:"Längen, Flächen & Volumina", bereich:"Strahlensatz, Umfang/Fläche, Volumen/Oberfläche & Maße mit Parameter", themen:[
+   {id:"17.1", t:"Umfang & Flächeninhalt", s:"ok", link:"messen/deck52.html", note:"+ Flächen-Zerleger-Labor", min:19},
+   {id:"17.2", t:"Volumen & Oberfläche von Körpern", s:"ok", link:"messen/deck53.html", note:"+ Körper-Baukasten-Labor", min:19},
+   {id:"17.3", t:"Maße mit Parameter", s:"ok", link:"messen/deck54.html", note:"+ Parameter-Maß-Labor", min:20},
+   {id:"17.4", t:"Kapitel-Mischquiz — gemischt quer durch alle drei Teile", s:"ok", link:"messen/mischquiz.html", note:"15 Fragen, Auswertung pro Teil", min:16},
+ ]},
+ {nr:18, titel:"Zufall & Wahrscheinlichkeit", bereich:"Ereignis-Mengen, Häufigkeit/Laplace & Baumdiagramm/Pfadregeln", themen:[
+   {id:"18.1", t:"Zufall & Ereignisse als Mengen", s:"ok", link:"zufall/deck55.html", note:"+ Ereignis-Mengen-Labor", min:18},
+   {id:"18.2", t:"Häufigkeiten, Vierfeldertafel & Laplace", s:"ok", link:"zufall/deck56.html", note:"+ Vierfeldertafel-Labor", min:17},
+   {id:"18.3", t:"Baumdiagramm & Pfadregeln", s:"ok", link:"zufall/deck57.html", note:"+ Baumpfade-Labor", min:20},
+   {id:"18.4", t:"Kapitel-Mischquiz — gemischt quer durch alle drei Teile", s:"ok", link:"zufall/mischquiz.html", note:"15 Fragen, Auswertung pro Teil", min:16},
+ ]},
+ {nr:19, titel:"Wachstum & Zerfall", bereich:"Exponentialfunktion, Logarithmus & Anwendungen — das Finale", themen:[
+   {id:"19.1", t:"Die Exponentialfunktion: Wachstum & Zerfall", s:"ok", link:"wachstum/deck58.html", note:"+ Wachstumssimulator", min:19},
+   {id:"19.2", t:"Exponentialgleichungen & der Logarithmus", s:"ok", link:"wachstum/deck59.html", note:"+ Log-Löser", min:19},
+   {id:"19.3", t:"Anwendungen & das große Finale", s:"ok", link:"wachstum/deck60.html", note:"+ Zinseszins-Rechner", min:21},
+   {id:"19.4", t:"Kapitel-Mischquiz — gemischt quer durch alle drei Teile", s:"ok", link:"wachstum/mischquiz.html", note:"15 Fragen, Auswertung pro Teil", min:16},
+ ]},
+];
+
+const grid=document.getElementById('grid');
+let total=0, done=0, partial=0;
+for(const k of KAPITEL){
+  const div=document.createElement('div'); div.className='kap';
+  let rows='', kapMin=0, kapMinKnown=false;
+  for(const th of k.themen){
+    total++;
+    if(th.s==='ok') done++;
+    if(th.s==='bau') partial++;
+    if(th.s==='ok' && th.min){ kapMin+=th.min; kapMinKnown=true; }
+    const timeTag = (th.s==='ok' && th.min) ? `<span class="time">⏱ ~${th.min} Min</span>` : '';
+    const badge = th.s==='ok'
+      ? (th.link? `<a class="badge" href="${th.link}">ÖFFNEN ▶</a>` : `<span class="badge">FERTIG</span>`)
+      : (th.s==='bau'
+          ? (th.note? `<span class="badge b">${th.note}</span>` : '')
+          : (th.note? `<span class="badge o">${th.note}</span>` : ''));
+    rows+=`<li><span class="dot ${th.s}"></span><span class="nr">${th.id}</span><span>${th.t}</span>${timeTag}${badge}</li>`;
+  }
+  const kapTimeStr = kapMinKnown ? `<span style="color:#7f8ea0;font-size:12px;margin-left:10px;">⏱ bisher ~${kapMin} Min fertig</span>` : '';
+  div.innerHTML=`<h2><span class="knr">${k.nr}</span> ${k.titel}${kapTimeStr}</h2><div class="pages">${k.bereich}</div><ul class="th">${rows}</ul>`;
+  grid.appendChild(div);
+}
+const pct=Math.round((done+partial*0.5)/total*100);
+document.getElementById('pfill').style.width=pct+'%';
+document.getElementById('pnum').textContent=`${done}/${total} Themen fertig`;
+</script>
+<script>
+/* 5 Fragen des Tages: Badge auf der Karte (liest ff_mathe_history; nur die erste Runde des Tages zaehlt) */
+(function(){
+  var b=document.getElementById('ffBadge'); if(!b) return;
+  function pad(n){return (n<10?'0':'')+n;}
+  function ld(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+  var t=null; try{ t=localStorage.getItem('__test_today__'); }catch(e){}
+  t=window.__TEST_TODAY__||t||ld(new Date());
+  var h=[]; try{ h=JSON.parse(localStorage.getItem('ff_mathe_history')||'[]')||[]; }catch(e){}
+  var days={}; h.forEach(function(x){ if(x&&!x.extra) days[x.date]=x; });
+  var d=new Date(t+'T12:00:00'); if(!days[t]) d.setDate(d.getDate()-1);
+  var st=0; while(days[ld(d)]){ st++; d.setDate(d.getDate()-1); }
+  var e=days[t];
+  b.textContent=(e?('✅ '+e.correct+'/'+e.n):'heute offen')+(st?(' · 🔥'+st):'');
+})();
+</script>
+<script src="gamify.js" defer></script>
+</body>
+</html>

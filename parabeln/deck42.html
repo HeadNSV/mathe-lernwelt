@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Quadratische Funktionen · Teil 5 — Wertemenge &amp; Anwendung</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .warnbox{background:#3d1c1c;border-left:5px solid #c0392b;border-radius:8px;padding:10px 16px;font-size:min(1.9vw,16px);color:#ffd9d0;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>QUADRATISCHE FUNKTIONEN <span class="accent">· Teil 5</span></h1>
+    <h2>Wertemenge &amp; Anwendung</h2>
+    <div class="hook" style="max-width:70ch;">Ein Springbrunnen schießt Wasser nach oben — welche Höhen kann der Strahl überhaupt erreichen? Die Antwort ist die Wertemenge seiner Flugbahn-Parabel.</div>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 13.5</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Wertemenge nach oben -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Wertemenge einer nach oben geöffneten Parabel</h2>
+      <div class="defbox">Bei D=ℝ ist der Scheitelpunkt der TIEFSTE Punkt einer nach oben geöffneten Parabel (a&gt;0). Der y-Wert des Scheitelpunkts ist die untere Schranke der Wertemenge — eine obere Schranke gibt es nicht.</div>
+      <div class="defbox">Beispiel: f(x)=2(x−3)²+1 mit D=ℝ → Scheitel S(3|1) → W=[1;∞[.</div>
+    </div>
+  </section>
+
+  <!-- 3 Wertemenge nach unten -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Wertemenge einer nach unten geöffneten Parabel</h2>
+      <div class="defbox">Bei D=ℝ ist der Scheitelpunkt der HÖCHSTE Punkt einer nach unten geöffneten Parabel (a&lt;0). Der y-Wert des Scheitelpunkts ist die obere Schranke der Wertemenge — eine untere Schranke gibt es nicht.</div>
+      <div class="defbox">Beispiel: g(x)=−½(x+2)²+5 mit D=ℝ → Scheitel S(−2|5) → W=]−∞;5].</div>
+    </div>
+  </section>
+
+  <!-- 4 Bruecke Intervallschreibweise -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🌉 Brücke</span> Intervallschreibweise aus Kapitel 1</h2>
+      <div class="defbox">Die eckigen und offenen Klammern kennst du bereits aus der Mengenlehre ganz am Anfang der Lernwelt: [1;∞[ bedeutet „alle Zahlen ab 1 einschließlich, ohne obere Grenze". Dieselbe Schreibweise, jetzt für Wertemengen von Parabeln genutzt.</div>
+    </div>
+  </section>
+
+  <!-- 5 Wertemenge eingeschraenkt -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Wertemenge bei eingeschränkter Definitionsmenge</h2>
+      <div class="defbox">Ist die Definitionsmenge eingeschränkt, hat die Wertemenge oft ZWEI Schranken. Eine Skizze des Graphen hilft dabei enorm.</div>
+    </div>
+  </section>
+
+  <!-- 6 Schritt Wertemenge eingeschraenkt -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Wertemenge bei eingeschränktem D bestimmen</h2>
+      <div class="defbox">Aufgabe: Bestimme die Wertemenge von h(x)=−(x−1)²+4 mit D=[−1;3].</div>
+      <div class="step" id="s6_1"><b class="lbl">Schritt 1 — Scheitelpunkt prüfen:</b> S(1|4) — x=1 liegt IN D=[−1;3], also ist y=4 der größtmögliche Wert (nach unten geöffnet).</div>
+      <div class="step" id="s6_2"><b class="lbl">Schritt 2 — Ränder von D einsetzen:</b> h(−1)=−(−2)²+4=0, h(3)=−(2)²+4=0.</div>
+      <div class="step" id="s6_3"><b class="lbl">Schritt 3 — Wertemenge angeben:</b> kleinster Wert an beiden Rändern gleich 0, größter Wert 4 im Scheitel → W=[0;4].</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="6" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 7 Anwendungsaufgabe Szenario -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Offene Anwendungsaufgabe — Der Torbogen</h2>
+      <div class="defbox">Ein historischer Torbogen ist 8 m breit und an seinem höchsten Punkt 4 m hoch, mit parabelförmigem Querschnitt. Ein Koordinatensystem wird in die untere linke Ecke gelegt: A(0|0), B(8|0), Scheitelpunkt S(4|4).</div>
+    </div>
+  </section>
+
+  <!-- 8 Schritt Funktionsgleichung Torbogen -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Funktionsgleichung des Torbogens</h2>
+      <div class="step" id="s8_1"><b class="lbl">Schritt 1 — Scheitelpunktform ansetzen:</b> y = a·(x−4)² + 4.</div>
+      <div class="step" id="s8_2"><b class="lbl">Schritt 2 — Punkt A(0|0) einsetzen:</b> 0 = a·(0−4)² + 4 = 16a + 4.</div>
+      <div class="step" id="s8_3"><b class="lbl">Schritt 3 — nach a auflösen:</b> −4 = 16a ⟺ a = −0,25.</div>
+      <div class="step" id="s8_4"><b class="lbl">Schritt 4 — Funktionsgleichung angeben:</b> y = −0,25·(x−4)² + 4, D=[0;8].</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="8" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 9 Schritt Breite in Hoehe -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Breite in bestimmter Höhe berechnen</h2>
+      <div class="defbox">Frage: Wie breit ist der Torbogen in 3 m Höhe?</div>
+      <div class="step" id="s9_1"><b class="lbl">Schritt 1 — y=3 einsetzen:</b> 3 = −0,25·(x−4)² + 4.</div>
+      <div class="step" id="s9_2"><b class="lbl">Schritt 2 — auflösen:</b> −1 = −0,25·(x−4)² ⟺ (x−4)² = 4 ⟺ x−4 = ±2.</div>
+      <div class="step" id="s9_3"><b class="lbl">Schritt 3 — x-Werte:</b> x=2 oder x=6.</div>
+      <div class="step" id="s9_4"><b class="lbl">Antwortsatz:</b> In 3 m Höhe ist der Torbogen 6−2 = 4 m breit.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="9" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 10 Modellgrenzen -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Modellgrenzen &amp; Antwortsatz-Disziplin</h2>
+      <div class="warnbox">⚠️ Ein realer Torbogen ist selten eine PERFEKTE Parabel — Bautoleranzen und Materialstärke weichen leicht ab. Zudem gilt das Modell nur INNERHALB der Definitionsmenge D=[0;8] — außerhalb des Bogens (x&lt;0 oder x&gt;8) hat die Funktionsgleichung keine sachliche Bedeutung mehr.</div>
+      <div class="defbox">Ein vollständiger Antwortsatz nennt die Zahl mit Einheit, den Sachbezug, und macht deutlich, dass er sich auf das Modell (nicht die exakte Realität) bezieht.</div>
+    </div>
+  </section>
+
+  <!-- 11 Eselsbruecke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Nach oben offen: Scheitel ist der Boden der Werte. Nach unten offen: Scheitel ist die Decke." Und: „Eingeschränktes D? Immer die Ränder UND den Scheitel prüfen — nie nur einen von beiden."</div>
+    </div>
+  </section>
+
+  <!-- 12 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Die maximale Fontänenhöhe</h2>
+      <div class="defbox">Ein Landschaftsarchitekt plant einen Springbrunnen. Die Wertemenge der Wasserstrahl-Parabel verrät ihm sofort die maximale Fontänenhöhe — wichtig, um die Höhe umliegender Bäume oder Überdachungen richtig zu planen.</div>
+    </div>
+  </section>
+
+  <!-- 13 Intuitions-Regler -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Schätz mal: kleinster y-Wert?</h2>
+      <div class="defbox">f(x) = 3(x+2)² − 7 mit D=ℝ. Welchen kleinsten y-Wert kann diese Funktion annehmen?</div>
+      <div id="estWmenge42"></div>
+    </div>
+  </section>
+
+  <!-- 14 Checkliste -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Checkliste für Wertemenge &amp; Anwendungsaufgaben</h2>
+      <table class="legend">
+        <tr><th>Schritt</th><th>Worauf achten</th></tr>
+        <tr><td>Öffnungsrichtung prüfen</td><td>a&gt;0 → Scheitel ist Minimum, a&lt;0 → Scheitel ist Maximum</td></tr>
+        <tr><td>Definitionsmenge prüfen</td><td>liegt der Scheitel überhaupt in D?</td></tr>
+        <tr><td>Ränder von D einsetzen</td><td>liefert die fehlende zweite Schranke</td></tr>
+        <tr><td>Antwortsatz</td><td>Zahl + Einheit + Sachbezug + Modellgrenzen</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 15 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Fall</th><th>Wertemenge</th></tr>
+      <tr><td>a&gt;0, D=ℝ</td><td>W=[y_s;∞[</td></tr>
+      <tr><td>a&lt;0, D=ℝ</td><td>W=]−∞;y_s]</td></tr>
+      <tr><td>eingeschränktes D</td><td>Scheitel (falls in D) + Randwerte vergleichen</td></tr>
+    </table>
+  </section>
+
+  <!-- 16 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Bestimme die Wertemenge von f(x)=(x−2)²+3 mit D=ℝ.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>Scheitel S(2|3), a&gt;0 → W=[3;∞[</details>
+        </li>
+        <li style="margin-top:10px;">Bestimme die Wertemenge von g(x)=−2x²+8 mit D=ℝ.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>Scheitel S(0|8), a&lt;0 → W=]−∞;8]</details>
+        </li>
+        <li style="margin-top:10px;">Ein Springbrunnen-Wasserstrahl folgt der Parabel h(x)=−0,5(x−2)²+3 (x=horizontale Entfernung, h=Höhe, in Metern, D=[0;4]). Wie hoch steigt der Strahl maximal?
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>Scheitel bei x=2 (liegt in D) → maximale Höhe 3 Meter.</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 17 Pruefungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Wertemenge bei D=ℝ direkt aus Öffnungsrichtung und Scheitelpunkt ablesen.</b></li>
+        <li><b>Bei eingeschränktem D sowohl Scheitel als auch Ränder prüfen.</b></li>
+        <li><b>Eine offene Anwendungsaufgabe komplett durchrechnen</b> — Koordinatensystem festlegen, Funktionsgleichung aufstellen, Frage beantworten, Modellgrenzen benennen.</li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">Damit hast du das Thema quadratische Funktionen komplett durchgearbeitet — von der Normalparabel bis zur offenen Anwendungsaufgabe.</div>
+    </div>
+  </section>
+
+  <!-- 18 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Wertemenge einer nach oben geöffneten Parabel", "Wertemenge einer nach unten geöffneten Parabel", "🌉 Brücke: Intervallschreibweise aus Kapitel 1", "Wertemenge bei eingeschränkter Definitionsmenge", "📐 Schritt für Schritt: Wertemenge bei eingeschränktem D bestimmen", "Offene Anwendungsaufgabe — Der Torbogen", "📐 Schritt für Schritt: Funktionsgleichung des Torbogens", "📐 Schritt für Schritt: Breite in bestimmter Höhe berechnen", "Modellgrenzen & Antwortsatz-Disziplin", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Die maximale Fontänenhöhe", "Schätz mal: kleinster y-Wert?", "Checkliste für Wertemenge & Anwendungsaufgaben", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=17;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck42_s1_Charon.mp3",txt:"Quadratische Funktionen, Teil fünf: Wertemenge und Anwendung. Ein Springbrunnen schießt Wasser nach oben - welche Höhen kann der Strahl überhaupt erreichen? Die Antwort ist die Wertemenge seiner Flugbahn-Parabel."},
+ 2:{wav:"narration_deck42_s2_Charon.mp3",txt:"Bei einer nach oben geöffneten Parabel ist der Scheitelpunkt der tiefste Punkt - sein y-Wert ist die untere Schranke der Wertemenge."},
+ 3:{wav:"narration_deck42_s3_Charon.mp3",txt:"Bei einer nach unten geöffneten Parabel ist der Scheitelpunkt der höchste Punkt - sein y-Wert ist die obere Schranke."},
+ 4:{wav:"narration_deck42_s4_Charon.mp3",txt:"Die Intervallschreibweise kennst du bereits aus dem allerersten Kapitel der Lernwelt - jetzt nutzt du sie für Wertemengen."},
+ 5:{wav:"narration_deck42_s5_Charon.mp3",txt:"Ist die Definitionsmenge eingeschränkt, hat die Wertemenge oft zwei Schranken - eine Skizze hilft enorm."},
+ 6:{wav:"narration_deck42_s6_Charon.mp3",txt:"Jetzt bestimmen wir gemeinsam eine Wertemenge bei eingeschränkter Definitionsmenge, Schritt für Schritt."},
+ 7:{wav:"narration_deck42_s7_Charon.mp3",txt:"Schauen wir uns eine offene Anwendungsaufgabe an: einen historischen Torbogen mit parabelförmigem Querschnitt."},
+ 8:{wav:"narration_deck42_s8_Charon.mp3",txt:"Jetzt stellen wir gemeinsam die Funktionsgleichung des Torbogens auf, Schritt für Schritt."},
+ 9:{wav:"narration_deck42_s9_Charon.mp3",txt:"Jetzt berechnen wir gemeinsam die Breite des Torbogens in einer bestimmten Höhe, Schritt für Schritt."},
+ 10:{wav:"narration_deck42_s10_Charon.mp3",txt:"Ein reales Bauwerk ist selten eine perfekte Parabel - benenne die Grenzen deines Modells im Antwortsatz."},
+ 11:{wav:"narration_deck42_s11_Charon.mp3",txt:"Nach oben offen: Scheitel ist der Boden der Werte. Nach unten offen: Scheitel ist die Decke."},
+ 12:{wav:"narration_deck42_s12_Charon.mp3",txt:"Auch ein Landschaftsarchitekt nutzt die Wertemenge, um die maximale Höhe eines Springbrunnens zu planen."},
+ 13:{wav:"narration_deck42_s13_Charon.mp3",txt:"Bevor es weitergeht: schätz doch mal, welchen kleinsten y-Wert diese Funktion annehmen kann."},
+ 14:{wav:"narration_deck42_s14_Charon.mp3",txt:"Hier noch mal eine Checkliste für Wertemenge und Anwendungsaufgaben im Überblick."},
+ 15:{wav:"narration_deck42_s15_Charon.mp3",txt:"Fassen wir zusammen, welche Wertemenge zu welcher Öffnungsrichtung gehört."},
+ 16:{wav:"narration_deck42_s16_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben rund um Wertemenge und Anwendung."},
+ 17:{wav:"narration_deck42_s17_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst. Damit hast du quadratische Funktionen komplett durchgearbeitet."},
+ 18:{wav:"narration_deck42_s18_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"f(x)=4(x−2)²−9 mit D=ℝ — wie lautet die Wertemenge?",
+  a:["W=[−9;∞[","W=]−∞;−9]","W=[2;∞[","W=]−∞;2]"],r:0,
+  why:"a=4&gt;0, Scheitel S(2|−9) → der Scheitel ist die untere Schranke, keine obere → W=[−9;∞[."},
+ {q:"g(x)=−3x²+12 mit D=ℝ — wie lautet die Wertemenge?",
+  a:["W=[12;∞[","W=]−∞;12]","W=[0;12]","W=]−∞;0]"],r:1,
+  why:"a=−3&lt;0, Scheitel S(0|12) → der Scheitel ist die obere Schranke → W=]−∞;12]."},
+ {q:"Warum reicht es bei eingeschränkter Definitionsmenge NICHT, nur den Scheitelpunkt zu betrachten?",
+  a:["Der Scheitel liegt nie in D","Weil auch die Randwerte von D die Wertemenge mitbestimmen können","Weil Parabeln mit eingeschränktem D keine Wertemenge haben","Das stimmt nicht, der Scheitel reicht immer"],r:1,
+  why:"Ist D eingeschränkt, können die Randwerte von D die zweite (fehlende) Schranke der Wertemenge liefern."},
+ {q:"Beim Aufstellen der Funktionsgleichung eines Torbogens aus Scheitel und einem Punkt: was ist der erste Schritt?",
+  a:["Sofort die Wertemenge bestimmen","Scheitelpunktform ansetzen und den Punkt einsetzen","Die Nullstellen raten","Ein Koordinatensystem ist nicht nötig"],r:1,
+  why:"Der Scheitelpunkt ist bekannt — also wird die Scheitelpunktform angesetzt und ein weiterer bekannter Punkt eingesetzt, um a zu bestimmen."},
+ {q:"Warum sollte ein Antwortsatz bei einer Anwendungsaufgabe die Modellgrenzen erwähnen?",
+  a:["Ist reine Formsache ohne Bedeutung","Weil ein mathematisches Modell die Realität nur näherungsweise beschreibt","Weil sonst die Rechnung falsch ist","Modellgrenzen sind nur bei linearen Funktionen relevant"],r:1,
+  why:"Ein parabelförmiges Modell beschreibt reale Objekte (Torbögen, Flugbahnen) nur näherungsweise — das gehört ehrlich in den Antwortsatz."}
+];
+const DECK_ID="parabeln/deck42";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), oi===item.r);
+        answered++; if(oi===item.r) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estWmenge42', {
+    frage: 'f(x) = 3(x+2)² − 7 mit D=ℝ. Welchen kleinsten y-Wert kann diese Funktion annehmen?',
+    min: -20, max: 5, korrekt: -7, toleranz: 0,
+    begruendung: 'Scheitel S(−2|−7), a=3&gt;0 → der kleinste y-Wert ist −7.'
+  });
+});
+</script>
+</body>
+</html>

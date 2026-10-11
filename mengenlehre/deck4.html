@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Mengenlehre · Teil 4 — Produktmenge &amp; Kombinationen</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:4vh 7vw;}
+  .ebox{max-width:min(86vw,960px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.8vw,32px);margin:0 0 14px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:12px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2.1vw,18px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:13px 17px;font-size:min(2.3vw,19px);color:#f6e7cf;margin-bottom:12px;}
+  .bul{font-size:min(2.2vw,18px);line-height:1.5;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:5px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.3vw,19px);color:#d7f3f0;margin-bottom:14px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:12px 18px;font-size:min(1.9vw,16px);color:#dff3df;margin-top:10px;}
+  .legend td,.legend th{font-size:min(1.9vw,16px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:8px 0;font-size:min(2.1vw,18px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+  .confrow{display:flex;gap:8px;margin-bottom:10px;}
+  .confchip{flex:1;background:#1f2630;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:7px 10px;font-size:13px;cursor:pointer;}
+  .confchip.sure.on{background:#1e4a34;border-color:#4caf50;}
+  .confchip.unsure.on{background:#4a3d1e;border-color:var(--accent);}
+  .quizoptswrap{opacity:0.4;pointer-events:none;transition:opacity .2s;}
+  .quizoptswrap.enabled{opacity:1;pointer-events:auto;}
+  .quizwarn{margin-top:8px;padding:8px 12px;background:#3d2a12;border-left:3px solid #c0392b;border-radius:6px;font-size:min(1.9vw,14px);color:#ffd9c2;display:none;}
+  .quizwarn.show{display:block;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>MENGENLEHRE <span class="accent">· Teil 4</span></h1>
+    <h2>Produktmenge &amp; Mengen-Kombinationen</h2>
+    <p>Mensa: 3 Gerichte, 4 Getränke — wie viele Menü-Kombis gibt es eigentlich? Und wie liest ein Vereinsvorstand aus EINEM Diagramm ab, ob sich eine Beitragserhöhung lohnt?</p>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 1.4</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Produktmenge / Mensa -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Die Produktmenge A × B</h2>
+      <div class="hook">🍽️ In der Mensa gibt es 3 Hauptgerichte und 4 Getränke. Wie viele verschiedene Menüs kannst du dir zusammenstellen?</div>
+      <div class="svgbox"><div id="svgS2"></div><div class="svgcaption">A×B — jedes Gericht mit jedem Getränk verbunden</div></div>
+      <div class="defbox">Die Produktmenge A × B beschreibt die Menge aller geordneten Paare (x|y), wobei x aus A und y aus B stammt: A × B = {(x|y) | x∈A und y∈B}. Gerichte A = {F;N;S}, Getränke B = {W;L;K;O}.</div>
+      <div class="alltagbox">🏠 Eine Bestellkarte mit „Hauptgericht + Getränk wählen" ist im Kern nichts anderes als eine Produktmenge.</div>
+    </div>
+  </section>
+
+  <!-- 3 A×B ungleich B×A -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>A × B ≠ B × A</h2>
+      <div class="svgbox"><div id="svgS3"></div></div>
+      <div class="defbox">Beispielaufgabe: A = {1; 2; 3}, B = {0; 1; 2}. C = A×B hat 9 Paare (x|y) mit x∈A zuerst; D = B×A hat 9 Paare mit y∈B zuerst — C ≠ D, die Reihenfolge zählt. Mächtigkeit: |A×B| = |A|·|B| = 3·3 = 9.</div>
+      <div class="alltagbox">🏠 (Fahrer|Fahrzeug) ist etwas anderes als (Fahrzeug|Fahrer) — bei einer Zuordnungsliste macht die Reihenfolge einen inhaltlichen Unterschied.</div>
+    </div>
+  </section>
+
+  <!-- 4 Kurz-Reminder -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Kurz-Reminder: A\B &amp; Komplement</h2>
+      <div class="defbox">Diese zwei Werkzeuge brauchst du für die nächsten Folien — die ausführliche Definition mit Venn-Diagramm folgt im Teil „Mengen vergleichen &amp; verknüpfen":</div>
+      <ul class="bul">
+        <li><b>A\B</b> (Restmenge, gesprochen „A ohne B"): alle Elemente, die in A, aber NICHT in B enthalten sind.</li>
+        <li><b>Komplement einer Menge X</b> (bezogen auf eine Grundmenge G): alle Elemente, die in G, aber NICHT in X enthalten sind.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 5 Kombination von Operationen -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Kombination von Mengenoperationen</h2>
+      <div class="defbox">Werden drei oder mehr Mengen mit mehreren Operationen (∩, ∪, \, Komplement) kombiniert, muss zuerst die Operation in Klammern ausgewertet werden — genau wie bei einem normalen Rechenausdruck.</div>
+      <ul class="bul">
+        <li>Auswertungsreihenfolge: erst der Klammerinhalt, dann von innen nach außen weiterrechnen.</li>
+        <li>Diese Regel machen wir uns gleich an zwei Beispielen zunutze.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 6 Worked Example 1 -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> D = C ∩ (A\B)</h2>
+      <div class="svgbox"><div id="svgS6"></div><div class="svgcaption">D = C∩(A\B) = {4; 5}</div></div>
+      <div class="defbox">Aufgabe: A = {1;2;3;4;5}, B = {−2;−1;0;1;2}, C = {4;5;6;7}, Grundmenge G = ℤ. Bestimme D = C ∩ (A\B).</div>
+      <div class="step" id="s6_1"><b class="lbl">Klammer zuerst:</b> A\B bestimmen — alle Elemente aus A, die NICHT in B sind: A\B = {3; 4; 5}.</div>
+      <div class="step" id="s6_2"><b class="lbl">Was jetzt?</b> C ∩ (A\B) heißt „welche Elemente stehen in BEIDEN Mengen C und A\B".</div>
+      <div class="step" id="s6_3"><b class="lbl">Vergleichen:</b> C = {4;5;6;7} und A\B = {3;4;5} — gemeinsame Elemente: 4 und 5.</div>
+      <div class="step" id="s6_4"><b class="lbl">Antwortsatz:</b> D = C ∩ (A\B) = {4; 5}.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="6" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 7 Worked Example 2 -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> M = Komplement von C ∪ (B\A)</h2>
+      <div class="svgbox"><div id="svgS7"></div><div class="svgcaption">A ⊂ B, C separat, G = {0;…;10}</div></div>
+      <div class="defbox">Aufgabe: A = {3;4;5}, B = {0;1;2;3;4;5}, C = {8;9;10}, Grundmenge G = {0;1;…;10}. Bestimme M = die Komplementärmenge von C ∪ (B\A).</div>
+      <div class="step" id="s7_1"><b class="lbl">Klammer zuerst:</b> B\A bestimmen — alle Elemente aus B, die NICHT in A sind: B\A = {0; 1; 2}.</div>
+      <div class="step" id="s7_2"><b class="lbl">Vereinigung bilden:</b> C ∪ (B\A) heißt „alle Elemente, die in mindestens einer der beiden Mengen stehen": C ∪ (B\A) = {0; 1; 2; 8; 9; 10}.</div>
+      <div class="step" id="s7_3"><b class="lbl">Komplement bilden:</b> Jetzt alle Elemente der Grundmenge G, die NICHT in C ∪ (B\A) stehen.</div>
+      <div class="step" id="s7_4"><b class="lbl">Antwortsatz:</b> M = {3; 4; 5; 6; 7}.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="7" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 8 Umfrage-Auswertung -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Umfrage-Auswertung mit drei Mengen</h2>
+      <div class="defbox">An einer Fach- und Berufsoberschule nehmen 500 Schüler(innen) an einer Umfrage teil: Sportverein (A), Musikinstrument (B), Jugendorganisation (C). Ein Venn-Diagramm mit drei Mengen hat 8 Regionen.</div>
+      <table class="legend">
+        <tr><th>Menge</th><th>Beschreibung</th><th>Anzahl</th></tr>
+        <tr><td>A</td><td>Sportverein aktiv</td><td>290</td></tr>
+        <tr><td>B</td><td>Musikinstrument</td><td>279</td></tr>
+        <tr><td>C</td><td>Jugendorganisation</td><td>113</td></tr>
+        <tr><td>A∩B∩C</td><td>alle drei zugleich</td><td>30</td></tr>
+        <tr><td>A∩B∩C̅</td><td>Sportverein + Musik, keine Jugendorg.</td><td>70</td></tr>
+        <tr><td>A∩B̅∩C</td><td>Sportverein + Jugendorg., kein Instrument</td><td>15</td></tr>
+        <tr><td>A̅∩B∩C</td><td>Musik + Jugendorg., kein Sportverein</td><td>20</td></tr>
+        <tr><td>A̅∩B̅∩C̅</td><td>keins von allen</td><td>83</td></tr>
+      </table>
+      <div class="alltagbox">🏠 Genau so liest ein Vereinsvorstand aus einer Mitglieder-Umfrage ab, wie viele Leute mehrere Angebote gleichzeitig nutzen.</div>
+    </div>
+  </section>
+
+  <!-- 9 Eselsbrücke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Produktmenge = Speisekarte × Getränkekarte: jede Zeile mit jeder Spalte, Reihenfolge zählt — (F|W) ≠ (W|F)."</div>
+    </div>
+  </section>
+
+  <!-- 10 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Fuhrpark-Disposition</h2>
+      <div class="defbox">Eine Firma besitzt drei Fahrzeuge — Kleinbus (K), Mittelklassewagen (M), Straßengeländewagen (S). Drei Angestellte — Franz (F), Hubert (H), Melis (Me) — brauchen gleichzeitig einen Firmenwagen.</div>
+      <ul class="bul">
+        <li>Alle möglichen (Fahrzeug|Angestellter)-Paare bilden die Produktmenge {K;M;S} × {F;H;Me} — 9 mögliche Zuordnungen.</li>
+        <li>Die Disposition wählt daraus genau eine passende Zuordnung pro Tag aus.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 11 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>×</td><td>„kreuz"</td><td>Produktmenge (geordnete Paare)</td></tr>
+        <tr><td>(x|y)</td><td>„Paar x y"</td><td>geordnetes Paar — Reihenfolge zählt</td></tr>
+        <tr><td>|A×B|</td><td>„Mächtigkeit von A kreuz B"</td><td>Anzahl der Paare = |A| · |B|</td></tr>
+        <tr><td>A\B</td><td>„A ohne B"</td><td>Restmenge</td></tr>
+        <tr><td>X̅</td><td>„X quer"</td><td>Komplement von X (bezogen auf Grundmenge G)</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 12 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Kombi-Maschine — Mensa &amp; Term-Baukasten</span><span class="sub">Missions-Modus in beiden Teilen</span></div>
+    <iframe allow="autoplay" data-src="produktmenge4_labor.html"></iframe>
+  </section>
+
+  <!-- 13 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Begriff</th><th>Kernaussage</th></tr>
+      <tr><td>Produktmenge A×B</td><td>alle geordneten Paare (x|y) mit x∈A, y∈B</td></tr>
+      <tr><td>A×B ≠ B×A</td><td>die Produktmenge ist nicht symmetrisch — Reihenfolge zählt</td></tr>
+      <tr><td>|A×B|</td><td>= |A| · |B|</td></tr>
+      <tr><td>Kombinierte Operationen</td><td>Klammerinhalt zuerst auswerten, dann von innen nach außen</td></tr>
+      <tr><td>Umfrage-Venn</td><td>3 Mengen ergeben 8 Regionen — jede Region einzeln auslesbar</td></tr>
+    </table>
+  </section>
+
+  <!-- 14 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Gegeben: A = {a;b}, B = {1;2;3}. Bilde A×B und gib |A×B| an.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>A×B = {(a|1);(a|2);(a|3);(b|1);(b|2);(b|3)} · |A×B| = 6</details>
+        </li>
+        <li style="margin-top:10px;">Gegeben: A = {2;4;6;8}, B = {4;5;6;7}. Bestimme A\B.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>A\B = {2; 8}</details>
+        </li>
+        <li style="margin-top:10px;">Gilt A×B = B×A für A = {x}, B = {y} mit x ≠ y? Begründe.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>Nein: A×B = {(x|y)}, B×A = {(y|x)} — und (x|y) ≠ (y|x), solange x ≠ y.</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 15 Prüfungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.3vw,19px);">
+        <li><b>Eine Produktmenge A×B bilden</b> und ihre Mächtigkeit berechnen können.</li>
+        <li><b>Begründen, warum A×B ≠ B×A</b> gilt.</li>
+        <li><b>Kombinierte Mengenausdrücke</b> (Klammer zuerst!) Schritt für Schritt auswerten können.</li>
+        <li><b>Aus einem Sachtext ein Mengen-Diagramm aufstellen</b> und daraus Anzahlen ablesen können.</li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">Transferaufgabe: <i>An einer Schule nehmen 200 Schüler(innen) an einer Umfrage teil: „Fährst du mit dem Fahrrad zur Schule?" (A) und „Nutzt du den Bus?" (B). 90 fahren Rad, 70 nutzen den Bus, 25 nutzen beides. Wie viele nutzen WEDER Rad noch Bus?"</i> → |A∪B| = 90+70−25 = 135. Von 200 Schüler(innen) nutzen also 200−135 = <b>65</b> weder Rad noch Bus.</div>
+    </div>
+  </section>
+
+  <!-- 16 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+// === SVG-Grafiken (additiv, Grafik-Nachrüstung 23.07.) ===
+// Slide 2: Paar-Gitter Mensa A={F,N,S} x B={W,L,K,O}
+(function(){
+  const A=["F","N","S"], B=["W","L","K","O"];
+  const x0=90, y0=42, dx=60, dy=34;
+  let s='<svg viewBox="0 0 320 170" style="width:100%;max-width:420px;height:auto;display:block;margin:0 auto;">';
+  s+='<text x="20" y="16" font-size="12" fill="#9aa4b2">Getränke B:</text>';
+  B.forEach((b,j)=>{ s+='<text x="'+(x0+j*dx)+'" y="30" text-anchor="middle" font-size="14" fill="#5fd0c7" font-weight="700">'+b+'</text>'; });
+  s+='<text x="20" y="'+(y0-8)+'" font-size="12" fill="#9aa4b2">Gerichte A:</text>';
+  A.forEach((a,i)=>{
+    s+='<text x="55" y="'+(y0+i*dy+18)+'" font-size="14" fill="#f2a63c" font-weight="700">'+a+'</text>';
+    B.forEach((b,j)=>{
+      const cx=x0+j*dx, cy=y0+i*dy+14;
+      s+='<rect x="'+(cx-24)+'" y="'+(cy-13)+'" width="48" height="24" rx="5" fill="#151b24" stroke="#4a5568" stroke-width="1"/>';
+      s+='<text x="'+cx+'" y="'+(cy+5)+'" text-anchor="middle" font-size="12" fill="#e6edf3">('+a+'|'+b+')</text>';
+    });
+  });
+  s+='</svg>';
+  document.getElementById('svgS2').innerHTML=s;
+})();
+// Slide 3: C=A x B Gitter, A={1,2,3}, B={0,1,2}
+(function(){
+  const A=[1,2,3], B=[0,1,2];
+  const x0=70, y0=34, dx=70, dy=36;
+  let s='<svg viewBox="0 0 300 150" style="width:100%;max-width:380px;height:auto;display:block;margin:0 auto;">';
+  s+='<text x="150" y="14" text-anchor="middle" font-size="13" fill="#9aa4b2">C = A×B (9 Paare)</text>';
+  B.forEach((b,j)=>{ s+='<text x="'+(x0+j*dx)+'" y="30" text-anchor="middle" font-size="13" fill="#5fd0c7" font-weight="700">B='+b+'</text>'; });
+  A.forEach((a,i)=>{
+    s+='<text x="25" y="'+(y0+i*dy+18)+'" font-size="13" fill="#f2a63c" font-weight="700">A='+a+'</text>';
+    B.forEach((b,j)=>{
+      const cx=x0+j*dx, cy=y0+i*dy+14;
+      s+='<rect x="'+(cx-28)+'" y="'+(cy-13)+'" width="56" height="24" rx="5" fill="rgba(242,166,60,0.10)" stroke="#f2a63c" stroke-width="1"/>';
+      s+='<text x="'+cx+'" y="'+(cy+5)+'" text-anchor="middle" font-size="12" fill="#e6edf3">('+a+'|'+b+')</text>';
+    });
+  });
+  s+='</svg>';
+  document.getElementById('svgS3').innerHTML=s;
+})();
+// Slide 6: 3-Mengen-Diagramm B-A-C (Kette), Highlight C∩(A\B)
+(function(){
+  const W=320,H=170;
+  const bA={cx:170,cy:95,r:62}, bB={cx:95,cy:95,r:50}, bC={cx:245,cy:95,r:50};
+  const accent="#f2a63c";
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:420px;height:auto;display:block;margin:0 auto;">';
+  s+='<defs>'
+   +'<clipPath id="clipA6"><circle cx="'+bA.cx+'" cy="'+bA.cy+'" r="'+bA.r+'"/></clipPath>'
+   +'<clipPath id="clipC6"><circle cx="'+bC.cx+'" cy="'+bC.cy+'" r="'+bC.r+'"/></clipPath>'
+   +'<mask id="maskNotB6"><rect x="0" y="0" width="'+W+'" height="'+H+'" fill="white"/><circle cx="'+bB.cx+'" cy="'+bB.cy+'" r="'+bB.r+'" fill="black"/></mask>'
+   +'</defs>';
+  s+='<rect x="6" y="6" width="'+(W-12)+'" height="'+(H-12)+'" fill="none" stroke="#4a5568" stroke-width="2"/><text x="'+(W-14)+'" y="22" text-anchor="end" font-size="13" fill="#9aa4b2">G=ℤ</text>';
+  s+='<circle cx="'+bB.cx+'" cy="'+bB.cy+'" r="'+bB.r+'" fill="rgba(95,208,199,0.10)" stroke="#5fd0c7" stroke-width="2"/>';
+  s+='<circle cx="'+bC.cx+'" cy="'+bC.cy+'" r="'+bC.r+'" fill="rgba(111,207,111,0.10)" stroke="#6fcf6f" stroke-width="2"/>';
+  s+='<g clip-path="url(#clipA6)"><g clip-path="url(#clipC6)"><rect x="0" y="0" width="'+W+'" height="'+H+'" fill="'+accent+'" opacity="0.55" mask="url(#maskNotB6)"/></g></g>';
+  s+='<circle cx="'+bA.cx+'" cy="'+bA.cy+'" r="'+bA.r+'" fill="none" stroke="'+accent+'" stroke-width="2"/>';
+  s+='<circle cx="'+bB.cx+'" cy="'+bB.cy+'" r="'+bB.r+'" fill="none" stroke="#5fd0c7" stroke-width="2"/>';
+  s+='<circle cx="'+bC.cx+'" cy="'+bC.cy+'" r="'+bC.r+'" fill="none" stroke="#6fcf6f" stroke-width="2"/>';
+  s+='<text x="170" y="45" text-anchor="middle" font-size="13" fill="'+accent+'" font-weight="700">A</text>';
+  s+='<text x="65" y="70" font-size="13" fill="#5fd0c7" font-weight="700">B</text>';
+  s+='<text x="270" y="70" font-size="13" fill="#6fcf6f" font-weight="700">C</text>';
+  const lbl=[[65,100,'-2'],[80,100,'-1'],[65,120,'0'],[128,80,'1'],[128,115,'2'],[150,140,'3'],[195,80,'4'],[195,115,'5'],[255,140,'6'],[268,100,'7']];
+  lbl.forEach(([x,y,t])=>{ s+='<text x="'+x+'" y="'+y+'" text-anchor="middle" font-size="12" fill="#e6edf3">'+t+'</text>'; });
+  s+='</svg>';
+  document.getElementById('svgS6').innerHTML=s;
+})();
+// Slide 7: A subset von B, C separat (strukturelles Referenzdiagramm)
+(function(){
+  const W=320,H=170;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:420px;height:auto;display:block;margin:0 auto;">';
+  s+='<rect x="6" y="6" width="'+(W-12)+'" height="'+(H-12)+'" fill="none" stroke="#4a5568" stroke-width="2"/><text x="'+(W-20)+'" y="22" font-size="13" fill="#9aa4b2">G</text>';
+  s+='<ellipse cx="110" cy="95" rx="90" ry="60" fill="rgba(95,208,199,0.10)" stroke="#5fd0c7" stroke-width="2"/>';
+  s+='<text x="185" y="45" font-size="13" fill="#5fd0c7" font-weight="700">B</text>';
+  s+='<circle cx="90" cy="95" r="35" fill="rgba(242,166,60,0.25)" stroke="#f2a63c" stroke-width="2"/>';
+  s+='<text x="90" y="80" text-anchor="middle" font-size="12" fill="#12100a" font-weight="700">A</text>';
+  s+='<text x="90" y="100" text-anchor="middle" font-size="12" fill="#12100a" font-weight="700">3 4 5</text>';
+  s+='<text x="150" y="90" text-anchor="middle" font-size="12" fill="#e6edf3">0</text>';
+  s+='<text x="150" y="110" text-anchor="middle" font-size="12" fill="#e6edf3">1  2</text>';
+  s+='<circle cx="255" cy="95" r="40" fill="rgba(111,207,111,0.14)" stroke="#6fcf6f" stroke-width="2"/>';
+  s+='<text x="255" y="70" text-anchor="middle" font-size="13" fill="#6fcf6f" font-weight="700">C</text>';
+  s+='<text x="255" y="100" text-anchor="middle" font-size="12" fill="#e6edf3">8 9 10</text>';
+  s+='<text x="30" y="140" font-size="12" fill="#9aa4b2">6  7</text>';
+  s+='</svg>';
+  document.getElementById('svgS7').innerHTML=s;
+})();
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Die Produktmenge A × B", "A × B ≠ B × A", "Kurz-Reminder: A\\B & Komplement", "Kombination von Mengenoperationen", "📐 Schritt für Schritt: D = C∩(A\\B)", "📐 Schritt für Schritt: M = Komplement(C∪(B\\A))", "Umfrage-Auswertung", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Fuhrpark-Disposition", "Symbol-Legende", "🧪 Kombi-Maschine", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=18;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck4_s1_Charon.mp3",txt:"Produktmenge und Mengen-Kombinationen – in der Mensa gibt es drei Hauptgerichte und vier Getränke. Wie viele verschiedene Menüs kannst du dir zusammenstellen? Und wie liest ein Vereinsvorstand aus einem einzigen Diagramm ab, ob sich eine Beitragserhöhung lohnt? Genau darum geht's jetzt."},
+ 2:{wav:"narration_deck4_s2_Charon.mp3",txt:"Schau auf das Gitter: die Produktmenge A kreuz B enthält alle geordneten Paare, bei denen die erste Komponente aus A und die zweite aus B stammt. Jedes Gericht mit jedem Getränk verbunden ergibt genau so ein Paar – zum Beispiel Fleisch mit Wasser oder Salat mit Kaffee."},
+ 3:{wav:"narration_deck4_s3_Charon.mp3",txt:"Schau auf das zweite Gitter: Wichtig ist, A kreuz B ist NICHT dasselbe wie B kreuz A – die Reihenfolge der Mengen zählt. Und die Mächtigkeit der Produktmenge ergibt sich ganz einfach aus dem Produkt der beiden Einzelmächtigkeiten."},
+ 4:{wav:"narration_deck4_s4_Charon.mp3",txt:"Zwei kurze Werkzeuge, bevor wir weiterrechnen: A ohne B meint alle Elemente aus A, die nicht in B stehen. Und das Komplement einer Menge meint alles, was in der Grundmenge steht, aber nicht in dieser Menge."},
+ 5:{wav:"narration_deck4_s5_Charon.mp3",txt:"Werden mehrere Mengenoperationen kombiniert, gilt dieselbe Regel wie bei jedem Rechenausdruck: erst der Klammerinhalt, dann von innen nach außen weiterrechnen."},
+ 6:{wav:"narration_deck4_s6_Charon.mp3",txt:"Schau auf die drei Kringel: B links, A in der Mitte, C rechts – A überlappt beide, aber B und C berühren sich nicht. Der eingefärbte Bereich rechts ist genau das Ergebnis. Überleg schon mal: was steht in der Klammer, und was musst du deshalb zuerst berechnen? Klick dich durch die Schritte."},
+ 7:{wav:"narration_deck4_s7_Charon.mp3",txt:"Schau auf die Grafik: A liegt diesmal komplett INNERHALB von B, und C steht separat daneben. Und jetzt ein zweites Beispiel mit einem Komplement am Ende – auch hier gilt: erst die Klammer, dann Schritt für Schritt weiter nach außen."},
+ 8:{wav:"narration_deck4_s8_Charon.mp3",txt:"Fünfhundert Schülerinnen und Schüler wurden zu drei Ja-Nein-Fragen befragt. Mit drei Mengen entstehen acht Regionen im Venn-Diagramm – und aus jeder einzelnen kannst du eine konkrete Anzahl ablesen."},
+ 9:{wav:"narration_deck4_s9_Charon.mp3",txt:"Merk's dir so: Produktmenge ist wie Speisekarte mal Getränkekarte – jede Zeile mit jeder Spalte, und die Reihenfolge zählt."},
+ 10:{wav:"narration_deck4_s10_Charon.mp3",txt:"In der Fuhrpark-Disposition ist das Alltag: alle möglichen Fahrzeug-Fahrer-Paare bilden eine Produktmenge, aus der jeden Tag eine passende Zuordnung ausgewählt wird."},
+ 11:{wav:"narration_deck4_s11_Charon.mp3",txt:"Hier noch mal alle Symbole dieser Folie im Überblick."},
+ 12:{wav:"narration_deck4_s12_Charon.mp3",txt:"Jetzt bist du dran: bau in Teil A deine eigene Mensa-Kombination, und probier in Teil B den Term-Baukasten aus."},
+ 13:{wav:"narration_deck4_s13_Charon.mp3",txt:"Fassen wir zusammen: die Produktmenge liefert geordnete Paare, ist nicht symmetrisch, und bei kombinierten Operationen gilt immer erst die Klammer."},
+ 14:{wav:"narration_deck4_s14_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm – drei Aufgaben zu Produktmenge, Restmenge und Symmetrie."},
+ 15:{wav:"narration_deck4_s15_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst – inklusive einer Transferaufgabe mit echten Schülerzahlen."},
+ 16:{wav:"narration_deck4_s16_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst – du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt (mehrere unabhängige Gruppen) ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"Gegeben A = {1;2}, B = {a;b}. Gilt A×B = B×A?",
+  a:["Ja, immer","Nein — die Produktmenge ist nicht symmetrisch, Reihenfolge zählt","Nur wenn A und B gleich groß sind","Nur wenn A und B beide Zahlen enthalten"],r:1,
+  why:"A×B enthält Paare (Zahl|Buchstabe), B×A enthält Paare (Buchstabe|Zahl) — das sind komplett andere Paare, außer in Sonderfällen."},
+ {q:"A = {1;2;3}, B = {x;y}. Wie groß ist |A×B|?",
+  a:["5","6","3","2"],r:1,
+  why:"|A×B| = |A| · |B| = 3 · 2 = 6."},
+ {q:"Was bedeutet A\\B?",
+  a:["Alle Elemente, die in A ODER B stehen","Alle Elemente, die in A UND B stehen","Alle Elemente, die in A, aber NICHT in B stehen","Alle Elemente außerhalb von A und B"],r:2,
+  why:"A\\B (Restmenge) enthält genau die Elemente aus A, die nicht gleichzeitig in B stehen."},
+ {q:"In welcher Reihenfolge wertest du C ∩ (A\\B) aus?",
+  a:["Erst C∩A, dann davon B abziehen","Erst A\\B in der Klammer berechnen, dann mit C schneiden","Reihenfolge ist egal, Ergebnis bleibt gleich","Erst C\\B, dann mit A schneiden"],r:1,
+  why:"Klammerinhalte werden immer zuerst berechnet — genau wie bei normalen Rechenausdrücken."},
+ {q:"In einer Umfrage sind A∩B∩C̅ = 70. Was bedeutet das?",
+  a:["70 Personen gehören zu KEINER der drei Gruppen","70 Personen gehören zu A, B UND C gleichzeitig","70 Personen gehören zu A und B, aber NICHT zu C","70 Personen gehören nur zu C"],r:2,
+  why:"C̅ bedeutet „nicht in C” — A∩B∩C̅ sind also alle, die in A UND B sind, aber nicht in C."},
+ {q:"A = {5}, B = {9}, A≠B. Welche Aussage stimmt?",
+  a:["(5|9) = (9|5)","(5|9) ≠ (9|5), weil die Reihenfolge im geordneten Paar zählt","A×B ist leer","|A×B| = 0"],r:1,
+  why:"Ein geordnetes Paar (x|y) ist nur dann gleich einem anderen, wenn beide Komponenten in gleicher Reihenfolge übereinstimmen — (5|9) und (9|5) sind verschieden."}
+];
+const DECK_ID="mengenlehre/deck4";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, conf:conf, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+
+    let sureChoice='unsure';
+    const confrow=document.createElement('div'); confrow.className='confrow';
+    const sureBtn=document.createElement('button'); sureBtn.className='confchip sure'; sureBtn.textContent='🟢 sicher'; sureBtn.type='button';
+    const unsureBtn=document.createElement('button'); unsureBtn.className='confchip unsure'; unsureBtn.textContent='🟡 unsicher'; unsureBtn.type='button';
+    confrow.appendChild(sureBtn); confrow.appendChild(unsureBtn);
+    box.appendChild(confrow);
+
+    const optsWrap=document.createElement('div'); optsWrap.className='quizoptswrap';
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    const warn=document.createElement('div'); warn.className='quizwarn'; warn.textContent='⚠️ Genau die merken sich die 5 Fragen des Tages.';
+
+    function chooseSure(which){
+      sureChoice=which;
+      sureBtn.classList.toggle('on', which==='sure');
+      unsureBtn.classList.toggle('on', which==='unsure');
+      optsWrap.classList.add('enabled');
+    }
+    sureBtn.onclick=()=>chooseSure('sure');
+    unsureBtn.onclick=()=>chooseSure('unsure');
+
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        const ok=(oi===item.r), conf=(sureChoice==='sure');
+        optsWrap.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(!ok) b.classList.add('wrong');
+        why.classList.add('show');
+        if(conf && !ok) warn.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), ok, conf);
+        answered++; if(ok) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      optsWrap.appendChild(b);
+    });
+    box.appendChild(optsWrap);
+    box.appendChild(why);
+    box.appendChild(warn);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

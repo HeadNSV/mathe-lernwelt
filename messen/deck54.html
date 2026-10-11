@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Längen, Flächen &amp; Volumina · Maße mit Parameter</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .warnbox{background:#3d1c1c;border-left:5px solid #c0392b;border-radius:8px;padding:10px 16px;font-size:min(1.9vw,16px);color:#ffd9d0;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+  .threebox{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>MASSE MIT PARAMETER</h1>
+    <h2>Kapitel 17 · Teil 3 — Flächen &amp; Volumen als Funktion</h2>
+    <div class="hook" style="max-width:70ch;">Ein Bauer hat nur eine feste Zaunlänge — wie legt er sein Rechteck an, damit die Weidefläche maximal wird? Genau das beantwortet A(x).</div>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 17.3</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Konzept + Bruecke zu Funktionen -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Fläche und Volumen als Funktion eines Parameters <span class="chip">🌉 Brücke</span></h2>
+      <div class="defbox">Der Flächeninhalt oder das Volumen einer Figur hängt oft von MEHREREN Größen ab. Gibt es eine Nebenbedingung, die eine Größe durch die andere ausdrückt, lässt sich die Fläche bzw. das Volumen als Funktion EINES einzigen Parameters x schreiben: A(x) bzw. V(x).</div>
+      <div class="defbox">Das ist derselbe Funktionsbegriff wie im Funktionen-Themenbereich! Häufig ist A(x) sogar eine QUADRATISCHE Funktion — dann kannst du mit dem Scheitelpunkt aus dem Parabel-Kapitel direkt das Maximum bestimmen.</div>
+    </div>
+  </section>
+
+  <!-- 3 Steps Dreieck-Parameter -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Fläche eines Dreiecks in Abhängigkeit von g</h2>
+      <div class="defbox">Bei einem gleichschenkligen Dreieck ist die Höhe h halb so groß wie die Grundseite g. Drücke die Fläche A in Abhängigkeit von g aus, und berechne g für A=36.</div>
+      <div class="step" id="s3_1"><b class="lbl">Schritt 1 — Nebenbedingung einsetzen:</b> h=g/2 in A=½·g·h ⟹ A(g)=½·g·(g/2)=g²/4.</div>
+      <div class="step" id="s3_2"><b class="lbl">Schritt 2 — A=36 einsetzen:</b> 36=g²/4 ⟺ g²=144 ⟺ g=12 (nur positive Lösung sinnvoll).</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="3" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 4 Weidezaun Setup -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Anwendung</span> Der Weidezaun</h2>
+      <div class="svgbox"><div id="svgWeide"></div><div class="svgcaption">Zaunlänge 80m auf drei Seiten, die vierte Seite grenzt an einen Fluss</div></div>
+      <div class="defbox">Ein Landwirt besitzt einen Weidezaun mit 80m Länge. Er steckt damit eine rechteckige Weidefläche ab, die an einen Fluss grenzt (die Flussseite braucht keinen Zaun). Für welche Breite x wird die Weidefläche maximal?</div>
+    </div>
+  </section>
+
+  <!-- 5 Steps A(x) aufstellen -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Flächenfunktion A(x) aufstellen</h2>
+      <div class="step" id="s5_1"><b class="lbl">Schritt 1 — Nebenbedingung:</b> zwei Breiten x + eine Länge l = 80m ⟹ l=80−2x.</div>
+      <div class="step" id="s5_2"><b class="lbl">Schritt 2 — Flächenfunktion:</b> A(x)=x·l=x·(80−2x)=−2x²+80x.</div>
+      <div class="step" id="s5_3"><b class="lbl">Definitionsbereich:</b> 0&lt;x&lt;40 (sonst wird Länge oder Breite null oder negativ).</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="5" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 6 Steps Maximum bestimmen -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Maximum über den Scheitelpunkt</h2>
+      <div class="defbox">A(x)=−2x²+80x ist eine nach unten geöffnete Parabel — ihr Scheitelpunkt liefert das Maximum.</div>
+      <div class="step" id="s6_1"><b class="lbl">Schritt 1 — x-Koordinate:</b> x_s=−b/(2a)=−80/(2·(−2))=20.</div>
+      <div class="step" id="s6_2"><b class="lbl">Schritt 2 — Maximum einsetzen:</b> A(20)=−2·400+80·20=−800+1600=800.</div>
+      <div class="step" id="s6_3"><b class="lbl">Antwort:</b> bei x=20m Breite (und Länge l=40m) wird die Weidefläche mit 800m² maximal.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="6" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 7 Volumen-Parameter Konzept -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Volumen in Abhängigkeit von einem Parameter</h2>
+      <div class="defbox">Genauso wie bei Flächen lässt sich auch das Volumen eines Körpers bei ausreichend vielen Nebenbedingungen als Funktion nur EINES Parameters darstellen.</div>
+    </div>
+  </section>
+
+  <!-- 8 Steps Quader-Verhaeltnis -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Quader mit festem Seitenverhältnis</h2>
+      <div class="defbox">Ein Quader hat die Längenverhältnisse l:b:h = 1:3:2. Drücke das Volumen in Abhängigkeit von l aus, und berechne l, b, h für V=48dm³.</div>
+      <div class="step" id="s8_1"><b class="lbl">Schritt 1 — Nebenbedingungen:</b> b=3l, h=2l.</div>
+      <div class="step" id="s8_2"><b class="lbl">Schritt 2 — Volumenfunktion:</b> V(l)=l·3l·2l=6l³.</div>
+      <div class="step" id="s8_3"><b class="lbl">Schritt 3 — V=48 einsetzen:</b> 48=6l³ ⟺ l³=8 ⟺ l=2dm.</div>
+      <div class="step" id="s8_4"><b class="lbl">Antwort:</b> l=2dm, b=6dm, h=4dm.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="8" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 9 Dachboden Setup -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Anwendung</span> Der Dachbodenausbau</h2>
+      <div class="svgbox"><div id="svgDach"></div><div class="svgcaption">Dachquerschnitt: gleichschenkliges Dreieck, Breite 6m, Höhe 3m — Haus 8m lang</div></div>
+      <div class="defbox">Ein 8m langes Haus hat einen Dachboden mit dreieckigem Querschnitt (Breite 6m, Höhe 3m). Es soll ein Raum mit rechteckigem Querschnitt (Breite x, Höhe h) eingebaut werden. Für welche Breite x wird das Raumvolumen maximal?</div>
+    </div>
+  </section>
+
+  <!-- 10 Steps Dachboden -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Maximales Raumvolumen</h2>
+      <div class="step" id="s10_1"><b class="lbl">Schritt 1 — Strahlensatz nutzt die Nebenbedingung:</b> (3−h)/(x/2)=3/3=1 ⟹ h=3−x/2.</div>
+      <div class="step" id="s10_2"><b class="lbl">Schritt 2 — Volumenfunktion:</b> V(x)=x·h·8=8x·(3−x/2)=24x−4x².</div>
+      <div class="step" id="s10_3"><b class="lbl">Schritt 3 — Scheitelpunkt:</b> x_s=−24/(2·(−4))=3.</div>
+      <div class="step" id="s10_4"><b class="lbl">Antwort:</b> V(3)=24·3−4·9=72−36=36m³ — maximal bei Breite x=3m und Höhe h=1,5m.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="10" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 11 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Parameter-Maß-Labor</span><span class="sub">x-Regler, Fläche live als Zahl UND als Graph</span></div>
+    <iframe allow="autoplay" data-src="parametermass54_labor.html"></iframe>
+  </section>
+
+  <!-- 12 Eselsbruecke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Zwei Unbekannte, eine Nebenbedingung — daraus wird EINE Funktion mit EINEM Parameter." Und: „Ist A(x) eine nach unten geöffnete Parabel, liegt das Maximum genau im Scheitelpunkt."</div>
+    </div>
+  </section>
+
+  <!-- 13 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Materialsparende Verpackung</h2>
+      <div class="defbox">Verpackungsdesigner nutzen genau diese Technik: bei vorgegebenem Volumen wird die Oberfläche (und damit der Materialverbrauch) als Funktion einer Kantenlänge dargestellt — und über den Scheitelpunkt die materialsparendste Form gefunden.</div>
+    </div>
+  </section>
+
+  <!-- 14 Intuitions-Regler -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Schätz mal: bei welchem x ist A(x) am größten?</h2>
+      <div class="defbox">A(x)=x·(10−x) — bei welchem x-Wert wird die Fläche maximal?</div>
+      <div id="estMessen54"></div>
+    </div>
+  </section>
+
+  <!-- 15 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>A(x), V(x)</td><td>„A von x, V von x"</td><td>Fläche bzw. Volumen als Funktion des Parameters x</td></tr>
+        <tr><td>x_s=−b/(2a)</td><td>—</td><td>x-Koordinate des Scheitelpunkts einer quadratischen Funktion</td></tr>
+        <tr><td>D_A</td><td>„Definitionsmenge von A"</td><td>sinnvolle x-Werte, für die A(x) geometrisch Sinn ergibt</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 16 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Schritt</th><th>Was passiert</th></tr>
+      <tr><td>1</td><td>Nebenbedingung finden, die eine Größe durch die andere ausdrückt</td></tr>
+      <tr><td>2</td><td>Fläche/Volumen als Funktion des verbleibenden Parameters aufstellen</td></tr>
+      <tr><td>3</td><td>Bei quadratischer Funktion: Scheitelpunkt = Maximum bestimmen</td></tr>
+    </table>
+  </section>
+
+  <!-- 17 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Ein Rechteck hat den Umfang 40m. Stelle die Fläche A(x) in Abhängigkeit der Breite x dar.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>l=20−x, A(x)=x·(20−x)=−x²+20x</details>
+        </li>
+        <li style="margin-top:10px;">Für welches x wird die Fläche aus Aufgabe 1 maximal?
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>x_s=−20/(2·(−1))=10, A(10)=100m²</details>
+        </li>
+        <li style="margin-top:10px;">Ein Würfel hat V(a)=a³. Berechne a für V=27dm³.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>a³=27 ⟹ a=3dm</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 18 Themenbereich-Abschluss-Check -->
+  <section class="slide explain scroll">
+    <div class="ebox">
+      <h2>🏁 Themenbereich-Abschluss-Check</h2>
+      <div class="defbox">Der Themenbereich „Längen, Flächen &amp; Volumina" ist jetzt komplett. Diese Aufgaben mischen alle drei Teile — quer durch Strahlensatz, Flächen/Volumen und Parameter.</div>
+      <ol class="bul">
+        <li>Ein Kreis hat den Radius r=4m. Berechne die Fläche.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung</summary>A=π·16≈50,27m²</details>
+        </li>
+        <li style="margin-top:10px;">Ein Würfel hat die Kante a=4cm. Berechne das Volumen.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung</summary>V=4³=64cm³</details>
+        </li>
+        <li style="margin-top:10px;">SA=2m, SB=5m, SC=3m. Berechne SD mit dem Strahlensatz.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung</summary>SD=SB·SC/SA=5·3/2=7,5m</details>
+        </li>
+        <li style="margin-top:10px;">A(x)=x·(10−x). Berechne A(3).
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung</summary>A(3)=3·7=21</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 19 Pruefungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Fläche oder Volumen mithilfe einer Nebenbedingung als Funktion EINES Parameters aufstellen.</b></li>
+        <li><b>Bei quadratischen A(x)/V(x)-Funktionen den Scheitelpunkt als Maximum bestimmen.</b></li>
+        <li><b>Einen sinnvollen Definitionsbereich für den Parameter angeben.</b></li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">🏁 Damit ist der gesamte Themenbereich „Längen, Flächen &amp; Volumina" vollständig durchgearbeitet. Als Nächstes folgt ein neues Themenfeld: Daten &amp; Zufall.</div>
+    </div>
+  </section>
+
+  <!-- 20 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+function toX54(x, ox, scale){ return ox+x*scale; }
+function toY54(y, oy, scale){ return oy-y*scale; }
+(function(){
+  let s='<svg viewBox="0 0 260 160" style="width:100%;max-width:300px;height:auto;display:block;margin:0 auto;">';
+  s+='<rect x="30" y="40" width="180" height="90" fill="rgba(95,208,199,0.15)" stroke="#5fd0c7" stroke-width="2"/>';
+  s+='<line x1="20" y1="130" x2="230" y2="130" stroke="#4a5568" stroke-width="4"/>';
+  s+='<text x="120" y="148" fill="#e6edf3" font-size="12" text-anchor="middle">Fluss (kein Zaun)</text>';
+  s+='<text x="120" y="30" fill="#f2a63c" font-size="12" text-anchor="middle">l = 80 − 2x</text>';
+  s+='<text x="15" y="90" fill="#f2a63c" font-size="12" text-anchor="middle" transform="rotate(-90 15 90)">x</text>';
+  s+='</svg>';
+  document.getElementById('svgWeide').innerHTML=s;
+})();
+(function(){
+  let s='<svg viewBox="0 0 260 160" style="width:100%;max-width:300px;height:auto;display:block;margin:0 auto;">';
+  s+='<polygon points="30,130 130,30 230,130" fill="none" stroke="#5fd0c7" stroke-width="2"/>';
+  s+='<rect x="90" y="90" width="80" height="40" fill="rgba(242,166,60,0.25)" stroke="#f2a63c" stroke-width="2"/>';
+  s+='<text x="130" y="20" fill="#e6edf3" font-size="12" text-anchor="middle">3m</text>';
+  s+='<text x="130" y="148" fill="#e6edf3" font-size="12" text-anchor="middle">6m</text>';
+  s+='<text x="130" y="85" fill="#f2a63c" font-size="12" text-anchor="middle">x</text>';
+  s+='</svg>';
+  document.getElementById('svgDach').innerHTML=s;
+})();
+
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Fläche und Volumen als Funktion eines Parameters", "📐 Schritt für Schritt: Fläche eines Dreiecks in Abhängigkeit von g", "🔧 Anwendung: Der Weidezaun", "📐 Schritt für Schritt: Flächenfunktion A(x) aufstellen", "📐 Schritt für Schritt: Maximum über den Scheitelpunkt", "Volumen in Abhängigkeit von einem Parameter", "📐 Schritt für Schritt: Quader mit festem Seitenverhältnis", "🔧 Anwendung: Der Dachbodenausbau", "📐 Schritt für Schritt: Maximales Raumvolumen", "🧪 Parameter-Maß-Labor", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Materialsparende Verpackung", "Schätz mal: bei welchem x ist A(x) am größten?", "Symbol-Legende", "Zusammenfassung", "✏️ Stift & Papier", "🏁 Themenbereich-Abschluss-Check", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=20;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck54_s1_Charon.mp3",txt:"Maße mit Parameter. Ein Bauer hat nur eine feste Zaunlänge - wie legt er sein Rechteck an, damit die Weidefläche maximal wird? Genau das beantwortet A von x."},
+ 2:{wav:"narration_deck54_s2_Charon.mp3",txt:"Mit einer Nebenbedingung lässt sich Fläche oder Volumen als Funktion eines einzigen Parameters darstellen - oft sogar als quadratische Funktion."},
+ 3:{wav:"narration_deck54_s3_Charon.mp3",txt:"Jetzt drücken wir gemeinsam die Fläche eines Dreiecks in Abhängigkeit von einem Parameter aus, Schritt für Schritt."},
+ 4:{wav:"narration_deck54_s4_Charon.mp3",txt:"Ein Landwirt möchte mit fester Zaunlänge eine möglichst große Weidefläche abstecken."},
+ 5:{wav:"narration_deck54_s5_Charon.mp3",txt:"Jetzt stellen wir gemeinsam die Flächenfunktion auf, Schritt für Schritt."},
+ 6:{wav:"narration_deck54_s6_Charon.mp3",txt:"Jetzt bestimmen wir gemeinsam das Maximum über den Scheitelpunkt, Schritt für Schritt."},
+ 7:{wav:"narration_deck54_s7_Charon.mp3",txt:"Auch das Volumen eines Körpers lässt sich bei ausreichend vielen Nebenbedingungen als Funktion eines Parameters darstellen."},
+ 8:{wav:"narration_deck54_s8_Charon.mp3",txt:"Jetzt berechnen wir gemeinsam einen Quader mit festem Seitenverhältnis, Schritt für Schritt."},
+ 9:{wav:"narration_deck54_s9_Charon.mp3",txt:"Beim Dachbodenausbau soll ein rechteckiger Raum in einen dreieckigen Querschnitt eingebaut werden."},
+ 10:{wav:"narration_deck54_s10_Charon.mp3",txt:"Jetzt bestimmen wir gemeinsam das maximale Raumvolumen, Schritt für Schritt."},
+ 11:{wav:"narration_deck54_s11_Charon.mp3",txt:"Jetzt bist du dran: stelle x per Regler ein und beobachte Fläche und Graph gleichzeitig."},
+ 12:{wav:"narration_deck54_s12_Charon.mp3",txt:"Zwei Unbekannte, eine Nebenbedingung - daraus wird eine Funktion mit einem Parameter."},
+ 13:{wav:"narration_deck54_s13_Charon.mp3",txt:"Auch beim Verpackungsdesign wird die materialsparendste Form über den Scheitelpunkt gefunden."},
+ 14:{wav:"narration_deck54_s14_Charon.mp3",txt:"Bevor du ins Labor gehst: schätz doch mal, bei welchem x-Wert diese Fläche maximal wird."},
+ 15:{wav:"narration_deck54_s15_Charon.mp3",txt:"Hier noch mal alle Symbole rund um Maße mit Parameter im Überblick."},
+ 16:{wav:"narration_deck54_s16_Charon.mp3",txt:"Fassen wir zusammen, wie man Flächen und Volumina mit Parameter Schritt für Schritt löst."},
+ 17:{wav:"narration_deck54_s17_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben rund um Parameter-Aufgaben."},
+ 18:{wav:"narration_deck54_s18_Charon.mp3",txt:"Jetzt kommt der Abschluss-Check über den gesamten Themenbereich - von Strahlensätzen bis Parameter-Aufgaben."},
+ 19:{wav:"narration_deck54_s19_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst - damit ist der gesamte Themenbereich Längen, Flächen und Volumina geschafft."},
+ 20:{wav:"narration_deck54_s20_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"A(x)=−3x²+60x. Wie groß ist x_s (die x-Koordinate des Maximums)?",
+  a:["10","20","−10","30"],r:0,
+  why:"x_s=−b/(2a)=−60/(2·(−3))=10."},
+ {q:"Ein Rechteck hat den Umfang 24m. Wie lautet die Flächenfunktion A(x) in Abhängigkeit der Breite x?",
+  a:["A(x)=x²","A(x)=x·(12−x)","A(x)=x·(24−x)","A(x)=24x"],r:1,
+  why:"Bei Umfang 24m gilt 2x+2l=24, also l=12−x. A(x)=x·l=x·(12−x)."},
+ {q:"Ein Schüler berechnet für einen Quader mit V(l)=6l³ den Wert l=2 aus V=48, vergisst aber b und h zu berechnen. Was fehlt?",
+  a:["Nichts, l allein reicht als Antwort","b=3l=6 und h=2l=4 müssen aus der Nebenbedingung noch bestimmt werden","b und h sind immer gleich l","Ohne Taschenrechner lässt sich das nicht berechnen"],r:1,
+  why:"Die Nebenbedingungen (hier b=3l, h=2l) müssen nach dem Finden von l noch angewendet werden, um alle drei Kantenlängen zu erhalten."},
+ {q:"Warum liefert der Scheitelpunkt einer nach UNTEN geöffneten Parabel das Maximum und nicht das Minimum?",
+  a:["Weil a>0 ist","Weil der Scheitelpunkt der höchste Punkt der Parabel ist, wenn sie nach unten geöffnet ist","Weil x immer positiv ist","Das ist Zufall, es könnte auch das Minimum sein"],r:1,
+  why:"Bei einer nach unten geöffneten Parabel (a<0) ist der Scheitelpunkt der HÖCHSTE Punkt des Graphen — also das Maximum."},
+ {q:"Für welchen Bereich von x ist der Definitionsbereich einer Flächenfunktion A(x)=x·(80−2x) sinnvoll?",
+  a:["Für alle x∈ℝ","Nur für 0<x<40, da sonst Länge oder Breite negativ würden","Nur für x=20","Für x<0"],r:1,
+  why:"Bei x≥40 würde die Länge (80−2x) null oder negativ — geometrisch nur 0<x<40 sinnvoll."}
+];
+const DECK_ID="messen/deck54";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), oi===item.r);
+        answered++; if(oi===item.r) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estMessen54', {
+    frage: 'A(x)=x·(10−x) — bei welchem x-Wert wird die Fläche maximal?',
+    min: 0, max: 10, korrekt: 5, toleranz: 0,
+    begruendung: 'A(x)=−x²+10x hat x_s=−10/(2·(−1))=5 — bei x=5 ist die Fläche mit A(5)=25 maximal.'
+  });
+});
+</script>
+</body>
+</html>

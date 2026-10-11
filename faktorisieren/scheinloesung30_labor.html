@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Scheinlösungs-Falle — Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{max-width:680px;margin:0 auto;padding:18px 20px 40px;}
+  h3{margin:0 0 6px;}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  #progress{font-size:13px;color:var(--muted);margin-bottom:8px;}
+  #eqLabel{font-size:22px;color:var(--accent);text-align:center;font-weight:700;margin:8px 0 14px;}
+  .stage{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin-bottom:12px;}
+  .stage h4{margin:0 0 8px;color:var(--accent);font-size:15px;}
+  .btnrow{display:flex;flex-wrap:wrap;gap:8px;}
+  .opt{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 13px;font-size:14px;cursor:pointer;}
+  .opt:hover{background:#283041;}
+  .opt.correct{background:#1c3d24;border-color:#4caf50;}
+  .opt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .opt:disabled{cursor:default;}
+  #feedback{font-size:14px;color:#5fd0c7;min-height:20px;margin-top:8px;}
+  #resultBox{text-align:center;font-size:17px;font-weight:700;margin:12px 0;min-height:24px;}
+  #resultBox.ok{color:#4caf50;}
+  #nextBtn{display:none;margin:10px auto 0;background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:9px 18px;font-size:14px;cursor:pointer;}
+  #doneBox{text-align:center;font-size:16px;color:var(--accent);font-weight:700;margin-top:16px;display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h3>🕳️ Scheinlösungs-Falle</h3>
+  <p class="hint">Löse jede Bruchgleichung Schritt für Schritt — die Probe gegen D entscheidet am Ende, ob deine Lösung echt ist.</p>
+  <div id="progress">Fall 1 / 3</div>
+  <div id="eqLabel"></div>
+
+  <div class="stage" id="stageD">
+    <h4>Schritt 1 — Definitionsmenge</h4>
+    <p class="hint" style="margin-bottom:8px;">Welcher x-Wert ist hier verboten?</p>
+    <div class="btnrow" id="dOptions"></div>
+  </div>
+
+  <div class="stage" id="stageSolve" style="display:none;">
+    <h4>Schritt 2 — Gleichung lösen</h4>
+    <p class="hint" style="margin-bottom:8px;">Welcher x-Wert kommt beim Auflösen heraus?</p>
+    <div class="btnrow" id="solveOptions"></div>
+  </div>
+
+  <div class="stage" id="stageProbe" style="display:none;">
+    <h4>Schritt 3 — Probe gegen D</h4>
+    <p class="hint" style="margin-bottom:8px;">Liegt das Ergebnis in D — oder ist es eine Scheinlösung?</p>
+    <div class="btnrow" id="probeOptions">
+      <button class="opt" data-v="gueltig">Gültige Lösung — liegt in D</button>
+      <button class="opt" data-v="schein">Scheinlösung — nicht in D, L={ }</button>
+    </div>
+  </div>
+
+  <div id="feedback"></div>
+  <div id="resultBox"></div>
+  <button id="nextBtn">Nächster Fall ▸</button>
+  <div id="doneBox">✅ Alle drei Fälle sauber geprüft — die Scheinlösungs-Falle hat dich nicht erwischt!</div>
+</div>
+<script>
+const CASES=[
+  {eq:"(x+2)/(x−4) = 6/(x−4)", forbidden:4, forbiddenOpts:[4,-4,6,2],
+   solveVal:4, solveOpts:[4,-4,2,6], verdict:"schein"},
+  {eq:"1/(x−1) + 2/(x+1) = 3/(x²−1)", forbidden:1, forbiddenOpts:[1,-1,3,0],
+   solveVal:"4/3", solveOpts:["4/3","1","-1","3"], verdict:"gueltig"},
+  {eq:"(x+1)/(x−3) = 4/(x−3)", forbidden:3, forbiddenOpts:[3,-3,4,1],
+   solveVal:3, solveOpts:[3,-3,1,4], verdict:"schein"}
+];
+let ci=0, stage=0, caseSolved=[false,false,false];
+
+function render(){
+  const c=CASES[ci];
+  document.getElementById('progress').textContent='Fall '+(ci+1)+' / '+CASES.length;
+  document.getElementById('eqLabel').textContent=c.eq;
+  document.getElementById('feedback').textContent='';
+  document.getElementById('resultBox').textContent='';
+  document.getElementById('resultBox').className='';
+  document.getElementById('nextBtn').style.display='none';
+  stage=0;
+  document.getElementById('stageD').style.display='block';
+  document.getElementById('stageSolve').style.display='none';
+  document.getElementById('stageProbe').style.display='none';
+
+  const dRow=document.getElementById('dOptions');
+  dRow.innerHTML='';
+  shuffleArr(c.forbiddenOpts).forEach(v=>{
+    const b=document.createElement('button'); b.className='opt'; b.textContent='x = '+v; b.dataset.v=v;
+    b.onclick=()=>checkD(v, b);
+    dRow.appendChild(b);
+  });
+  const sRow=document.getElementById('solveOptions');
+  sRow.innerHTML='';
+  shuffleArr(c.solveOpts).forEach(v=>{
+    const b=document.createElement('button'); b.className='opt'; b.textContent='x = '+v; b.dataset.v=v;
+    b.onclick=()=>checkSolve(v, b);
+    sRow.appendChild(b);
+  });
+  [...document.querySelectorAll('#probeOptions .opt')].forEach(b=>{ b.disabled=false; b.classList.remove('correct','wrong'); b.onclick=()=>checkProbe(b.dataset.v, b); });
+}
+function shuffleArr(a){ return [...a].sort(()=>Math.random()-0.5); }
+
+function checkD(v, btn){
+  const c=CASES[ci];
+  if(stage!==0) return;
+  if(String(v)===String(c.forbidden)){
+    btn.classList.add('correct');
+    [...document.getElementById('dOptions').children].forEach(x=>x.disabled=true);
+    document.getElementById('feedback').textContent='Richtig — x='+c.forbidden+' ist verboten. D = ℝ\\{'+c.forbidden+'}.';
+    stage=1;
+    document.getElementById('stageSolve').style.display='block';
+  } else {
+    btn.classList.add('wrong');
+    document.getElementById('feedback').textContent='Nicht ganz — welcher Nenner wird bei diesem x-Wert Null?';
+    setTimeout(()=>btn.classList.remove('wrong'),700);
+  }
+}
+function checkSolve(v, btn){
+  const c=CASES[ci];
+  if(stage!==1) return;
+  if(String(v)===String(c.solveVal)){
+    btn.classList.add('correct');
+    [...document.getElementById('solveOptions').children].forEach(x=>x.disabled=true);
+    document.getElementById('feedback').textContent='Richtig gelöst: x = '+c.solveVal+'. Aber Achtung — jetzt kommt die Probe!';
+    stage=2;
+    document.getElementById('stageProbe').style.display='block';
+  } else {
+    btn.classList.add('wrong');
+    document.getElementById('feedback').textContent='Nicht ganz — rechne die bruchfreie Gleichung nochmal nach.';
+    setTimeout(()=>btn.classList.remove('wrong'),700);
+  }
+}
+function checkProbe(v, btn){
+  const c=CASES[ci];
+  if(stage!==2 || caseSolved[ci]) return;
+  if(v===c.verdict){
+    btn.classList.add('correct');
+    [...document.getElementById('probeOptions').children].forEach(x=>x.disabled=true);
+    caseSolved[ci]=true;
+    const box=document.getElementById('resultBox');
+    box.className='ok';
+    box.textContent = c.verdict==='schein'
+      ? '✅ Erkannt: x='+c.solveVal+' liegt NICHT in D → Scheinlösung → L = { }.'
+      : '✅ Erkannt: x='+c.solveVal+' liegt in D → gültige Lösung → L = {'+c.solveVal+'}.';
+    window.lwAward && window.lwAward('mission', 'fall'+(ci+1));
+    document.getElementById('nextBtn').style.display = (ci<CASES.length-1) ? 'block' : 'none';
+    checkAllDone();
+  } else {
+    btn.classList.add('wrong');
+    document.getElementById('feedback').textContent='Nicht ganz — vergleiche das Ergebnis mit der Definitionsmenge aus Schritt 1.';
+    setTimeout(()=>btn.classList.remove('wrong'),700);
+  }
+}
+document.getElementById('nextBtn').onclick=()=>{
+  if(ci<CASES.length-1){ ci++; render(); }
+};
+function checkAllDone(){
+  if(caseSolved.every(Boolean)){
+    document.getElementById('doneBox').style.display='block';
+    window.lwAward && window.lwAward('mission', 'scheinloesung_komplett');
+  }
+}
+render();
+
+// Test-Hook fuer Playwright-Verifikation
+window.LAB = {
+  state: () => ({ caseIndex: ci, stage: stage, caseSolved: caseSolved.slice() }),
+  answerD: (v) => { const b=[...document.getElementById('dOptions').children].find(x=>String(x.dataset.v)===String(v)); if(b) checkD(v,b); },
+  answerSolve: (v) => { const b=[...document.getElementById('solveOptions').children].find(x=>String(x.dataset.v)===String(v)); if(b) checkSolve(v,b); },
+  answerProbe: (v) => { const b=[...document.getElementById('probeOptions').children].find(x=>x.dataset.v===v); if(b) checkProbe(v,b); },
+  nextCase: () => document.getElementById('nextBtn').click()
+};
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

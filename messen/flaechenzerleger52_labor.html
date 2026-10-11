@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Flächen-Zerleger</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:16px 22px 40px;max-width:900px;margin:0 auto;}
+  h2{margin:0 0 4px;font-size:22px;}
+  .lead{color:var(--muted);font-size:15px;margin:0 0 14px;}
+  .modebar{display:flex;gap:8px;margin-bottom:14px;}
+  .modebtn{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 16px;font-size:15px;cursor:pointer;}
+  .modebtn.active{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  .panel{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:14px;}
+  #svgHost{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;}
+  .row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;}
+  .partbtn{flex:1;min-width:150px;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:14px;cursor:pointer;}
+  .partbtn:hover{background:#283041;}
+  .partbtn.revealed{background:#1c3d24;border-color:#4caf50;}
+  .totalbtn{margin-top:10px;width:100%;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:14px;cursor:pointer;}
+  .totalbtn:hover{background:#283041;}
+  .totalbtn.revealed{background:#1c3d24;border-color:#4caf50;}
+  .mission{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:10px 16px;margin-top:10px;font-size:15px;}
+  .mission.solved{background:#1c3d24;border-left-color:#4caf50;}
+  .card{background:#1f2630;border-radius:8px;padding:10px 14px;margin:8px 0;}
+  .triplebtns{display:flex;gap:8px;margin-top:6px;}
+  .tbtn{flex:1;background:#151b24;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:14px;cursor:pointer;}
+  .tbtn:hover{background:#283041;}
+  .tbtn.correct{background:#1c3d24;border-color:#4caf50;}
+  .tbtn.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .tbtn:disabled{cursor:default;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h2>🧪 Flächen-Zerleger</h2>
+  <p class="lead">Zerlege eine zusammengesetzte Figur — oder löse das Umfang-oder-Fläche-Rätsel.</p>
+  <div class="modebar">
+    <button class="modebtn active" id="btnModeA">Modus: Zerlegen</button>
+    <button class="modebtn" id="btnModeB">Modus: Umfang oder Fläche?</button>
+  </div>
+
+  <div class="panel" id="panelA">
+    <div id="svgHost"></div>
+    <div class="row">
+      <button class="partbtn" id="btnPart1">Teilfläche 1 aufdecken (Querbalken)</button>
+      <button class="partbtn" id="btnPart2">Teilfläche 2 aufdecken (Steg)</button>
+    </div>
+    <button class="totalbtn" id="btnTotal">Gesamtfläche berechnen</button>
+    <div class="mission" id="missionA">🎯 Mission: Decke beide Teilflächen auf und berechne die Gesamtfläche.</div>
+  </div>
+
+  <div class="panel" id="panelB" style="display:none;">
+    <div id="szenarioHost"></div>
+    <div class="mission" id="missionB">🎯 Mission: Klassifiziere alle 6 Szenarien richtig als „Umfang" oder „Fläche".</div>
+  </div>
+</div>
+
+<script>
+// ===== Modus A: Zerlegen =====
+let part1Revealed=false, part2Revealed=false, totalRevealed=false;
+function renderSVG(){
+  let s='<svg viewBox="0 0 220 200" style="width:100%;max-width:260px;height:auto;display:block;margin:0 auto;">';
+  s+='<rect x="20" y="20" width="160" height="40" fill="'+(part1Revealed?'rgba(95,208,199,0.35)':'rgba(95,208,199,0.12)')+'" stroke="#5fd0c7" stroke-width="2"/>';
+  s+='<rect x="70" y="60" width="40" height="100" fill="'+(part2Revealed?'rgba(242,166,60,0.35)':'rgba(242,166,60,0.12)')+'" stroke="#f2a63c" stroke-width="2"/>';
+  s+='<text x="100" y="15" fill="#5fd0c7" font-size="13" text-anchor="middle">8m × 2m</text>';
+  s+='<text x="90" y="115" fill="#f2a63c" font-size="12" text-anchor="middle">2m × 5m</text>';
+  s+='</svg>';
+  document.getElementById('svgHost').innerHTML=s;
+}
+function updateMissionA(){
+  const box=document.getElementById('missionA');
+  if(part1Revealed && part2Revealed && totalRevealed){
+    box.classList.add('solved');
+    box.innerHTML='✅ Mission erfüllt: A₁=16m² + A₂=10m² = 26m² Gesamtfläche.';
+  } else {
+    box.classList.remove('solved');
+    box.innerHTML='🎯 Mission: Decke beide Teilflächen auf und berechne die Gesamtfläche.';
+  }
+}
+document.getElementById('btnPart1').onclick=function(){
+  part1Revealed=true;
+  this.textContent='Teilfläche 1 = 8m × 2m = 16m²';
+  this.classList.add('revealed');
+  renderSVG(); updateMissionA();
+};
+document.getElementById('btnPart2').onclick=function(){
+  part2Revealed=true;
+  this.textContent='Teilfläche 2 = 2m × 5m = 10m²';
+  this.classList.add('revealed');
+  renderSVG(); updateMissionA();
+};
+document.getElementById('btnTotal').onclick=function(){
+  totalRevealed=true;
+  this.textContent='Gesamtfläche = 16m² + 10m² = 26m²';
+  this.classList.add('revealed');
+  updateMissionA();
+};
+renderSVG();
+
+// ===== Modus B: Umfang oder Flaeche =====
+const SZENARIEN=[
+  {t:'Zaun ums Grundstück ziehen', ans:'umfang'},
+  {t:'Rasen einsäen', ans:'flaeche'},
+  {t:'Randstein ums Beet legen', ans:'umfang'},
+  {t:'Teppichboden verlegen', ans:'flaeche'},
+  {t:'Bordüre um den Pool anbringen', ans:'umfang'},
+  {t:'Fliesen im Bad verlegen', ans:'flaeche'}
+];
+let classifiedB={};
+function renderB(){
+  const host=document.getElementById('szenarioHost');
+  host.innerHTML='';
+  SZENARIEN.forEach((sz,si)=>{
+    const card=document.createElement('div'); card.className='card';
+    card.innerHTML='<b>'+(si+1)+'. '+sz.t+'</b>';
+    const btns=document.createElement('div'); btns.className='triplebtns';
+    ['Umfang','Fläche'].forEach(label=>{
+      const key = label==='Umfang'?'umfang':'flaeche';
+      const btn=document.createElement('button'); btn.className='tbtn'; btn.textContent=label;
+      btn.onclick=()=>{
+        if(classifiedB[si]!==undefined) return;
+        const correct = (key===sz.ans);
+        classifiedB[si]=correct;
+        btns.querySelectorAll('.tbtn').forEach(b=>b.disabled=true);
+        btn.classList.add(correct?'correct':'wrong');
+        if(!correct){
+          const rightLabel = sz.ans==='umfang'?'Umfang':'Fläche';
+          btns.querySelectorAll('.tbtn').forEach(b=>{ if(b.textContent===rightLabel) b.classList.add('correct'); });
+        }
+        updateMissionB();
+      };
+      btns.appendChild(btn);
+    });
+    card.appendChild(btns);
+    host.appendChild(card);
+  });
+  updateMissionB();
+}
+function updateMissionB(){
+  const box=document.getElementById('missionB');
+  const done=Object.keys(classifiedB).length;
+  const correct=Object.values(classifiedB).filter(v=>v).length;
+  if(done===SZENARIEN.length && correct===SZENARIEN.length){
+    box.classList.add('solved');
+    box.innerHTML='✅ Mission erfüllt: alle 6 Szenarien richtig klassifiziert!';
+  } else {
+    box.classList.remove('solved');
+    box.innerHTML='🎯 Mission: Klassifiziere alle 6 Szenarien richtig als „Umfang" oder „Fläche". ('+correct+'/'+SZENARIEN.length+' richtig, '+done+'/'+SZENARIEN.length+' bearbeitet)';
+  }
+}
+renderB();
+
+// ===== Modus-Umschaltung =====
+const btnModeA=document.getElementById('btnModeA'), btnModeB=document.getElementById('btnModeB');
+const panelA=document.getElementById('panelA'), panelB=document.getElementById('panelB');
+let mode='zerlegen';
+btnModeA.onclick=()=>{ mode='zerlegen'; btnModeA.classList.add('active'); btnModeB.classList.remove('active'); panelA.style.display='block'; panelB.style.display='none'; };
+btnModeB.onclick=()=>{ mode='raetsel'; btnModeB.classList.add('active'); btnModeA.classList.remove('active'); panelA.style.display='none'; panelB.style.display='block'; };
+
+window.LAB={
+  state(){
+    const done=Object.keys(classifiedB).length;
+    const correct=Object.values(classifiedB).filter(v=>v).length;
+    return {
+      mode: mode,
+      part1Revealed: part1Revealed,
+      part2Revealed: part2Revealed,
+      totalRevealed: totalRevealed,
+      missionASolved: part1Revealed && part2Revealed && totalRevealed,
+      classifiedCount: done,
+      correctCount: correct,
+      missionBSolved: done===SZENARIEN.length && correct===SZENARIEN.length
+    };
+  },
+  setMode(m){ if(m==='zerlegen') btnModeA.onclick(); else btnModeB.onclick(); },
+  revealPart1(){ document.getElementById('btnPart1').click(); },
+  revealPart2(){ document.getElementById('btnPart2').click(); },
+  revealTotal(){ document.getElementById('btnTotal').click(); },
+  classify(idx, choice){
+    const host=document.getElementById('szenarioHost');
+    const card=host.children[idx];
+    const btns=card.querySelectorAll('.tbtn');
+    btns[choice==='umfang'?0:1].click();
+  },
+  szenarioCount(){ return SZENARIEN.length; }
+};
+</script>
+</body>
+</html>

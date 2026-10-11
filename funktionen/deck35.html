@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Funktionen · Teil 5 — Lineare Funktionen im Einsatz</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .warnbox{background:#3d1c1c;border-left:5px solid #c0392b;border-radius:8px;padding:10px 16px;font-size:min(1.9vw,16px);color:#ffd9d0;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>FUNKTIONEN <span class="accent">· Teil 5</span></h1>
+    <h2>Lineare Funktionen im Einsatz</h2>
+    <div class="hook" style="max-width:70ch;">Handytarif A oder B — ab wie vielen Minuten kippt es? Genau EIN Punkt entscheidet, welcher Tarif sich lohnt. Genau das ist der Kern dieses Decks: lineare Funktionen im echten Leben.</div>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 11.5</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Anwendung 1 Szenario -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Anwendungsaufgabe 1 — Handytarif-Vergleich</h2>
+      <div class="defbox">Tarif A: 10 € Grundgebühr + 0,05 €/Minute. Tarif B: keine Grundgebühr, dafür 0,15 €/Minute. Ab wie vielen Minuten Gesprächszeit im Monat lohnt sich Tarif A?</div>
+      <ul class="bul">
+        <li>Tarif A: kA(x) = 0,05x + 10</li>
+        <li>Tarif B: kB(x) = 0,15x</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 3 Schritt Handytarif -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Handytarif lösen</h2>
+      <div class="step" id="s3_1"><b class="lbl">Schritt 1 — gleichsetzen:</b> 0,05x+10 = 0,15x.</div>
+      <div class="step" id="s3_2"><b class="lbl">Schritt 2 — nach x auflösen:</b> 10 = 0,1x ⟺ x=100.</div>
+      <div class="step" id="s3_3"><b class="lbl">Schritt 3 — Probe:</b> kA(100)=0,05·100+10=15 €, kB(100)=0,15·100=15 € ✓.</div>
+      <div class="step" id="s3_4"><b class="lbl">Antwortsatz:</b> Bis 100 Gesprächsminuten pro Monat ist Tarif B günstiger. Ab 100 Minuten lohnt sich Tarif A, weil seine Steigung (der Preis pro Minute) niedriger ist.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="3" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 4 Anwendung 2 Szenario -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Anwendungsaufgabe 2 — Kostenfunktion mit Grenzen</h2>
+      <div class="defbox">Ein Kopierladen berechnet 2 € Grundgebühr plus 0,08 € pro Kopie. Mindestbestellung: 20 Kopien, Höchstmenge: 500 Kopien pro Auftrag.</div>
+      <ul class="bul">
+        <li>Funktionsgleichung: k(x) = 0,08x + 2</li>
+        <li>Definitionsmenge (aus dem Sachzusammenhang!): D = [20; 500]</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 5 Schritt Kopierladen -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Kostenfunktion auswerten</h2>
+      <div class="step" id="s5_1"><b class="lbl">Kosten für 150 Kopien:</b> k(150)=0,08·150+2=12+2=14 €.</div>
+      <div class="step" id="s5_2"><b class="lbl">Wie viele Kopien für 10 € Budget?:</b> 0,08x+2=10 ⟺ 0,08x=8 ⟺ x=100 Kopien.</div>
+      <div class="step" id="s5_3"><b class="lbl">Wertemenge bestimmen:</b> k(20)=3,6 €, k(500)=42 € → W=[3,6; 42]. Kein Auftrag kostet weniger als 3,60 € oder mehr als 42 €.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="5" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 6 Anwendung 3 Szenario + Schritt -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Anwendungsaufgabe 3 — Akku-Wertminderung</h2>
+      <div class="defbox">Ein E-Bike-Akku hat neu 500 Wh Kapazität und verliert je 100 Ladezyklen näherungsweise 25 Wh (als linear angenommen). b(x) = 500 − 0,25x, x = Anzahl Ladezyklen.</div>
+      <div class="step" id="s6_1"><b class="lbl">Nullstelle berechnen:</b> 500−0,25x=0 ⟺ 0,25x=500 ⟺ x=2000.</div>
+      <div class="step" id="s6_2"><b class="lbl">Antwortsatz:</b> Rechnerisch wäre die Kapazität nach 2000 Ladezyklen bei 0 Wh.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="6" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 7 Modellgrenzen -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Modellgrenzen erkennen und benennen</h2>
+      <div class="warnbox">⚠️ Das lineare Modell aus Aufgabe 3 stimmt NICHT über den gesamten Zeitraum: In Wirklichkeit verliert ein Akku anfangs meist schneller und später langsamer an Kapazität — kein gleichmäßiger, linearer Verlauf. Außerdem wird ein Akku praktisch NIE bis 0 Wh genutzt — er gilt oft schon bei etwa 70 % Restkapazität als „verschlissen".</div>
+      <div class="defbox">In der Prüfung wird genau das oft verlangt: benenne, WARUM ein lineares Modell nur in einem bestimmten Bereich sinnvoll ist — das nennt man kritisches Bewerten des Modells.</div>
+    </div>
+  </section>
+
+  <!-- 8 Antwortsatz-Disziplin -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Antwortsatz-Disziplin</h2>
+      <div class="defbox">Ein vollständiger Antwortsatz nennt drei Dinge:</div>
+      <ol class="bul">
+        <li>die konkrete Zahl <b>mit Einheit</b> (nicht nur „x=100", sondern „100 Minuten").</li>
+        <li>den <b>Sachbezug</b> — worum es in der Aufgabe eigentlich geht.</li>
+        <li>bei mehreren rechnerischen Lösungen: <b>welche davon überhaupt sinnvoll ist</b> (siehe Modellgrenzen).</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 9 Eselsbruecke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Zwei Preise, ein Punkt, eine Wahrheit" — bei jedem Tarifvergleich entscheidet der Schnittpunkt, ab wann sich welcher Tarif lohnt. Und: „Antwortsatz ohne Einheit ist wie eine Adresse ohne Hausnummer."</div>
+    </div>
+  </section>
+
+  <!-- 10 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Maschinenstundensatz in der Werkstatt</h2>
+      <div class="defbox">Ein Kfz-Betrieb berechnet den Stundensatz einer Hebebühne als lineare Funktion: feste Kosten (Abschreibung, Miete, Wartungsvertrag) plus laufende Kosten pro Nutzungsstunde (Strom, Verschleiß). Genau dieselbe m/t-Logik wie bei jedem Tarifvergleich in diesem Deck.</div>
+    </div>
+  </section>
+
+  <!-- 11 Intuitions-Regler -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Schätz mal: was kostet die Fahrt?</h2>
+      <div class="defbox">Der Taxi-Tarif aus dem vorigen Deck: k(x)=1,8x+3,5. Was kostet eine 10-km-Fahrt?</div>
+      <div id="estTaxi35"></div>
+    </div>
+  </section>
+
+  <!-- 12 Checkliste -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Checkliste für Anwendungsaufgaben</h2>
+      <table class="legend">
+        <tr><th>Schritt</th><th>Worauf achten</th></tr>
+        <tr><td>Funktionsterm aufstellen</td><td>Fixkosten = t, Kosten pro Einheit = m</td></tr>
+        <tr><td>Definitionsmenge</td><td>ergibt sich oft aus dem Sachzusammenhang (Mindest-/Höchstmenge, x≥0 …)</td></tr>
+        <tr><td>Lösung berechnen</td><td>Gleichsetzen bei Vergleichen, Nullstelle bei „wann ist es 0"</td></tr>
+        <tr><td>Antwortsatz</td><td>Zahl + Einheit + Sachbezug + Plausibilitätscheck</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 13 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Situation</th><th>Lösungsweg</th></tr>
+      <tr><td>Zwei Tarife vergleichen</td><td>Gleichsetzen → Schnittpunkt entscheidet</td></tr>
+      <tr><td>Kosten bei bestimmter Menge</td><td>x einsetzen, Funktionswert berechnen</td></tr>
+      <tr><td>„Wann ist der Wert 0?"</td><td>Nullstelle berechnen</td></tr>
+      <tr><td>Grenzen des Modells</td><td>immer explizit benennen, wenn gefragt</td></tr>
+    </table>
+  </section>
+
+  <!-- 14 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Zwei Streaming-Anbieter: C kostet 8 €/Monat pauschal, D kostet 2 € Grundgebühr + 0,50 € pro geliehenem Film. Ab wie vielen Filmen lohnt sich C?
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>8=2+0,5x → 6=0,5x → x=12. Ab 12 Filmen im Monat lohnt sich Anbieter C.</details>
+        </li>
+        <li style="margin-top:10px;">Ein Wasserfilter kostet 40 € Anschaffung plus 3 € pro Filterwechsel. Stelle die Kostenfunktion auf und berechne die Kosten nach 8 Wechseln.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>k(x)=3x+40, k(8)=24+40=64 €</details>
+        </li>
+        <li style="margin-top:10px;">Warum sollte man bei linearen Wachstums-/Abnahme-Modellen immer prüfen, ob das Modell auch für sehr große x-Werte noch realistisch ist?
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>Reale Prozesse verlaufen selten unbegrenzt linear — irgendwann greifen andere Effekte (Sättigung, Verschleiß, Grenzen), die das lineare Modell nicht abbildet.</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 15 Pruefungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Aus einem Sachtext eine Funktionsgleichung aufstellen</b> — Fixkosten als t, Preis pro Einheit als m.</li>
+        <li><b>Zwei Angebote per Gleichsetzen vergleichen</b> und den Umschlagpunkt sauber deuten.</li>
+        <li><b>Antwortsätze vollständig formulieren</b> — Zahl, Einheit, Sachbezug, Plausibilität.</li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">Damit hast du das Thema lineare Funktionen komplett durchgearbeitet — von der Definition bis zur Anwendung im echten Leben.</div>
+    </div>
+  </section>
+
+  <!-- 16 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Anwendungsaufgabe 1 — Handytarif-Vergleich", "📐 Schritt für Schritt: Handytarif lösen", "Anwendungsaufgabe 2 — Kostenfunktion mit Grenzen", "📐 Schritt für Schritt: Kostenfunktion auswerten", "📐 Schritt für Schritt: Anwendungsaufgabe 3 — Akku-Wertminderung", "Modellgrenzen erkennen und benennen", "Antwortsatz-Disziplin", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Maschinenstundensatz in der Werkstatt", "Schätz mal: was kostet die Fahrt?", "Checkliste für Anwendungsaufgaben", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=17;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck35_s1_Charon.mp3",txt:"Funktionen, Teil fünf: lineare Funktionen im Einsatz. Handytarif A oder B - ab wie vielen Minuten kippt es? Genau ein Punkt entscheidet, welcher Tarif sich lohnt."},
+ 2:{wav:"narration_deck35_s2_Charon.mp3",txt:"Schauen wir uns die erste Anwendungsaufgabe an: einen Vergleich zweier Handytarife."},
+ 3:{wav:"narration_deck35_s3_Charon.mp3",txt:"Jetzt lösen wir den Handytarif-Vergleich gemeinsam, Schritt für Schritt."},
+ 4:{wav:"narration_deck35_s4_Charon.mp3",txt:"Die zweite Anwendungsaufgabe zeigt eine Kostenfunktion mit einer eingeschränkten Definitionsmenge aus dem Sachzusammenhang."},
+ 5:{wav:"narration_deck35_s5_Charon.mp3",txt:"Jetzt werten wir die Kostenfunktion gemeinsam aus, Schritt für Schritt."},
+ 6:{wav:"narration_deck35_s6_Charon.mp3",txt:"Die dritte Anwendungsaufgabe zeigt eine Wertminderung - hier berechnen wir gemeinsam eine Nullstelle im Sachzusammenhang."},
+ 7:{wav:"narration_deck35_s7_Charon.mp3",txt:"Ein lineares Modell gilt selten für alle x-Werte - erkenne und benenne, wo seine Grenzen liegen."},
+ 8:{wav:"narration_deck35_s8_Charon.mp3",txt:"Ein vollständiger Antwortsatz braucht drei Dinge: die Zahl mit Einheit, den Sachbezug, und eine Einschätzung, welche Lösung überhaupt sinnvoll ist."},
+ 9:{wav:"narration_deck35_s9_Charon.mp3",txt:"Zwei Preise, ein Punkt, eine Wahrheit - bei jedem Tarifvergleich entscheidet der Schnittpunkt."},
+ 10:{wav:"narration_deck35_s10_Charon.mp3",txt:"Auch der Stundensatz einer Werkstatt-Hebebühne folgt genau derselben m-t-Logik."},
+ 11:{wav:"narration_deck35_s11_Charon.mp3",txt:"Bevor es weitergeht: schätz doch mal, was eine zehn Kilometer lange Taxifahrt nach dem bekannten Tarif kostet."},
+ 12:{wav:"narration_deck35_s12_Charon.mp3",txt:"Hier noch mal eine Checkliste, worauf du bei jeder Anwendungsaufgabe achten solltest."},
+ 13:{wav:"narration_deck35_s13_Charon.mp3",txt:"Fassen wir zusammen, welcher Lösungsweg zu welcher Art von Anwendungsaufgabe passt."},
+ 14:{wav:"narration_deck35_s14_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Anwendungsaufgaben zum Üben."},
+ 15:{wav:"narration_deck35_s15_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst. Damit hast du lineare Funktionen komplett durchgearbeitet."},
+ 16:{wav:"narration_deck35_s16_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"Zwei Fitnessstudios: E kostet 25 €/Monat pauschal, F kostet 5 € Grundgebühr + 4 € pro Besuch. Ab wie vielen Besuchen im Monat lohnt sich E?",
+  a:["4 Besuche","5 Besuche","20 Besuche","25 Besuche"],r:1,
+  why:"25=5+4x → 20=4x → x=5. Ab 5 Besuchen im Monat ist E günstiger."},
+ {q:"Warum gehört eine Einheit zwingend in den Antwortsatz einer Anwendungsaufgabe?",
+  a:["Weil sonst die Rechnung falsch ist","Weil die reine Zahl ohne Einheit im Sachzusammenhang bedeutungslos ist","Nur bei Geldbeträgen nötig","Einheiten sind bei linearen Funktionen nicht relevant"],r:1,
+  why:"„100“ allein sagt nichts — „100 Minuten“ oder „100 €“ macht die Aussage im Sachzusammenhang erst verständlich."},
+ {q:"Ein Modell für Akku-Kapazitätsverlust liefert rechnerisch eine Nullstelle bei 2000 Ladezyklen. Was folgt daraus für die Praxis?",
+  a:["Der Akku hält garantiert exakt 2000 Zyklen","Das lineare Modell gilt nur näherungsweise — der Akku wird praktisch schon vorher als verschlissen gelten","2000 ist eine Scheinlösung und ungültig","Die Rechnung ist damit fehlerhaft"],r:1,
+  why:"Das lineare Modell beschreibt die Realität nur näherungsweise — reale Akkus altern nicht gleichmäßig linear und werden meist schon bei deutlich höherer Restkapazität ausgemustert."},
+ {q:"Warum wird bei einer Kostenfunktion oft eine eingeschränkte Definitionsmenge angegeben?",
+  a:["Damit die Formel kürzer wird","Weil im Sachzusammenhang oft eine Mindest- oder Höchstmenge gilt","Rein aus mathematischer Tradition","Definitionsmengen sind bei Kostenfunktionen immer ℝ"],r:1,
+  why:"Reale Bestellungen haben oft eine Mindestmenge (z.B. Mindestbestellwert) und eine Höchstmenge (z.B. Lagerkapazität) — das begrenzt D sinnvoll."},
+ {q:"Was ist der erste Schritt beim Aufstellen einer Kostenfunktion aus einem Sachtext?",
+  a:["Sofort die Nullstelle berechnen","Fixkosten als t und Kosten pro Einheit als m identifizieren","Eine Wertetabelle erstellen","Zwei beliebige Punkte raten"],r:1,
+  why:"Fixkosten (unabhängig von der Menge) entsprechen t, variable Kosten pro Einheit entsprechen der Steigung m — daraus ergibt sich der Funktionsterm direkt."}
+];
+const DECK_ID="funktionen/deck35";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), oi===item.r);
+        answered++; if(oi===item.r) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estTaxi35', {
+    frage: 'Der Taxi-Tarif aus dem vorigen Deck: k(x)=1,8x+3,5. Was kostet eine 10-km-Fahrt?',
+    min: 0, max: 40, korrekt: 21.5, toleranz: 0.5,
+    begruendung: 'k(10)=1,8·10+3,5=18+3,5=21,5 €.'
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Längen, Flächen &amp; Volumina · Kapitel-Mischquiz</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  .wrap{max-width:820px;margin:0 auto;padding:24px 18px 60px;}
+  h1{font-size:min(6vw,30px);margin:0 0 6px;}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 20px;}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0 20px;}
+  button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 16px;font-size:14px;cursor:pointer;}
+  button:hover{background:#283041;}
+  button.primary{background:var(--accent);color:#12100a;font-weight:700;border:0;}
+  .quizq{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq .deckTag{display:inline-block;background:#1b222c;color:var(--accent);font-size:11.5px;font-weight:600;border-radius:999px;padding:3px 10px;margin-bottom:8px;}
+  .quizq p.qtext{font-size:min(2.3vw,19px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2vw,16px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(1.8vw,14.5px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #result{display:none;}
+  #result.show{display:block;}
+  .scoreBig{font-size:min(6vw,36px);color:var(--accent);text-align:center;margin:10px 0;}
+  .deckRow{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 16px;margin:6px 0;font-size:14.5px;}
+  .deckRow a{color:var(--accent);text-decoration:none;font-size:13px;}
+  .deckRow a:hover{text-decoration:underline;}
+  .weak{border-left:4px solid #e05a5a;}
+  .strong{border-left:4px solid #3dbb7a;}
+  #startScreen .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:16px 20px;font-size:15px;color:#f6e7cf;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔀 Kapitel-Mischquiz — Längen, Flächen &amp; Volumina</h1>
+  <p class="sub">15 zufällig gemischte Fragen aus allen drei Teilen — Interleaving statt Blockübung.</p>
+
+  <div id="startScreen">
+    <div class="defbox">Dieses Quiz zieht bei jedem Start 15 Fragen zufällig aus dem gesamten Themenbereich — quer durch Umfang/Fläche, Volumen/Oberfläche und Maße mit Parameter. Am Ende siehst du, bei welchem Teil du nochmal reinschauen solltest.</div>
+    <div class="bar">
+      <button class="primary" id="startBtn">▶ Quiz starten (15 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+
+  <div id="quizArea"></div>
+  <div id="result">
+    <div class="scoreBig" id="scoreBig"></div>
+    <h2 style="font-size:18px;">Auswertung pro Teil</h2>
+    <div id="deckBreakdown"></div>
+    <div class="bar">
+      <button class="primary" id="againBtn">🔁 Nochmal (neue 15 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;align-self:center;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+</div>
+<script>
+// === Fragenpool: kopiert aus den QUIZ-Arrays der drei Teile + eigene Transferfragen ===
+const POOL = [
+// --- deck52.html: Umfang & Flächeninhalt ---
+{deck:"Teil 1 — Umfang & Flächeninhalt", link:"deck52.html", q:"Ein Zimmer soll tapeziert werden. Was wird dafür benötigt?",
+ a:["Der Umfang des Zimmers","Die Wandfläche","Beide sind gleich wichtig","Keines von beiden, nur die Raumhöhe"],r:1,
+ why:"Tapezieren bedeckt eine Fläche — gesucht ist die Wandfläche in m², nicht der Umfang."},
+{deck:"Teil 1 — Umfang & Flächeninhalt", link:"deck52.html", q:"1 m² entspricht wie vielen cm²?",
+ a:["100 cm²","1.000 cm²","10.000 cm²","1.000.000 cm²"],r:2,
+ why:"1 m²=100cm·100cm=10.000cm² — bei Flächen wird mit 100² umgerechnet."},
+{deck:"Teil 1 — Umfang & Flächeninhalt", link:"deck52.html", q:"Ein Schüler verdoppelt die Seitenlänge eines Quadrats und erwartet doppelte Fläche. Was übersieht er?",
+ a:["Nichts, das stimmt","Die Fläche vervierfacht sich, da A=a² quadratisch von a abhängt","Die Fläche halbiert sich","Die Fläche bleibt gleich"],r:1,
+ why:"Bei A=a² führt eine Verdopplung von a zu einer Vervierfachung von A."},
+{deck:"Teil 1 — Umfang & Flächeninhalt", link:"deck52.html", q:"SA=4m, SB=6m (auf einem Strahl), SC=9m (auf dem Parallel-Strahl). Wie groß ist SD?",
+ a:["13,5m","6m","4m","54m"],r:0,
+ why:"SA/SB=SC/SD → 4/6=9/SD → SD=6·9/4=13,5m."},
+{deck:"Teil 1 — Umfang & Flächeninhalt", link:"deck52.html", q:"Beim Försterdreieck ist die Gegenkathete DOPPELT so lang wie die Ankathete. Was folgt daraus für die Baumhöhe?",
+ a:["Baumhöhe' = halbe Entfernung","Baumhöhe' = doppelte Entfernung","Baumhöhe' = gleiche Entfernung","Das lässt sich ohne weitere Angaben nicht sagen"],r:1,
+ why:"Bei Gegenkathete:Ankathete=2:1 gilt Baumhöhe'=Entfernung·2."},
+// --- deck53.html: Volumen & Oberfläche ---
+{deck:"Teil 2 — Volumen & Oberfläche", link:"deck53.html", q:"Ein Würfel hat Kantenlänge a=3cm. Verdreifacht man a auf 9cm, wie ändert sich das Volumen?",
+ a:["verdreifacht sich","verneunfacht sich","verdrei-und-zwanzigfacht sich (27x)","bleibt gleich"],r:2,
+ why:"V=a³ — bei a→3a wird V→27a³, also das 27-fache."},
+{deck:"Teil 2 — Volumen & Oberfläche", link:"deck53.html", q:"Ein Schüler berechnet für einen Zylinder die Oberfläche und nennt sie „Volumen des Zylinders“. Was ist das Problem?",
+ a:["Nichts, Volumen und Oberfläche sind dasselbe","Oberfläche (Flächeneinheit) und Volumen (Raumeinheit) sind grundverschiedene Größen","Nur bei Zylindern ist das ein Problem","Oberfläche ist immer größer als Volumen"],r:1,
+ why:"Oberfläche misst eine Fläche, Volumen einen Rauminhalt — beide dürfen nie verwechselt werden."},
+{deck:"Teil 2 — Volumen & Oberfläche", link:"deck53.html", q:"Ein Kegel hat dieselbe Grundfläche und Höhe wie ein Zylinder. Welches Verhältnis der Volumina gilt?",
+ a:["Kegel = Zylinder","Kegel = ½ · Zylinder","Kegel = ⅓ · Zylinder","Kegel = 2 · Zylinder"],r:2,
+ why:"Ein spitzer Körper hat immer ⅓ des Volumens des entsprechenden geraden Körpers."},
+{deck:"Teil 2 — Volumen & Oberfläche", link:"deck53.html", q:"Ein Aquarium fasst 200 Liter. Wie viel m³ sind das?",
+ a:["0,2 m³","2 m³","20 m³","200 m³"],r:0,
+ why:"1m³=1.000 Liter, also 200 Liter = 0,2 m³."},
+{deck:"Teil 2 — Volumen & Oberfläche", link:"deck53.html", q:"Bei der Oberfläche eines Zylinders vergisst ein Schüler die beiden Kreisflächen und berechnet nur die Mantelfläche. Was fehlt?",
+ a:["Nichts, Mantelfläche ist die gesamte Oberfläche","Es fehlen 2·π·r² für die beiden Kreisflächen oben und unten","Es fehlt nur EINE Kreisfläche","Zylinder haben keine Oberfläche"],r:1,
+ why:"Die vollständige Oberfläche besteht aus Mantelfläche PLUS zwei Kreisflächen."},
+// --- deck54.html: Maße mit Parameter ---
+{deck:"Teil 3 — Maße mit Parameter", link:"deck54.html", q:"A(x)=−3x²+60x. Wie groß ist x_s (die x-Koordinate des Maximums)?",
+ a:["10","20","−10","30"],r:0,
+ why:"x_s=−b/(2a)=−60/(2·(−3))=10."},
+{deck:"Teil 3 — Maße mit Parameter", link:"deck54.html", q:"Ein Rechteck hat den Umfang 24m. Wie lautet die Flächenfunktion A(x) in Abhängigkeit der Breite x?",
+ a:["A(x)=x²","A(x)=x·(12−x)","A(x)=x·(24−x)","A(x)=24x"],r:1,
+ why:"Bei Umfang 24m gilt l=12−x. A(x)=x·(12−x)."},
+{deck:"Teil 3 — Maße mit Parameter", link:"deck54.html", q:"Ein Schüler berechnet für einen Quader mit V(l)=6l³ den Wert l=2 aus V=48, vergisst aber b und h zu berechnen. Was fehlt?",
+ a:["Nichts, l allein reicht als Antwort","b=3l=6 und h=2l=4 müssen aus der Nebenbedingung noch bestimmt werden","b und h sind immer gleich l","Ohne Taschenrechner lässt sich das nicht berechnen"],r:1,
+ why:"Die Nebenbedingungen müssen nach dem Finden von l noch angewendet werden."},
+{deck:"Teil 3 — Maße mit Parameter", link:"deck54.html", q:"Warum liefert der Scheitelpunkt einer nach UNTEN geöffneten Parabel das Maximum?",
+ a:["Weil a>0 ist","Weil der Scheitelpunkt der höchste Punkt der Parabel ist, wenn sie nach unten geöffnet ist","Weil x immer positiv ist","Das ist Zufall"],r:1,
+ why:"Bei einer nach unten geöffneten Parabel (a<0) ist der Scheitelpunkt der höchste Punkt des Graphen."},
+{deck:"Teil 3 — Maße mit Parameter", link:"deck54.html", q:"Für welchen Bereich von x ist der Definitionsbereich von A(x)=x·(80−2x) sinnvoll?",
+ a:["Für alle x∈ℝ","Nur für 0<x<40, da sonst Länge oder Breite negativ würden","Nur für x=20","Für x<0"],r:1,
+ why:"Bei x≥40 würde die Länge (80−2x) null oder negativ."},
+// --- Eigene Transferfragen (kapitelübergreifend, eigene Werte) ---
+{deck:"Teil 2 — Volumen & Oberfläche", link:"deck53.html", q:"Ein Würfel mit a=3cm wird zu einem Würfel mit a=6cm vergrößert. Um welchen Faktor wächst die OBERFLÄCHE (nicht das Volumen)?",
+ a:["Faktor 2","Faktor 4","Faktor 6","Faktor 8"],r:1,
+ why:"Oberfläche O=6a² hängt quadratisch von a ab — bei Verdopplung von a wächst O um den Faktor 2²=4. Das Volumen wächst dagegen um den Faktor 8."},
+{deck:"Teil 3 — Maße mit Parameter", link:"deck54.html", q:"A(x)=x·(80−2x) hat bei x=20 ihr Maximum. Welchen Namen trägt dieser Punkt im Graphen der Funktion?",
+ a:["Nullstelle","Scheitelpunkt","Achsenabschnitt","Asymptote"],r:1,
+ why:"Bei einer quadratischen Funktion liegt das Maximum (oder Minimum) immer im Scheitelpunkt der Parabel."},
+{deck:"Teil 2 — Volumen & Oberfläche", link:"deck53.html", q:"Ein Zylinder und ein Kegel haben gleiche Grundfläche und Höhe. Wie viel Prozent des Zylindervolumens beträgt das Kegelvolumen?",
+ a:["Etwa 33%","Etwa 50%","Etwa 66%","100%"],r:0,
+ why:"Das Kegelvolumen beträgt ⅓ des Zylindervolumens — das sind etwa 33%."},
+{deck:"Teil 1 — Umfang & Flächeninhalt", link:"deck52.html", q:"Welches der folgenden Themen gehörte NICHT zum Themenbereich „Längen, Flächen & Volumina“?",
+ a:["Strahlensatz","Satz des Pythagoras","Volumen von Körpern","Parameterfunktionen A(x)"],r:1,
+ why:"Der Satz des Pythagoras gehört zum vorherigen Themenbereich Dreieckslehre — nicht zu diesem Kapitel."}
+];
+
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+let current=[];
+let deckStats={};
+
+function startQuiz(){
+  current = shuffle(POOL).slice(0,15);
+  deckStats={};
+  document.getElementById('startScreen').style.display='none';
+  document.getElementById('result').classList.remove('show');
+  const area=document.getElementById('quizArea');
+  area.innerHTML='';
+  let answered=0, score=0;
+  current.forEach((item,qi)=>{
+    if(!deckStats[item.deck]) deckStats[item.deck]={right:0,total:0,link:item.link};
+    deckStats[item.deck].total++;
+    const box=document.createElement('div'); box.className='quizq';
+    const tag=document.createElement('span'); tag.className='deckTag'; tag.textContent=item.deck; box.appendChild(tag);
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        answered++;
+        if(oi===item.r){ score++; deckStats[item.deck].right++; }
+        if(answered===current.length) showResult(score);
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    area.appendChild(box);
+  });
+}
+
+function showResult(score){
+  const res=document.getElementById('result');
+  res.classList.add('show');
+  document.getElementById('scoreBig').textContent='Ergebnis: '+score+' / '+current.length+' — '+
+    (score>=current.length*0.8?'stark! 💪':(score>=current.length*0.5?'solide, ein paar Themen nochmal ansehen':'lohnt sich, mehrere Teile zu wiederholen'));
+  const bd=document.getElementById('deckBreakdown');
+  bd.innerHTML='';
+  Object.keys(deckStats).sort().forEach(deck=>{
+    const s=deckStats[deck];
+    const row=document.createElement('div');
+    const pct=s.right/s.total;
+    row.className='deckRow '+(pct<0.5?'weak':(pct===1?'strong':''));
+    row.innerHTML='<span>'+deck+': '+s.right+' / '+s.total+' richtig'+(pct<0.6?' — nochmal ansehen empfohlen':'')+'</span><a href="'+s.link+'">Teil öffnen →</a>';
+    bd.appendChild(row);
+  });
+  res.scrollIntoView({behavior:'smooth'});
+}
+
+document.getElementById('startBtn').onclick=startQuiz;
+document.getElementById('againBtn').onclick=startQuiz;
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

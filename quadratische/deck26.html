@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Quadratische Gleichungen · Teil 2 — Lösbarkeit &amp; Anwendung</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .warnbox{background:#3d1c1c;border-left:5px solid #c0392b;border-radius:8px;padding:10px 16px;font-size:min(1.9vw,16px);color:#ffd9d0;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>QUADRATISCHE GLEICHUNGEN <span class="accent">· Teil 2</span></h1>
+    <h2>Lösbarkeit &amp; Anwendung</h2>
+    <div class="hook" style="max-width:70ch;">Fährst du doppelt so schnell, wird dein Bremsweg NICHT doppelt so lang — er wird VIERMAL so lang. Das steckt in der quadratischen Formel selbst, und du lernst jetzt, wie man das nachrechnet.</div>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 9.2</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Diskriminante Weiche -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Die Diskriminante als Weiche</h2>
+      <div class="svgbox"><div id="svgDiskTree"></div></div>
+      <div class="defbox">Der Ausdruck unter der Wurzel in der Lösungsformel, D=b²−4ac, heißt Diskriminante — ihr Vorzeichen allein entscheidet, wie viele Lösungen die Gleichung hat, noch BEVOR man die Wurzel überhaupt zieht.</div>
+    </div>
+  </section>
+
+  <!-- 3 Schritt 3 Faelle -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Die 3 Fälle an eigenen Beispielen</h2>
+      <div class="step" id="s3_1"><b class="lbl">Fall D&gt;0 — zwei Lösungen:</b> x²−x−6=0 → D=(−1)²−4·1·(−6)=1+24=25&gt;0 → x=(1±5)/2 → x₁=3, x₂=−2 → L={−2;3}.</div>
+      <div class="step" id="s3_2"><b class="lbl">Fall D=0 — genau eine Lösung:</b> x²−6x+9=0 → D=(−6)²−4·1·9=36−36=0 → x=6/2=3 → L={3}.</div>
+      <div class="step" id="s3_3"><b class="lbl">Fall D&lt;0 — keine Lösung:</b> x²+x+3=0 → D=1²−4·1·3=1−12=−11&lt;0 → L={ } (es müsste die Wurzel aus einer negativen Zahl gezogen werden).</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="3" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 4 Bruecke lineare Loesbarkeit -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🌉 Brücke</span> Lösbarkeit — linear vs. quadratisch</h2>
+      <div class="defbox">Auch bei linearen Gleichungen gab es 3 Fälle (Kapitel 7): eine Lösung, unendlich viele, oder keine. Bei quadratischen Gleichungen sind es AUCH 3 Fälle — aber „unendlich viele" wird hier zu „genau zwei", weil die Diskriminante das Vorzeichen liefert statt einer wahren/falschen Zahlenaussage.</div>
+    </div>
+  </section>
+
+  <!-- 5 Bruecke Loesungsmenge -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🌉 Brücke</span> Die Lösungsmenge ist eine Menge</h2>
+      <div class="defbox">L={−2;3} und L={3} und L={ } sind alle drei ganz normale MENGEN — genau die Schreibweise aus Kapitel 1. L={ } ist dabei die leere Menge (keine Lösung), NICHT dasselbe wie L={0} (die Lösung wäre die Zahl 0).</div>
+    </div>
+  </section>
+
+  <!-- 6 Anwendungsaufgabe -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Anwendungsaufgabe: Bremsweg</h2>
+      <div class="defbox">Der Bremsweg s (in Metern) eines Autos bei Geschwindigkeit v (in km/h) auf trockener Straße lässt sich näherungsweise durch s(v)=v²/100 beschreiben (fertige Formel, ohne Herleitung). Bei welcher Geschwindigkeit beträgt der Bremsweg genau 36m?</div>
+      <div class="step" id="s6_1"><b class="lbl">Schritt 1 — Gleichung aufstellen:</b> v²/100=36.</div>
+      <div class="step" id="s6_2"><b class="lbl">Schritt 2 — Lösen:</b> |·100 ⇔ v²=3600 → v₁=60, v₂=−60.</div>
+      <div class="step" id="s6_3"><b class="lbl">Schritt 3 — Antwortsatz-Disziplin:</b> v₂=−60 wird VERWORFEN — eine Geschwindigkeit kann im Sachkontext nicht negativ sein. Bei v=120 statt v=60 (doppelte Geschwindigkeit) wäre der Bremsweg s=120²/100=144m — das VIERFACHE von 36m, nicht das Doppelte!</div>
+      <div class="step" id="s6_4"><b class="lbl">Antwortsatz:</b> Bei einer Geschwindigkeit von 60 km/h beträgt der Bremsweg 36m.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="6" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 7 Eselsbruecke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Diskriminante positiv? Zwei Wege ans Ziel. Null? Nur einer. Negativ? Kein Weg." Und im Sachkontext gilt zusätzlich: „Passt die Lösung überhaupt zur Wirklichkeit?" — negative Geschwindigkeiten, Längen oder Zeiten gibt es nicht.</div>
+    </div>
+  </section>
+
+  <!-- 8 Intuitions-Regler -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Schätz mal: Wie viele Lösungen?</h2>
+      <div class="defbox">Ohne zu rechnen — wie viele Lösungen hat wohl x²+4x+4=0? (Tipp: schau dir b und c genau an — erinnert dich das an eine Binomische Formel?)</div>
+      <div id="estDisk26"></div>
+    </div>
+  </section>
+
+  <!-- 9 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>D</td><td>„Diskriminante"</td><td>b²−4ac, entscheidet über die Anzahl der Lösungen</td></tr>
+        <tr><td>D&gt;0</td><td>„Diskriminante größer 0"</td><td>zwei verschiedene Lösungen</td></tr>
+        <tr><td>D=0</td><td>„Diskriminante gleich 0"</td><td>genau eine Lösung</td></tr>
+        <tr><td>D&lt;0</td><td>„Diskriminante kleiner 0"</td><td>keine reelle Lösung</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 10 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Diskriminanten-Detektor</span><span class="sub">a/b/c-Regler → D live berechnet</span></div>
+    <iframe allow="autoplay" data-src="diskriminante26_labor.html"></iframe>
+  </section>
+
+  <!-- 11 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Diskriminante</th><th>Anzahl Lösungen</th></tr>
+      <tr><td>D&gt;0</td><td>zwei verschiedene Lösungen</td></tr>
+      <tr><td>D=0</td><td>genau eine Lösung</td></tr>
+      <tr><td>D&lt;0</td><td>keine (reelle) Lösung</td></tr>
+    </table>
+  </section>
+
+  <!-- 12 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Bestimme die Diskriminante von 2x²+3x+5=0 und gib die Anzahl der Lösungen an.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>D=9−40=−31&lt;0 → keine Lösung</details>
+        </li>
+        <li style="margin-top:10px;">Bestimme die Diskriminante von x²−8x+16=0 und die Lösungsmenge.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>D=64−64=0 → x=4 → L={4}</details>
+        </li>
+        <li style="margin-top:10px;">Ein Quadrat hat eine Fläche von 49m². Bestimme die Seitenlänge und begründe, warum nur EINE der beiden mathematischen Lösungen sinnvoll ist.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>x²=49 → x=±7. Nur x=7 ist sinnvoll, da eine Seitenlänge nicht negativ sein kann.</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 13 Pruefungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Die Diskriminante berechnen und die Anzahl der Lösungen daraus ableiten</b> — ohne die Gleichung vollständig lösen zu müssen.</li>
+        <li><b>Anwendungsaufgaben in eine quadratische Gleichung übersetzen</b> und lösen.</li>
+        <li><b>Antwortsatz-Disziplin</b>: mathematisch korrekte, aber sachlich unsinnige Lösungen (z.B. negative Längen/Geschwindigkeiten) erkennen und begründet verwerfen.</li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">Kapitel-Brücke — Transferaufgabe mit Teil 1: <i>„Bestimme ohne vollständige Lösungsformel, ob 3x²−6x+3=0 null, eine oder zwei Lösungen hat — und ob c=0 wäre, welcher Lösungsweg aus Teil 1 statt der Diskriminante ausreichen würde."</i> → D=36−36=0 → genau eine Lösung. Wäre c=0 (also 3x²−6x=0), würde Ausklammern (x·(3x−6)=0) reichen, die Diskriminante wäre dann nicht nötig.</div>
+    </div>
+  </section>
+
+  <!-- 14 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+// === SVG: 3-Ast Diskriminanten-Weiche ===
+function treeBox26(x,y,w,h,text,color){
+  return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="6" fill="rgba(255,255,255,0.03)" stroke="'+color+'" stroke-width="1.5"/><text x="'+(x+w/2)+'" y="'+(y+h/2+5)+'" text-anchor="middle" font-size="13" font-weight="600" fill="'+color+'">'+text+'</text>';
+}
+function buildTree3SVG26(top, branches){
+  const topW=220, topX=170;
+  let s='<svg viewBox="0 0 560 220" style="width:100%;max-width:560px;height:auto;display:block;margin:0 auto;">';
+  s+=treeBox26(topX,10,topW,40,top,'#f2a63c');
+  const cols=[{x:10,c:'#4caf50'},{x:205,c:'#5fd0c7'},{x:400,c:'#c0392b'}];
+  branches.forEach((b,i)=>{
+    const col=cols[i];
+    s+='<line x1="'+(topX+topW/2)+'" y1="50" x2="'+(col.x+75)+'" y2="90" stroke="#9aa4b2" stroke-width="1.5"/>';
+    s+=treeBox26(col.x,90,150,40,b.cond,col.c);
+    s+='<line x1="'+(col.x+75)+'" y1="130" x2="'+(col.x+75)+'" y2="160" stroke="#9aa4b2" stroke-width="1.5"/>';
+    s+=treeBox26(col.x,160,150,45,b.res,col.c);
+  });
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgDiskTree').innerHTML=buildTree3SVG26('D = b² − 4ac', [
+  {cond:'D > 0', res:'zwei Lösungen'},
+  {cond:'D = 0', res:'eine Lösung'},
+  {cond:'D < 0', res:'keine Lösung'}
+]);
+
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Die Diskriminante als Weiche", "📐 Schritt für Schritt: Die 3 Fälle an eigenen Beispielen", "🌉 Brücke: Lösbarkeit — linear vs. quadratisch", "🌉 Brücke: Die Lösungsmenge ist eine Menge", "📐 Schritt für Schritt: Anwendungsaufgabe Bremsweg", "💡 Eselsbrücke", "Schätz mal: Wie viele Lösungen?", "Symbol-Legende", "🧪 Diskriminanten-Detektor", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=15;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck26_s1_Charon.mp3",txt:"Quadratische Gleichungen, Teil zwei. Fährst du doppelt so schnell, wird dein Bremsweg nicht doppelt so lang - er wird viermal so lang. Das steckt in der quadratischen Formel selbst, und du lernst jetzt, wie man das nachrechnet."},
+ 2:{wav:"narration_deck26_s2_Charon.mp3",txt:"Der Ausdruck unter der Wurzel in der Lösungsformel heißt Diskriminante - ihr Vorzeichen allein entscheidet, wie viele Lösungen die Gleichung hat, noch bevor man die Wurzel überhaupt zieht."},
+ 3:{wav:"narration_deck26_s3_Charon.mp3",txt:"Schauen wir uns alle drei Fälle an eigenen Beispielen an - Schritt für Schritt."},
+ 4:{wav:"narration_deck26_s4_Charon.mp3",txt:"Auch bei linearen Gleichungen gab es drei Fälle - aber bei quadratischen Gleichungen wird aus unendlich vielen Lösungen jetzt genau zwei, weil die Diskriminante das Vorzeichen liefert statt einer wahren oder falschen Zahlenaussage."},
+ 5:{wav:"narration_deck26_s5_Charon.mp3",txt:"Die Lösungsmenge ist immer eine ganz normale Menge, genau wie aus der Mengenlehre bekannt - die leere Menge bedeutet keine Lösung, nicht zu verwechseln mit der Lösung Null."},
+ 6:{wav:"narration_deck26_s6_Charon.mp3",txt:"Jetzt lösen wir gemeinsam eine echte Anwendungsaufgabe zum Bremsweg - und du siehst, warum eine der beiden mathematischen Lösungen verworfen werden muss."},
+ 7:{wav:"narration_deck26_s7_Charon.mp3",txt:"Merk dir: Diskriminante positiv heißt zwei Wege ans Ziel, Null heißt nur einer, negativ heißt kein Weg. Und im Sachkontext zählt zusätzlich, ob die Lösung überhaupt zur Wirklichkeit passt."},
+ 8:{wav:"narration_deck26_s8_Charon.mp3",txt:"Bevor du ins Labor gehst: schätz doch mal, wie viele Lösungen diese Gleichung wohl hat."},
+ 9:{wav:"narration_deck26_s9_Charon.mp3",txt:"Hier noch mal alle Symbole rund um die Diskriminante im Überblick, bevor du selbst im Labor experimentierst."},
+ 10:{wav:"narration_deck26_s10_Charon.mp3",txt:"Jetzt bist du dran: stelle mit den Reglern für a, b und c verschiedene Gleichungen ein und beobachte live, wie sich die Diskriminante verändert."},
+ 11:{wav:"narration_deck26_s11_Charon.mp3",txt:"Fassen wir zusammen: wie das Vorzeichen der Diskriminante über die Anzahl der Lösungen entscheidet."},
+ 12:{wav:"narration_deck26_s12_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben zu Diskriminante und Anwendung."},
+ 13:{wav:"narration_deck26_s13_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst - inklusive einer Transferaufgabe, die beide Teile dieses Kapitels miteinander verbindet."},
+ 14:{wav:"narration_deck26_s14_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"Eine quadratische Gleichung hat D=−7. Wie viele Lösungen hat sie?",
+  a:["Zwei","Eine","Keine","Unendlich viele"],r:2,
+  why:"D<0 bedeutet, dass die Wurzel aus einer negativen Zahl gezogen werden müsste — im Bereich der reellen Zahlen nicht möglich, also keine Lösung."},
+ {q:"Bei x²−10x+25=0 ist D=0. Was bedeutet das?",
+  a:["Es gibt zwei verschiedene Lösungen","Es gibt genau eine Lösung","Es gibt keine Lösung","Die Gleichung ist nicht lösbar"],r:1,
+  why:"D=0 bedeutet: die Lösungsformel liefert nur EINEN Wert, da +√0 und −√0 dasselbe Ergebnis liefern."},
+ {q:"Ein Bremsweg-Problem liefert die Lösungen v=8 und v=−8. Welche gehört in den Antwortsatz?",
+  a:["Nur v=8, weil eine Geschwindigkeit nicht negativ sein kann","Beide, mathematisch sind beide korrekt","Nur v=−8","Keine von beiden"],r:0,
+  why:"Antwortsatz-Disziplin: auch wenn beide Lösungen die Gleichung mathematisch erfüllen, ist im Sachkontext nur die sinnvolle Lösung zu nennen."},
+ {q:"Was ist der Unterschied zwischen L={ } und L={0}?",
+  a:["Kein Unterschied","L={ } ist die leere Menge (keine Lösung), L={0} enthält die Zahl 0 als Lösung","L={0} bedeutet immer D<0","L={ } bedeutet immer D=0"],r:1,
+  why:"Genau wie in der Mengenlehre: { } hat kein Element, {0} hat GENAU EIN Element, nämlich die Zahl 0."},
+ {q:"Verdoppelt man bei s(v)=v²/100 die Geschwindigkeit v, was passiert mit dem Bremsweg s?",
+  a:["Er verdoppelt sich","Er bleibt gleich","Er vervierfacht sich","Er halbiert sich"],r:2,
+  why:"(2v)²/100 = 4v²/100 = 4·s(v) — weil v quadriert wird, führt eine Verdopplung von v zu einer VIERfachung von s."},
+ {q:"Bestimme die Diskriminante von x²+2x+1=0.",
+  a:["D=0","D=4","D=−4","D=8"],r:0,
+  why:"D=2²−4·1·1=4−4=0."}
+];
+const DECK_ID="quadratische/deck26";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), oi===item.r);
+        answered++; if(oi===item.r) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estDisk26', {
+    frage: 'Ohne zu rechnen — wie viele Lösungen hat wohl x²+4x+4=0?',
+    min: 0, max: 2, korrekt: 1, toleranz: 0,
+    begruendung: 'x²+4x+4=(x+2)² — eine Binomische Formel! D=16−16=0, also genau eine Lösung: x=−2.'
+  });
+});
+</script>
+</body>
+</html>

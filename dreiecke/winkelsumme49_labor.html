@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Winkelsumme-Werkstatt</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:16px 22px 40px;max-width:820px;margin:0 auto;}
+  h2{margin:0 0 4px;font-size:22px;}
+  .lead{color:var(--muted);font-size:15px;margin:0 0 14px;}
+  .modebar{display:flex;gap:8px;margin-bottom:14px;}
+  .modebtn{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 16px;font-size:15px;cursor:pointer;}
+  .modebtn.active{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  .panel{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:14px;}
+  .row{display:flex;align-items:center;gap:12px;margin:10px 0;flex-wrap:wrap;}
+  .row label{min-width:90px;font-size:15px;}
+  input[type=range]{flex:1;min-width:180px;}
+  .val{font-weight:700;color:var(--accent);min-width:56px;text-align:right;}
+  #svgHost{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;}
+  .sumline{font-size:18px;text-align:center;margin-top:10px;font-weight:700;color:var(--accent);}
+  .mission{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:10px 16px;margin-top:10px;font-size:15px;}
+  .mission.solved{background:#1c3d24;border-left-color:#4caf50;}
+  .mcq{margin-top:10px;}
+  .mcopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:15px;cursor:pointer;}
+  .mcopt:hover{background:#283041;}
+  .mcopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .mcopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .mcopt:disabled{cursor:default;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h2>🧪 Winkelsumme-Werkstatt</h2>
+  <p class="lead">Verforme das Dreieck per Regler — oder bestimme fehlende Winkel aus Vorgaben.</p>
+  <div class="modebar">
+    <button class="modebtn active" id="btnModeA">Modus: Frei verformen</button>
+    <button class="modebtn" id="btnModeB">Modus: Fehlenden Winkel bestimmen</button>
+  </div>
+
+  <div class="panel" id="panelA">
+    <div class="row">
+      <label for="alphaSlide">Winkel α</label>
+      <input type="range" id="alphaSlide" min="15" max="140" step="1" value="50">
+      <span class="val" id="alphaVal">50°</span>
+    </div>
+    <div class="row">
+      <label for="betaSlide">Winkel β</label>
+      <input type="range" id="betaSlide" min="15" max="140" step="1" value="60">
+      <span class="val" id="betaVal">60°</span>
+    </div>
+    <div id="svgHostA"></div>
+    <div class="sumline" id="sumLine"></div>
+    <div class="mission" id="missionA">🎯 Mission: Probiere mindestens 3 verschiedene Winkel-Kombinationen aus — versuch ruhig, eine Winkelsumme über 180° zu schaffen!</div>
+  </div>
+
+  <div class="panel" id="panelB" style="display:none;">
+    <div id="mcHost"></div>
+    <div class="mission" id="missionB">🎯 Mission: Bestimme den fehlenden Winkel bei 3 verschiedenen Dreiecken richtig.</div>
+  </div>
+</div>
+
+<script>
+function toX(x,ox,sx){ return ox+x*sx; }
+function toY(y,oy,sy){ return oy-y*sy; }
+
+function drawTriangle(alphaDeg, betaDeg, hostId){
+  const w=320, h=220, pad=30;
+  const L=6; // Basislaenge in Modell-Einheiten
+  const a=alphaDeg*Math.PI/180, b=betaDeg*Math.PI/180;
+  const ta=Math.tan(a), tb=Math.tan(b);
+  const x = (L*tb)/(ta+tb);
+  const y = ta*x;
+  // Punkte: A=(0,0) B=(L,0) C=(x,y)
+  const maxY=Math.max(y,0.001);
+  const s=Math.min((w-2*pad)/L,(h-2*pad)/maxY);
+  const ox=pad, oy=h-pad;
+  const A=[toX(0,ox,s),toY(0,oy,s)], B=[toX(L,ox,s),toY(0,oy,s)], C=[toX(x,ox,s),toY(y,oy,s)];
+  let svg='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;max-width:360px;height:auto;display:block;margin:0 auto;">';
+  svg+='<polygon points="'+A.join(',')+' '+B.join(',')+' '+C.join(',')+'" fill="none" stroke="#5fd0c7" stroke-width="2.6"/>';
+  svg+='<text x="'+(A[0]-10)+'" y="'+(A[1]+4)+'" fill="#f2a63c" font-size="14" text-anchor="end">A</text>';
+  svg+='<text x="'+(B[0]+10)+'" y="'+(B[1]+4)+'" fill="#f2a63c" font-size="14">B</text>';
+  svg+='<text x="'+C[0]+'" y="'+(C[1]-8)+'" fill="#f2a63c" font-size="14" text-anchor="middle">C</text>';
+  document.getElementById(hostId).innerHTML=svg;
+}
+
+// ===== Modus A =====
+let alpha=50, beta=60;
+let triedSet=new Set();
+let missionASolved=false;
+function renderA(){
+  const gamma = 180-alpha-beta;
+  drawTriangle(alpha,beta,'svgHostA');
+  const sum = alpha+beta+Math.max(gamma,0);
+  document.getElementById('sumLine').textContent = 'α='+alpha+'° · β='+beta+'° · γ='+(gamma>0?gamma:'—')+'° · Summe = '+(gamma>0?180:'(γ nicht mehr positiv — kein echtes Dreieck)')+(gamma>0?'°':'');
+  triedSet.add(alpha+'_'+beta);
+  const box=document.getElementById('missionA');
+  if(triedSet.size>=3 && !missionASolved){
+    missionASolved=true;
+  }
+  if(missionASolved){
+    box.classList.add('solved');
+    box.innerHTML='✅ Egal wie du α und β wählst, γ passt sich IMMER genau so an, dass die Summe 180° bleibt — eine Winkelsumme von 190° ist geometrisch unmöglich. Du hast '+triedSet.size+' Kombinationen ausprobiert.';
+  } else {
+    box.innerHTML='🎯 Mission: Probiere mindestens 3 verschiedene Winkel-Kombinationen aus — versuch ruhig, eine Winkelsumme über 180° zu schaffen! ('+triedSet.size+'/3)';
+  }
+}
+document.getElementById('alphaSlide').addEventListener('input', e=>{ alpha=parseInt(e.target.value); document.getElementById('alphaVal').textContent=alpha+'°'; renderA(); });
+document.getElementById('betaSlide').addEventListener('input', e=>{ beta=parseInt(e.target.value); document.getElementById('betaVal').textContent=beta+'°'; renderA(); });
+renderA();
+
+// ===== Modus B =====
+const ROUNDS=[
+  {alpha:40, beta:60, gamma:80, opts:[80,70,90,100]},
+  {alpha:90, beta:45, gamma:45, opts:[45,35,55,90]},
+  {alpha:110, beta:30, gamma:40, opts:[40,50,30,60]}
+];
+let roundIdx=0, correctCount=0, roundDone=[false,false,false];
+function renderB(){
+  const host=document.getElementById('mcHost');
+  if(roundIdx>=ROUNDS.length){
+    host.innerHTML='<p>Alle Runden gespielt: '+correctCount+' / '+ROUNDS.length+' richtig.</p>';
+    updateMissionB();
+    return;
+  }
+  const r=ROUNDS[roundIdx];
+  host.innerHTML='<p>Runde '+(roundIdx+1)+'/3: α='+r.alpha+'°, β='+r.beta+'°. Wie groß ist γ?</p><div class="mcq"></div>';
+  const mcq=host.querySelector('.mcq');
+  const opts=r.opts.slice().sort(()=>Math.random()-0.5);
+  opts.forEach(o=>{
+    const b=document.createElement('button'); b.className='mcopt'; b.textContent=o+'°';
+    b.onclick=()=>{
+      mcq.querySelectorAll('.mcopt').forEach(x=>x.disabled=true);
+      if(o===r.gamma){ b.classList.add('correct'); correctCount++; roundDone[roundIdx]=true; }
+      else { b.classList.add('wrong'); mcq.querySelectorAll('.mcopt').forEach(x=>{ if(parseInt(x.textContent)===r.gamma) x.classList.add('correct'); }); }
+      setTimeout(()=>{ roundIdx++; renderB(); }, 900);
+    };
+    mcq.appendChild(b);
+  });
+}
+function updateMissionB(){
+  const box=document.getElementById('missionB');
+  const allCorrect = correctCount===ROUNDS.length;
+  if(allCorrect){
+    box.classList.add('solved');
+    box.innerHTML='✅ Mission erfüllt: alle 3 fehlenden Winkel richtig bestimmt!';
+  } else {
+    box.classList.remove('solved');
+    box.innerHTML='🎯 Mission: Bestimme den fehlenden Winkel bei 3 verschiedenen Dreiecken richtig. ('+correctCount+'/3 richtig)';
+  }
+}
+renderB();
+
+// ===== Modus-Umschaltung =====
+const btnModeA=document.getElementById('btnModeA'), btnModeB=document.getElementById('btnModeB');
+const panelA=document.getElementById('panelA'), panelB=document.getElementById('panelB');
+let mode='explore';
+btnModeA.onclick=()=>{ mode='explore'; btnModeA.classList.add('active'); btnModeB.classList.remove('active'); panelA.style.display='block'; panelB.style.display='none'; };
+btnModeB.onclick=()=>{ mode='bestimmen'; btnModeB.classList.add('active'); btnModeA.classList.remove('active'); panelA.style.display='none'; panelB.style.display='block'; };
+
+// ===== Test-Hooks =====
+window.LAB={
+  state(){
+    return {
+      mode: mode,
+      alpha: alpha,
+      beta: beta,
+      triedCount: triedSet.size,
+      missionASolved: missionASolved,
+      roundIdx: roundIdx,
+      correctCount: correctCount,
+      missionBSolved: correctCount===ROUNDS.length
+    };
+  },
+  setMode(m){ if(m==='explore') btnModeA.onclick(); else btnModeB.onclick(); },
+  setAngles(a,b){
+    alpha=a; beta=b;
+    document.getElementById('alphaSlide').value=a; document.getElementById('alphaVal').textContent=a+'°';
+    document.getElementById('betaSlide').value=b; document.getElementById('betaVal').textContent=b+'°';
+    renderA();
+  },
+  answerRound(correct){
+    if(roundIdx>=ROUNDS.length) return;
+    const r=ROUNDS[roundIdx];
+    const btns=document.querySelectorAll('#mcHost .mcopt');
+    btns.forEach(b=>{ if(parseInt(b.textContent)===(correct?r.gamma:r.opts.find(o=>o!==r.gamma))) b.click(); });
+  }
+};
+</script>
+</body>
+</html>

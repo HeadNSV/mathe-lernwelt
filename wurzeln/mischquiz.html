@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Reelle Zahlen &amp; Wurzeln · Kapitel-Mischquiz</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  .wrap{max-width:820px;margin:0 auto;padding:24px 18px 60px;}
+  h1{font-size:min(6vw,30px);margin:0 0 6px;}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 20px;}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0 20px;}
+  button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 16px;font-size:14px;cursor:pointer;}
+  button:hover{background:#283041;}
+  button.primary{background:var(--accent);color:#12100a;font-weight:700;border:0;}
+  .quizq{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq .deckTag{display:inline-block;background:#1b222c;color:var(--accent);font-size:11.5px;font-weight:600;border-radius:999px;padding:3px 10px;margin-bottom:8px;}
+  .quizq p.qtext{font-size:min(2.3vw,19px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2vw,16px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(1.8vw,14.5px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #result{display:none;}
+  #result.show{display:block;}
+  .scoreBig{font-size:min(6vw,36px);color:var(--accent);text-align:center;margin:10px 0;}
+  .deckRow{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 16px;margin:6px 0;font-size:14.5px;}
+  .deckRow a{color:var(--accent);text-decoration:none;font-size:13px;}
+  .deckRow a:hover{text-decoration:underline;}
+  .weak{border-left:4px solid #e05a5a;}
+  .strong{border-left:4px solid #3dbb7a;}
+  #startScreen .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:16px 20px;font-size:15px;color:#f6e7cf;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔀 Kapitel-Mischquiz — Reelle Zahlen &amp; Wurzeln</h1>
+  <p class="sub">14 zufällig gemischte Fragen aus beiden Teilen — Interleaving statt Blockübung.</p>
+
+  <div id="startScreen">
+    <div class="defbox">Dieses Quiz zieht bei jedem Start 14 Fragen zufällig aus dem gesamten Kapitel — quer durch die Quadratwurzel und die Rechengesetze mit Wurzeln. Am Ende siehst du, bei welchem Teil du nochmal reinschauen solltest.</div>
+    <div class="bar">
+      <button class="primary" id="startBtn">▶ Quiz starten (14 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+
+  <div id="quizArea"></div>
+  <div id="result">
+    <div class="scoreBig" id="scoreBig"></div>
+    <h2 style="font-size:18px;">Auswertung pro Teil</h2>
+    <div id="deckBreakdown"></div>
+    <div class="bar">
+      <button class="primary" id="againBtn">🔁 Nochmal (neue 14 Fragen)</button>
+      <a href="../index.html" style="color:var(--muted);font-size:13px;align-self:center;">← zurück zur Übersicht</a>
+    </div>
+  </div>
+</div>
+<script>
+// === Fragenpool: kopiert aus den QUIZ-Arrays beider Decks (deck-Feld + Ruecksprung-Link) + eigene Transferfragen ===
+const POOL = [
+// --- deck15.html: Die Quadratwurzel & reelle Zahlen ---
+{deck:"Teil 1 — Die Quadratwurzel", link:"deck15.html", q:"Was ist √a?",
+ a:["Die Zahl, die a mit sich selbst addiert","Die nicht-negative Zahl, die quadriert a ergibt","a geteilt durch 2","a mal 2"],r:1,
+ why:"√a ist per Definition die nicht-negative Zahl, die quadriert a ergibt."},
+{deck:"Teil 1 — Die Quadratwurzel", link:"deck15.html", q:"Warum ist √(−4) nicht definiert?",
+ a:["Weil −4 zu klein ist","Weil es keine Zahl gibt, die quadriert −4 ergibt","Weil man nicht durch −4 teilen darf","Weil −4 keine ganze Zahl ist"],r:1,
+ why:"Quadrate sind nie negativ — deshalb hat x²=−4 keine Lösung."},
+{deck:"Teil 1 — Die Quadratwurzel", link:"deck15.html", q:"Wie schreibt man a^(3/4) als Wurzel (a∈ℝ₀⁺)?",
+ a:["⁴√(a³)","³√(a⁴)","a·3/4","⁴√a · 3"],r:0,
+ why:"a^(m/n) = ⁿ√(aᵐ): Zähler 3 bleibt Exponent unter der Wurzel, Nenner 4 wird Wurzelexponent."},
+{deck:"Teil 1 — Die Quadratwurzel", link:"deck15.html", q:"Ist √2 rational oder irrational?",
+ a:["Rational, denn 1,41 ist ein Bruch","Irrational — lässt sich mit keinem Bruch exakt darstellen","Rational, weil es eine reelle Zahl ist","Weder noch"],r:1,
+ why:"Der Widerspruchsbeweis zeigt: √2 kann kein vollständig gekürzter Bruch sein — √2 ist irrational."},
+{deck:"Teil 1 — Die Quadratwurzel", link:"deck15.html", q:"Was bezeichnet man beim Ausdruck ⁵√32 als Radikand?",
+ a:["Die 5","Die 32","Das Wurzelzeichen selbst","Das Ergebnis 2"],r:1,
+ why:"Der Radikand ist die Zahl UNTER der Wurzel — hier die 32. Die 5 ist der Wurzelexponent."},
+{deck:"Teil 1 — Die Quadratwurzel", link:"deck15.html", q:"Welcher Fehler steckt in „√(x²) ist immer x”?",
+ a:["Kein Fehler","√(x²) ist der Betrag |x|, nicht einfach x","√(x²) ist immer 0","Es müsste x² heißen"],r:1,
+ why:"Die Quadratwurzel ist per Definition nicht-negativ — √(x²)=|x| gilt auch für negatives x."},
+
+// --- deck16.html: Rechnen mit Wurzeln ---
+{deck:"Teil 2 — Rechnen mit Wurzeln", link:"deck16.html", q:"Was ist √(9+16)?",
+ a:["7","5","25","1"],r:1,
+ why:"√(9+16)=√25=5. Der Klassiker-Fehler wäre √9+√16=3+4=7 — falsch!"},
+{deck:"Teil 2 — Rechnen mit Wurzeln", link:"deck16.html", q:"Was ist √3 · √12?",
+ a:["√36 = 6","√15","36","√9"],r:0,
+ why:"√a·√b=√(ab): √3·√12=√36=6."},
+{deck:"Teil 2 — Rechnen mit Wurzeln", link:"deck16.html", q:"Wie lautet √50 teilweise radiziert?",
+ a:["10√5","5√2","25√2","2√25"],r:1,
+ why:"50=25·2, √25=5 → √50=√(25·2)=5√2."},
+{deck:"Teil 2 — Rechnen mit Wurzeln", link:"deck16.html", q:"Was ist 6√2 − 10√2?",
+ a:["−4√2","−4","16√2","4"],r:0,
+ why:"Gleicher Radikand → Koeffizienten subtrahieren: 6−10=−4, also −4√2."},
+{deck:"Teil 2 — Rechnen mit Wurzeln", link:"deck16.html", q:"Wie macht man den Nenner von 3/√x rational?",
+ a:["Mit √x erweitern: 3√x/x","Mit x erweitern: 3x/x","Gar nicht möglich","Durch √x teilen"],r:0,
+ why:"Erweitern mit √x: 3/√x = (3·√x)/(√x·√x) = 3√x/x."},
+{deck:"Teil 2 — Rechnen mit Wurzeln", link:"deck16.html", q:"Welcher Trick steckt hinter dem Rationalmachen von a/(b+√x)?",
+ a:["Mit (b+√x) selbst erweitern","Mit (b−√x) erweitern — nutzt die 3. Binomische Formel","Wurzel einfach weglassen","Zähler und Nenner quadrieren"],r:1,
+ why:"Erweitern mit der Differenz (b−√x) nutzt (b+√x)(b−√x)=b²−x — die dritte Binomische Formel."},
+
+// --- Eigene Transferfragen (kapitelübergreifend, eigene Werte) ---
+{deck:"Teil 2 — Rechnen mit Wurzeln", link:"deck16.html", q:"Ein DIN-A4-Blatt ist 21 cm breit. Wie lang ist es ungefähr (l_y=√2·l_x)?",
+ a:["≈ 29,7 cm","≈ 21 cm","≈ 42 cm","≈ 10,5 cm"],r:0,
+ why:"21 · √2 ≈ 21 · 1,4142 ≈ 29,7 cm — genau das DIN-A4-Format."},
+{deck:"Teil 1 — Die Quadratwurzel", link:"deck15.html", q:"Ein quadratisches Grundstück hat 121 m² Fläche. Wie lang ist eine Seite?",
+ a:["11 m","12,1 m","60,5 m","121 m"],r:0,
+ why:"√121 = 11, denn 11²=121 — Wurzelziehen als Umkehrung des Quadrierens."}
+];
+
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+let current=[];
+let deckStats={};
+
+function startQuiz(){
+  current = shuffle(POOL).slice(0,14);
+  deckStats={};
+  document.getElementById('startScreen').style.display='none';
+  document.getElementById('result').classList.remove('show');
+  const area=document.getElementById('quizArea');
+  area.innerHTML='';
+  let answered=0, score=0;
+  current.forEach((item,qi)=>{
+    if(!deckStats[item.deck]) deckStats[item.deck]={right:0,total:0,link:item.link};
+    deckStats[item.deck].total++;
+    const box=document.createElement('div'); box.className='quizq';
+    const tag=document.createElement('span'); tag.className='deckTag'; tag.textContent=item.deck; box.appendChild(tag);
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        answered++;
+        if(oi===item.r){ score++; deckStats[item.deck].right++; }
+        if(answered===current.length) showResult(score);
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    area.appendChild(box);
+  });
+}
+
+function showResult(score){
+  const res=document.getElementById('result');
+  res.classList.add('show');
+  document.getElementById('scoreBig').textContent='Ergebnis: '+score+' / '+current.length+' — '+
+    (score>=current.length*0.8?'stark! 💪':(score>=current.length*0.5?'solide, ein paar Themen nochmal ansehen':'lohnt sich, mehrere Teile zu wiederholen'));
+  const bd=document.getElementById('deckBreakdown');
+  bd.innerHTML='';
+  Object.keys(deckStats).sort().forEach(deck=>{
+    const s=deckStats[deck];
+    const row=document.createElement('div');
+    const pct=s.right/s.total;
+    row.className='deckRow '+(pct<0.5?'weak':(pct===1?'strong':''));
+    row.innerHTML='<span>'+deck+': '+s.right+' / '+s.total+' richtig'+(pct<0.6?' — nochmal ansehen empfohlen':'')+'</span><a href="'+s.link+'">Teil öffnen →</a>';
+    bd.appendChild(row);
+  });
+  res.scrollIntoView({behavior:'smooth'});
+}
+
+document.getElementById('startBtn').onclick=startQuiz;
+document.getElementById('againBtn').onclick=startQuiz;
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

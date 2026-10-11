@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Log-Löser</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:16px 22px 40px;max-width:900px;margin:0 auto;}
+  h2{margin:0 0 4px;font-size:22px;}
+  .lead{color:var(--muted);font-size:15px;margin:0 0 14px;}
+  .modebar{display:flex;gap:8px;margin-bottom:14px;}
+  .modebtn{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 16px;font-size:15px;cursor:pointer;}
+  .modebtn.active{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  .panel{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:14px;}
+  select{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:15px;margin-bottom:10px;}
+  .eq{font-size:19px;color:var(--accent);font-weight:700;text-align:center;margin:10px 0;}
+  .step{background:#0e131b;border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:6px 0;font-size:15px;display:none;}
+  .step.show{display:block;}
+  button.act{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 16px;font-size:15px;cursor:pointer;margin-top:8px;}
+  button.act.primary{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  .mission{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:10px 16px;margin-top:10px;font-size:15px;}
+  .mission.solved{background:#1c3d24;border-left-color:#4caf50;}
+  .qopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:15px;cursor:pointer;}
+  .qopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .qopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h2>🧪 Log-Löser</h2>
+  <p class="lead">Modus A: Gleichung wählen, Schritte aufdecken. Modus B: Zahlgefühl trainieren — schätzen VOR dem Rechnen.</p>
+  <div class="modebar">
+    <button class="modebtn active" id="btnModeA">Modus: Geführt lösen</button>
+    <button class="modebtn" id="btnModeB">Modus: Zahlgefühl-Rätsel</button>
+  </div>
+
+  <div class="panel" id="panelA">
+    <select id="eqSel">
+      <option value="0">2ˣ = 40</option>
+      <option value="1">5ˣ = 100</option>
+      <option value="2">3ˣ = 200</option>
+    </select>
+    <div class="eq" id="eqDisplay"></div>
+    <div class="step" id="stepA1"></div>
+    <div class="step" id="stepA2"></div>
+    <div class="step" id="stepA3"></div>
+    <button class="act primary" id="btnReveal">Nächsten Schritt zeigen ▸</button>
+    <div class="mission" id="missionA">🎯 Mission: Löse mindestens 2 verschiedene Gleichungen vollständig durch.</div>
+  </div>
+
+  <div class="panel" id="panelB" style="display:none;">
+    <div class="eq" id="eqBDisplay"></div>
+    <p style="font-size:15px;text-align:center;color:var(--muted);">Zwischen welchen ganzen Zahlen liegt x? (VOR dem Rechnen schätzen!)</p>
+    <div id="qbox"></div>
+    <div class="mission" id="missionB">🎯 Mission: Finde die richtige Einordnung.</div>
+  </div>
+</div>
+
+<script>
+const EQS=[
+  {a:2, c:40, steps:['Schritt 1 — Isolieren: 2ˣ=40 ist bereits isoliert.', 'Schritt 2 — Logarithmieren: x=log₂(40).', 'Schritt 3 — Berechnen: x=ln(40)/ln(2)≈5,32.']},
+  {a:5, c:100, steps:['Schritt 1 — Isolieren: 5ˣ=100 ist bereits isoliert.', 'Schritt 2 — Logarithmieren: x=log₅(100).', 'Schritt 3 — Berechnen: x=ln(100)/ln(5)≈2,86.']},
+  {a:3, c:200, steps:['Schritt 1 — Isolieren: 3ˣ=200 ist bereits isoliert.', 'Schritt 2 — Logarithmieren: x=log₃(200).', 'Schritt 3 — Berechnen: x=ln(200)/ln(3)≈4,82.']}
+];
+let eqIdx=0, revealCount=0;
+let solvedEqs=new Set();
+let missionASolved=false;
+
+function renderA(){
+  const eq=EQS[eqIdx];
+  document.getElementById('eqDisplay').textContent=eq.a+'ˣ = '+eq.c;
+  for(let i=0;i<3;i++){
+    const el=document.getElementById('stepA'+(i+1));
+    el.textContent=eq.steps[i];
+    el.classList.toggle('show', i<revealCount);
+  }
+  const btn=document.getElementById('btnReveal');
+  if(revealCount>=3){
+    btn.textContent='Alle Schritte gezeigt ✓';
+    btn.disabled=true;
+    solvedEqs.add(eqIdx);
+  } else {
+    btn.textContent='Nächsten Schritt zeigen ▸';
+    btn.disabled=false;
+  }
+  const box=document.getElementById('missionA');
+  if(solvedEqs.size>=2){
+    missionASolved=true;
+    box.classList.add('solved');
+    box.textContent='✅ '+solvedEqs.size+' Gleichungen vollständig gelöst — Mission erfüllt.';
+  } else if(missionASolved){
+    box.classList.add('solved');
+  } else {
+    box.textContent='🎯 Mission: Löse mindestens 2 verschiedene Gleichungen vollständig durch. ('+solvedEqs.size+'/2)';
+  }
+}
+document.getElementById('eqSel').addEventListener('change', e=>{ eqIdx=parseInt(e.target.value); revealCount=0; renderA(); });
+document.getElementById('btnReveal').addEventListener('click', ()=>{ revealCount=Math.min(3, revealCount+1); renderA(); });
+renderA();
+
+// ===== Modus B: Zahlgefuehl =====
+const RIDDLE={a:4, c:90, options:['zwischen 1 und 2','zwischen 2 und 3','zwischen 3 und 4','zwischen 4 und 5'], correct:2,
+  why:'4³=64 und 4⁴=256 — da 64<90<256, liegt x zwischen 3 und 4 (genauer log₄(90)≈3,26).'};
+let missionBSolved=false;
+(function(){
+  document.getElementById('eqBDisplay').textContent=RIDDLE.a+'ˣ = '+RIDDLE.c;
+  const host=document.getElementById('qbox');
+  RIDDLE.options.forEach((opt,oi)=>{
+    const b=document.createElement('button'); b.className='qopt'; b.textContent=opt;
+    b.onclick=()=>{
+      host.querySelectorAll('.qopt').forEach(x=>x.disabled=true);
+      const box=document.getElementById('missionB');
+      if(oi===RIDDLE.correct){
+        b.classList.add('correct');
+        missionBSolved=true;
+        box.classList.add('solved');
+        box.textContent='✅ Richtig! '+RIDDLE.why;
+      } else {
+        b.classList.add('wrong');
+        host.children[RIDDLE.correct].classList.add('correct');
+        box.textContent='🎯 Das war nicht richtig. '+RIDDLE.why;
+      }
+    };
+    host.appendChild(b);
+  });
+})();
+
+// ===== Modus-Umschaltung =====
+const btnModeA=document.getElementById('btnModeA'), btnModeB=document.getElementById('btnModeB');
+const panelA=document.getElementById('panelA'), panelB=document.getElementById('panelB');
+let mode='gefuehrt';
+btnModeA.onclick=()=>{ mode='gefuehrt'; btnModeA.classList.add('active'); btnModeB.classList.remove('active'); panelA.style.display='block'; panelB.style.display='none'; };
+btnModeB.onclick=()=>{ mode='raetsel'; btnModeB.classList.add('active'); btnModeA.classList.remove('active'); panelA.style.display='none'; panelB.style.display='block'; };
+
+window.LAB={
+  state(){
+    return {
+      mode,
+      eqIdx, revealCount, solvedCount: solvedEqs.size, missionASolved,
+      missionBSolved
+    };
+  },
+  setMode(m){ if(m==='gefuehrt') btnModeA.onclick(); else btnModeB.onclick(); },
+  selectEq(i){ eqIdx=i; document.getElementById('eqSel').value=i; revealCount=0; renderA(); },
+  reveal(){ document.getElementById('btnReveal').click(); }
+};
+</script>
+</body>
+</html>

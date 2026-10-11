@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Schar-Generator — Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{max-width:640px;margin:0 auto;padding:18px 20px 40px;}
+  h3{margin:0 0 6px;}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  #progress{font-size:13px;color:var(--muted);margin-bottom:8px;}
+  #missionText{font-size:15px;color:var(--accent);text-align:center;font-weight:700;margin-bottom:10px;}
+  .controls{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin-bottom:12px;}
+  .row{display:flex;align-items:center;gap:12px;margin:8px 0;}
+  .row label{font-size:14px;color:var(--muted);min-width:22px;}
+  input[type=range]{flex:1;}
+  .valbox{background:#1f2630;border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:14px;font-weight:700;color:var(--accent);min-width:40px;text-align:center;}
+  #svgHost{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;}
+  #eqLabel{text-align:center;font-size:14px;color:var(--muted);margin:6px 0;}
+  .btnRow{display:flex;gap:10px;justify-content:center;margin:8px 0;}
+  .btnRow button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;}
+  .btnRow button:hover{background:#283041;}
+  #confirmBtn{background:var(--accent) !important;color:#12100a !important;font-weight:700;border:0 !important;}
+  #feedback{text-align:center;font-size:14px;min-height:20px;margin-top:6px;color:var(--fg);}
+  #nextBtn{display:none;margin:10px auto 0;background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:9px 18px;font-size:14px;cursor:pointer;}
+  #doneBox{text-align:center;font-size:16px;color:var(--accent);font-weight:700;margin-top:16px;display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h3>🌀 Schar-Generator</h3>
+  <p class="hint">Bewege den k-Regler, friere interessante Geraden ein, und finde das gesuchte k.</p>
+  <div id="progress">Mission 1 / 2</div>
+  <div id="missionText"></div>
+  <div class="controls">
+    <div class="row"><label for="kSlider">k</label><input type="range" id="kSlider" min="-5" max="5" step="1" value="0"/><span class="valbox" id="kVal">0</span></div>
+  </div>
+  <div id="eqLabel"></div>
+  <div id="svgHost"></div>
+  <div class="btnRow">
+    <button id="freezeBtn">❄️ Einfrieren</button>
+    <button id="clearBtn">🗑️ Eingefrorene löschen</button>
+  </div>
+  <div class="btnRow">
+    <button id="confirmBtn">✅ Dieses k als Antwort bestätigen</button>
+  </div>
+  <div id="feedback"></div>
+  <button id="nextBtn">Nächste Mission ▸</button>
+  <div id="doneBox">✅ Beide Missionen gelöst — du beherrschst den Parameter k!</div>
+</div>
+<script>
+const MISSIONS=[
+  {label:"Finde das k, dessen Gerade durch P(3|10) läuft.", fn:(k,x)=>k*x+4, target:2, point:[3,10]},
+  {label:"Welches k macht die Gerade waagrecht (parallel zur x-Achse)?", fn:(k,x)=>(3-k)*x-1, target:3, point:null}
+];
+let mi=0, k=0, frozen=[], missionSolved=[false,false];
+
+function toX(x){ return 150+x*20; }
+function toY(y){ return 150-y*20; }
+function buildSVG(){
+  const m=MISSIONS[mi];
+  let s='<svg viewBox="0 0 300 300" style="width:100%;max-width:320px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="0" y1="150" x2="300" y2="150" stroke="#9aa4b2" stroke-width="1"/>';
+  s+='<line x1="150" y1="0" x2="150" y2="300" stroke="#9aa4b2" stroke-width="1"/>';
+  const x1=-7, x2=7;
+  frozen.forEach(fk=>{
+    s+='<line x1="'+toX(x1)+'" y1="'+toY(m.fn(fk,x1))+'" x2="'+toX(x2)+'" y2="'+toY(m.fn(fk,x2))+'" stroke="#5fd0c7" stroke-width="1.5" opacity="0.35"/>';
+  });
+  s+='<line x1="'+toX(x1)+'" y1="'+toY(m.fn(k,x1))+'" x2="'+toX(x2)+'" y2="'+toY(m.fn(k,x2))+'" stroke="#f2a63c" stroke-width="2.5"/>';
+  if(m.point){
+    s+='<circle cx="'+toX(m.point[0])+'" cy="'+toY(m.point[1])+'" r="6" fill="none" stroke="#4caf50" stroke-width="2"/>';
+    s+='<text x="'+(toX(m.point[0])+9)+'" y="'+(toY(m.point[1])-9)+'" font-size="11" fill="#4caf50">P('+m.point[0]+'|'+m.point[1]+')</text>';
+  }
+  s+='</svg>';
+  return s;
+}
+function render(){
+  document.getElementById('progress').textContent='Mission '+(mi+1)+' / '+MISSIONS.length;
+  document.getElementById('missionText').textContent=MISSIONS[mi].label;
+  document.getElementById('feedback').textContent='';
+  document.getElementById('nextBtn').style.display='none';
+  frozen=[];
+  updateDisplay();
+}
+function updateDisplay(){
+  document.getElementById('kVal').textContent=k;
+  document.getElementById('svgHost').innerHTML=buildSVG();
+  document.getElementById('eqLabel').textContent='aktuelle Gerade bei k='+k;
+}
+document.getElementById('kSlider').addEventListener('input', e=>{ k=parseInt(e.target.value); updateDisplay(); });
+document.getElementById('freezeBtn').onclick=()=>{ if(!frozen.includes(k)) frozen.push(k); updateDisplay(); };
+document.getElementById('clearBtn').onclick=()=>{ frozen=[]; updateDisplay(); };
+document.getElementById('confirmBtn').onclick=()=>{
+  if(missionSolved[mi]) return;
+  const m=MISSIONS[mi];
+  if(k===m.target){
+    missionSolved[mi]=true;
+    document.getElementById('feedback').textContent='✅ Richtig! k='+m.target+' erfüllt die Bedingung.';
+    window.lwAward && window.lwAward('mission', 'mission'+(mi+1));
+    document.getElementById('nextBtn').style.display = (mi<MISSIONS.length-1) ? 'block' : 'none';
+    checkAllDone();
+  } else {
+    document.getElementById('feedback').textContent='Noch nicht — probier ein anderes k.';
+  }
+};
+document.getElementById('nextBtn').onclick=()=>{
+  if(mi<MISSIONS.length-1){ mi++; k=0; document.getElementById('kSlider').value=0; render(); }
+};
+function checkAllDone(){
+  if(missionSolved.every(Boolean)){
+    document.getElementById('doneBox').style.display='block';
+    window.lwAward && window.lwAward('mission', 'schargenerator_komplett');
+  }
+}
+render();
+
+// Test-Hook fuer Playwright-Verifikation
+window.LAB = {
+  state: () => ({ mission: mi, k: k, frozen: frozen.slice(), missionSolved: missionSolved.slice() }),
+  setK: (v) => { k=v; document.getElementById('kSlider').value=v; updateDisplay(); },
+  freeze: () => document.getElementById('freezeBtn').click(),
+  confirm: () => document.getElementById('confirmBtn').click(),
+  nextMission: () => document.getElementById('nextBtn').click()
+};
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

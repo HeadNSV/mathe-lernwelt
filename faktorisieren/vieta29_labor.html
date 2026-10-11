@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Zahlenpaar-Sucher — Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{max-width:640px;margin:0 auto;padding:18px 20px 40px;}
+  h3{margin:0 0 6px;}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  #progress{font-size:13px;color:var(--muted);margin-bottom:8px;}
+  #eqLabel{font-size:21px;color:var(--accent);text-align:center;font-weight:700;margin:8px 0 4px;}
+  #goalLabel{font-size:14px;color:var(--muted);text-align:center;margin-bottom:14px;}
+  #selRow{text-align:center;font-size:16px;margin-bottom:10px;min-height:24px;}
+  #selRow span.pick{display:inline-block;background:#1f2630;border:1px solid var(--accent);border-radius:6px;padding:3px 10px;margin:0 4px;color:var(--accent);font-weight:700;}
+  #grid{display:grid;grid-template-columns:repeat(9,1fr);gap:5px;background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:14px;}
+  .cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:#1f2630;border:1px solid var(--line);border-radius:6px;font-size:13px;cursor:pointer;color:var(--fg);}
+  .cell:hover{background:#283041;}
+  .cell.chosen{background:#33291a;border-color:var(--accent);color:var(--accent);font-weight:700;}
+  .cell.hit{background:#1c3d24;border-color:#4caf50;color:#8ee0a0;font-weight:700;}
+  .cell.miss{background:#3d1c1c;border-color:#c0392b;}
+  #feedback{text-align:center;font-size:14px;min-height:20px;margin-top:10px;color:#5fd0c7;}
+  #resetPick{display:block;margin:8px auto 0;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;}
+  #nextBtn{display:none;margin:14px auto 0;background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:9px 18px;font-size:14px;cursor:pointer;}
+  #doneBox{text-align:center;font-size:16px;color:var(--accent);font-weight:700;margin-top:16px;display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h3>🔢 Zahlenpaar-Sucher</h3>
+  <p class="hint">Klick zwei Zahlen im Gitter an, die zur geforderten Summe UND zum geforderten Produkt passen.</p>
+  <div id="progress">Runde 1 / 4</div>
+  <div id="eqLabel"></div>
+  <div id="goalLabel"></div>
+  <div id="selRow"></div>
+  <div id="grid"></div>
+  <button id="resetPick">Auswahl zurücksetzen</button>
+  <div id="feedback"></div>
+  <button id="nextBtn">Nächste Runde ▸</button>
+  <div id="doneBox">✅ Alle vier Zahlenpaare gefunden — der Satz von Vieta sitzt!</div>
+</div>
+<script>
+const ROUNDS=[
+  {eq:"x² + 2x − 15 = 0", p:2, q:-15},
+  {eq:"x² − x − 6 = 0", p:-1, q:-6},
+  {eq:"x² + 7x + 12 = 0", p:7, q:12},
+  {eq:"x² − 8x + 15 = 0", p:-8, q:15}
+];
+const VALUES=[]; for(let v=-9; v<=9; v++) VALUES.push(v);
+let ri=0, picked=[], roundSolved=[false,false,false,false];
+
+function currentGoal(){ const r=ROUNDS[ri]; return { sum:-r.p, prod:r.q }; }
+
+function render(){
+  document.getElementById('progress').textContent='Runde '+(ri+1)+' / '+ROUNDS.length;
+  document.getElementById('eqLabel').textContent=ROUNDS[ri].eq;
+  const g=currentGoal();
+  document.getElementById('goalLabel').textContent='gesucht: Summe = '+g.sum+', Produkt = '+g.prod;
+  document.getElementById('feedback').textContent='';
+  document.getElementById('nextBtn').style.display='none';
+  picked=[];
+  renderSel();
+  const grid=document.getElementById('grid');
+  grid.innerHTML='';
+  VALUES.forEach(v=>{
+    const c=document.createElement('div'); c.className='cell'; c.textContent=v; c.dataset.v=v;
+    c.onclick=()=>pickCell(v, c);
+    grid.appendChild(c);
+  });
+}
+function renderSel(){
+  document.getElementById('selRow').innerHTML = picked.length===0
+    ? '<span style="color:var(--muted);">noch nichts ausgewählt</span>'
+    : picked.map(v=>'<span class="pick">'+v+'</span>').join(' + ');
+}
+function pickCell(v, el){
+  if(roundSolved[ri]) return;
+  if(picked.length>=2) return;
+  if(el.classList.contains('chosen')) return;
+  picked.push(v);
+  el.classList.add('chosen');
+  renderSel();
+  if(picked.length===2){
+    const g=currentGoal();
+    const sum=picked[0]+picked[1], prod=picked[0]*picked[1];
+    if(sum===g.sum && prod===g.prod){
+      document.querySelectorAll('#grid .cell.chosen').forEach(c=>c.classList.add('hit'));
+      document.getElementById('feedback').textContent='✅ Treffer! x₁='+picked[0]+', x₂='+picked[1]+' → Summe='+sum+', Produkt='+prod+'.';
+      roundSolved[ri]=true;
+      window.lwAward && window.lwAward('mission', 'runde'+(ri+1));
+      document.getElementById('nextBtn').style.display = (ri<ROUNDS.length-1) ? 'block' : 'none';
+      checkAllDone();
+    } else {
+      document.querySelectorAll('#grid .cell.chosen').forEach(c=>c.classList.add('miss'));
+      document.getElementById('feedback').textContent='Nicht ganz — Summe='+sum+', Produkt='+prod+'. Das passt noch nicht. Nochmal versuchen.';
+      setTimeout(()=>{
+        document.querySelectorAll('#grid .cell').forEach(c=>c.classList.remove('chosen','miss'));
+        picked=[];
+        renderSel();
+      }, 900);
+    }
+  }
+}
+document.getElementById('resetPick').onclick=()=>{
+  if(roundSolved[ri]) return;
+  document.querySelectorAll('#grid .cell').forEach(c=>c.classList.remove('chosen','miss'));
+  picked=[];
+  renderSel();
+};
+document.getElementById('nextBtn').onclick=()=>{
+  if(ri<ROUNDS.length-1){ ri++; render(); }
+};
+function checkAllDone(){
+  if(roundSolved.every(Boolean)){
+    document.getElementById('doneBox').style.display='block';
+    window.lwAward && window.lwAward('mission', 'zahlenpaar_komplett');
+  }
+}
+render();
+
+// Test-Hook fuer Playwright-Verifikation
+window.LAB = {
+  state: () => ({ round: ri, picked: picked.slice(), roundSolved: roundSolved.slice(), goal: currentGoal() }),
+  pick: (v) => {
+    const c=[...document.querySelectorAll('#grid .cell')].find(x=>parseInt(x.dataset.v)===v);
+    if(c) pickCell(v, c);
+  },
+  nextRound: () => document.getElementById('nextBtn').click()
+};
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

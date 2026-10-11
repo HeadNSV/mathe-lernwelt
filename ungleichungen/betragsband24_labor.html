@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Betrags-Band — Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{max-width:760px;margin:0 auto;padding:18px 20px 40px;}
+  h3{margin:0 0 6px;}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  .modebar{display:flex;gap:8px;margin-bottom:14px;}
+  .modebar button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;}
+  .modebar button.on{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  .part{display:none;}
+  .part.show{display:block;}
+  .controls{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:14px;}
+  .row{display:flex;align-items:center;gap:12px;margin:10px 0;}
+  .row label{font-size:14px;color:var(--muted);min-width:110px;}
+  input[type=range]{flex:1;}
+  .valbox{background:#1f2630;border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:14px;font-weight:700;color:var(--accent);min-width:44px;text-align:center;}
+  .reltoggle{display:flex;gap:8px;}
+  .reltoggle button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 16px;font-size:15px;cursor:pointer;}
+  .reltoggle button.on{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  #eqLabel{font-size:20px;color:var(--accent);text-align:center;font-weight:700;margin:12px 0;}
+  #svgHost{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center;}
+  #intervalLabel{text-align:center;font-size:15px;color:#5fd0c7;font-weight:700;margin-top:8px;}
+  #missionBox{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:14px;margin-top:14px;}
+  #missionFeedback{margin-top:8px;font-size:14px;min-height:20px;}
+  #missionFeedback.ok{color:#4caf50;}
+  #puzzleWrap .quest{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:14px 18px;font-size:15px;margin-bottom:10px;}
+  #puzzleOpts{display:flex;flex-direction:column;gap:8px;}
+  #puzzleOpts button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer;text-align:left;}
+  #puzzleFeedback{margin-top:10px;font-size:14px;min-height:20px;}
+  #puzzleFeedback.ok{color:#4caf50;}
+  #puzzleFeedback.bad{color:#e05a5a;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="modebar">
+    <button id="modeBand" class="on">🎯 Band einstellen</button>
+    <button id="modePuzzle">🕵️ Gehört die Zahl dazu?</button>
+  </div>
+
+  <div class="part show" id="partBand">
+    <h3>🎯 Stelle |x−c| ? a live ein</h3>
+    <p class="hint">Verschiebe die Mitte c, ändere die Grenze a, und wechsle zwischen ≤ und ≥ — beobachte, wie sich das Lösungsband bzw. die Außenbereiche verändern.</p>
+    <div class="controls">
+      <div class="row"><label for="cSlider">Mitte c</label><input type="range" id="cSlider" min="-4" max="6" step="1" value="0"/><span class="valbox" id="cVal">0</span></div>
+      <div class="row"><label for="aSlider">Grenze a</label><input type="range" id="aSlider" min="1" max="5" step="1" value="3"/><span class="valbox" id="aVal">3</span></div>
+      <div class="row"><label>Relation</label><div class="reltoggle"><button id="relLe" class="on">≤ (Band)</button><button id="relGe">≥ (Außen)</button></div></div>
+    </div>
+    <div id="eqLabel"></div>
+    <div id="svgHost"></div>
+    <div id="intervalLabel"></div>
+    <div id="missionBox">
+      <b>Mission:</b> Stelle |x−3|≤2 ein (c=3, a=2, Relation ≤).
+      <div id="missionFeedback"></div>
+    </div>
+  </div>
+
+  <div class="part" id="partPuzzle">
+    <h3>🕵️ Gehört die Zahl zur Lösungsmenge?</h3>
+    <div id="puzzleWrap"></div>
+  </div>
+</div>
+<script>
+// === Band-Modus ===
+let c=0, a=3, rel='le';
+let missionDone=false;
+
+function buildAxisSVG(c,a,rel){
+  const x0=250, unit=36, y=80;
+  let s='<svg viewBox="0 0 500 140" style="width:100%;max-width:520px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="20" y1="'+y+'" x2="480" y2="'+y+'" stroke="#9aa4b2" stroke-width="2"/>';
+  s+='<polygon points="480,'+y+' 472,'+(y-5)+' 472,'+(y+5)+'" fill="#9aa4b2"/>';
+  s+='<polygon points="20,'+y+' 28,'+(y-5)+' 28,'+(y+5)+'" fill="#9aa4b2"/>';
+  for(let v=-7;v<=9;v++){
+    const x=x0+v*unit;
+    if(x<25||x>475) continue;
+    s+='<line x1="'+x+'" y1="'+(y-5)+'" x2="'+x+'" y2="'+(y+5)+'" stroke="#9aa4b2" stroke-width="1.5"/>';
+    s+='<text x="'+x+'" y="'+(y+20)+'" text-anchor="middle" font-size="10" fill="#9aa4b2">'+v+'</text>';
+  }
+  const left=c-a, right=c+a;
+  const xL=Math.max(25,x0+left*unit), xR=Math.min(475,x0+right*unit);
+  const color = rel==='le' ? '#5fd0c7' : '#f2a63c';
+  if(rel==='le'){
+    s+='<line x1="'+xL+'" y1="'+y+'" x2="'+xR+'" y2="'+y+'" stroke="'+color+'" stroke-width="6"/>';
+  } else {
+    s+='<line x1="25" y1="'+y+'" x2="'+xL+'" y2="'+y+'" stroke="'+color+'" stroke-width="6"/>';
+    s+='<line x1="'+xR+'" y1="'+y+'" x2="475" y2="'+y+'" stroke="'+color+'" stroke-width="6"/>';
+  }
+  [left,right].forEach(v=>{
+    const x=x0+v*unit;
+    if(x<25||x>475) return;
+    s+='<circle cx="'+x+'" cy="'+y+'" r="7" fill="'+color+'"/>';
+  });
+  s+='<circle cx="'+(x0+c*unit)+'" cy="'+y+'" r="4" fill="#e6edf3"/>';
+  s+='<text x="'+(x0+c*unit)+'" y="'+(y-16)+'" text-anchor="middle" font-size="12" fill="#e6edf3">c</text>';
+  s+='</svg>';
+  return s;
+}
+function fmt(n){ return n<0 ? '−'+Math.abs(n) : ''+n; }
+function render(){
+  document.getElementById('cVal').textContent=c;
+  document.getElementById('aVal').textContent=a;
+  const relSym = rel==='le' ? '≤' : '≥';
+  document.getElementById('eqLabel').textContent = '|x'+(c===0?'':(c>0?'−'+c:'+'+Math.abs(c)))+'| '+relSym+' '+a;
+  document.getElementById('svgHost').innerHTML = buildAxisSVG(c,a,rel);
+  const left=c-a, right=c+a;
+  let intervalTxt;
+  if(rel==='le'){
+    intervalTxt = 'L = ['+fmt(left)+';'+fmt(right)+']';
+  } else {
+    intervalTxt = 'L = ]−∞;'+fmt(left)+'] ∪ ['+fmt(right)+';∞[';
+  }
+  document.getElementById('intervalLabel').textContent = intervalTxt;
+  checkMission();
+}
+function checkMission(){
+  const fb=document.getElementById('missionFeedback');
+  if(c===3 && a===2 && rel==='le'){
+    if(!missionDone){
+      missionDone=true;
+      fb.className='ok';
+      fb.textContent='✅ Genau richtig: |x−3|≤2 → L=[1;5].';
+      window.lwAward && window.lwAward('mission');
+    }
+  } else {
+    fb.className='';
+    fb.textContent='';
+  }
+}
+document.getElementById('cSlider').addEventListener('input', e=>{ c=parseInt(e.target.value); render(); });
+document.getElementById('aSlider').addEventListener('input', e=>{ a=parseInt(e.target.value); render(); });
+document.getElementById('relLe').onclick=()=>{ rel='le'; document.getElementById('relLe').classList.add('on'); document.getElementById('relGe').classList.remove('on'); render(); };
+document.getElementById('relGe').onclick=()=>{ rel='ge'; document.getElementById('relGe').classList.add('on'); document.getElementById('relLe').classList.remove('on'); render(); };
+render();
+
+// === Raetselmodus: gehoert die Zahl dazu? ===
+const SCENARIOS=[
+  {desc:'|x−3|≤2. Gehört x=5 zur Lösungsmenge?', ok:true, why:"Richtig — |5−3|=2, und 2≤2 ist wahr. Die Grenze selbst gehört bei ≤ dazu."},
+  {desc:'|x−3|≤2. Gehört x=6 zur Lösungsmenge?', ok:false, why:"Falsch wäre 'ja' — |6−3|=3, und 3≤2 ist falsch. 6 liegt außerhalb des Bands."},
+  {desc:'|x|<4. Gehört x=4 zur Lösungsmenge?', ok:false, why:"Nein — |4|=4, und 4<4 ist falsch (echtes <, Grenze ausgeschlossen)."},
+  {desc:'|x+1|≥3. Gehört x=−1 zur Lösungsmenge?', ok:false, why:"Nein — |−1+1|=0, und 0≥3 ist falsch. x=−1 ist genau die Mitte, liegt also im ausgeschlossenen Bereich."},
+  {desc:'|x+1|≥3. Gehört x=3 zur Lösungsmenge?', ok:true, why:"Richtig — |3+1|=4, und 4≥3 ist wahr. x=3 liegt im rechten Außenbereich."},
+  {desc:'|x|<−2. Gehört irgendeine Zahl zur Lösungsmenge?', ok:false, why:"Nein — ein Betrag ist nie negativ, kann also nie kleiner als eine negative Zahl sein. Die Lösungsmenge ist leer."}
+];
+(function(){
+  const wrap=document.getElementById('puzzleWrap');
+  let si=0;
+  function loadScenario(){
+    wrap.innerHTML='';
+    if(si>=SCENARIOS.length){
+      wrap.innerHTML='<div class="quest">🎉 Alle Szenarien durchgespielt! Starte von vorn, indem du die Seite neu lädst.</div>';
+      return;
+    }
+    const sc=SCENARIOS[si];
+    const q=document.createElement('div'); q.className='quest'; q.textContent=sc.desc;
+    wrap.appendChild(q);
+    const opts=document.createElement('div'); opts.id='puzzleOpts';
+    const fb=document.createElement('div'); fb.id='puzzleFeedback';
+    ['✅ Gehört dazu','❌ Gehört nicht dazu'].forEach((label,oi)=>{
+      const b=document.createElement('button');
+      b.textContent=label;
+      b.onclick=()=>{
+        const said=(oi===0);
+        if(said===sc.ok){ fb.className='ok'; fb.textContent='✅ '+sc.why; }
+        else { fb.className='bad'; fb.textContent='❌ '+sc.why; }
+        setTimeout(()=>{ si++; loadScenario(); }, 1800);
+      };
+      opts.appendChild(b);
+    });
+    wrap.appendChild(opts);
+    wrap.appendChild(fb);
+  }
+  loadScenario();
+})();
+
+// mode switch
+const modeBand=document.getElementById('modeBand'), modePuzzle=document.getElementById('modePuzzle');
+const partBand=document.getElementById('partBand'), partPuzzle=document.getElementById('partPuzzle');
+modeBand.onclick=()=>{ modeBand.classList.add('on'); modePuzzle.classList.remove('on'); partBand.classList.add('show'); partPuzzle.classList.remove('show'); };
+modePuzzle.onclick=()=>{ modePuzzle.classList.add('on'); modeBand.classList.remove('on'); partPuzzle.classList.add('show'); partBand.classList.remove('show'); };
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

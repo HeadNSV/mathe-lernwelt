@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Lineare Ungleichungen · Teil 2 — Formvariablen &amp; Beträge</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .warnbox{background:#3d1c1c;border-left:5px solid #c0392b;border-radius:8px;padding:10px 16px;font-size:min(1.9vw,16px);color:#ffd9d0;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>LINEARE UNGLEICHUNGEN <span class="accent">· Teil 2</span></h1>
+    <h2>Formvariablen &amp; Beträge</h2>
+    <div class="hook" style="max-width:70ch;">Heute treffen zwei bekannte Ideen aufeinander: Formvariablen (aus den Gleichungen) UND der Zeichen-Dreher von eben — und ein neues Werkzeug: Beträge als Abstands-Frage auf dem Zahlenstrahl.</div>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 8.2</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Bruecke Formvariable -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🌉 Brücke</span> Fallunterscheidung — jetzt mit einer Frage mehr</h2>
+      <div class="defbox">Bei Gleichungen mit Formvariable gab es zwei Fälle: der Term ist 0, oder er ist es nicht. Bei Ungleichungen kommt eine dritte Unterscheidung dazu — denn jetzt zählt auch, ob der Term POSITIV oder NEGATIV ist, wegen des Zeichen-Drehers.</div>
+      <ul class="bul">
+        <li>Term &gt; 0 → Relationszeichen bleibt. Term &lt; 0 → Relationszeichen dreht sich. Term = 0 → separat berechnen.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 3 Entscheidungsbaum -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Fallunterscheidung: a·x &gt; 6</h2>
+      <div class="svgbox"><div id="svgTree3"></div></div>
+      <div class="defbox">Bei a=0 wird die Ungleichung zu 0&gt;6 — das ist für JEDES x falsch, also L₀={ }, unabhängig vom Fall a&gt;0/a&lt;0.</div>
+    </div>
+  </section>
+
+  <!-- 4 Schritt-fuer-Schritt Formvariable -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Ungleichung mit Formvariable lösen</h2>
+      <div class="defbox">Aufgabe: Bestimme die Lösungsmenge von k·x−3≤5 in Abhängigkeit von k (G=ℝ).</div>
+      <div class="step" id="s4_1"><b class="lbl">Schritt 1 — Nach x auflösen:</b> k·x−3≤5 |+3 ⇔ k·x≤8 |:k und k≠0.</div>
+      <div class="step" id="s4_2"><b class="lbl">Fall k&gt;0:</b> Zeichen bleibt: x≤8/k → L<sub>k</sub>=]−∞;8/k] für k&gt;0.</div>
+      <div class="step" id="s4_3"><b class="lbl">Fall k&lt;0:</b> Zeichen dreht: x≥8/k → L<sub>k</sub>=[8/k;∞[ für k&lt;0.</div>
+      <div class="step" id="s4_4"><b class="lbl">Fall k=0:</b> 0·x−3≤5 ⇔ −3≤5 — das ist IMMER wahr, egal welches x → L₀=G (diesmal ALLE Zahlen, anders als im vorigen Beispiel!).</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="4" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 5 Betrag = Abstand -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🌉 Brücke</span> Betrag = Abstand von 0</h2>
+      <div class="defbox">Der Betrag |a| ist der Abstand der Zahl a vom Nullpunkt auf dem Zahlenstrahl — deshalb ist er nie negativ. Das kennst du schon: |−5|=5 und |5|=5, beide Zahlen sind 5 Schritte von der 0 entfernt.</div>
+    </div>
+  </section>
+
+  <!-- 6 Abstands-Band -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>|x| &lt; a als Abstands-Band</h2>
+      <div class="svgbox"><div id="svgBand"></div></div>
+      <div class="defbox">|x|&lt;3 fragt: „Welche Zahlen x haben einen Abstand von unter 3 zur 0?" — die Antwort ist ein ganzes BAND auf dem Zahlenstrahl, von −3 bis 3 (beide Grenzen offen, da &lt; nicht ≤).</div>
+    </div>
+  </section>
+
+  <!-- 7 Doppelungleichung und Vereinigung -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Doppelungleichung &amp; <span class="chip">🌉 Brücke</span> Vereinigung</h2>
+      <div class="svgbox"><div id="svgDoubleUnion"></div></div>
+      <ul class="bul">
+        <li>|x|&lt;a ⇔ −a&lt;x&lt;a — EIN zusammenhängendes Band (Doppelungleichung).</li>
+        <li>|x|&gt;a ⇔ x&lt;−a ∨ x&gt;a — ZWEI getrennte Strahlen, verbunden mit „oder" — das ist genau die Vereinigung ∪ aus der Mengenlehre!</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 8 Schritt-fuer-Schritt verschobenes Band -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Ein verschobenes Betragsband lösen</h2>
+      <div class="defbox">Aufgabe: Bestimme die Lösungsmenge von |x−3|≤2 (G=ℝ).</div>
+      <div class="step" id="s8_1"><b class="lbl">Schritt 1 — In Doppelungleichung umschreiben:</b> |x−3|≤2 ⇔ −2≤x−3≤2.</div>
+      <div class="step" id="s8_2"><b class="lbl">Schritt 2 — Auf allen drei Seiten +3:</b> −2≤x−3≤2 |+3 ⇔ 1≤x≤5.</div>
+      <div class="step" id="s8_3"><b class="lbl">Schritt 3 — Lösungsmenge angeben:</b> L=[1;5] — ein Band um die 3, das sich um 2 nach links und rechts erstreckt.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="8" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 9 Eselsbruecke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Kleiner als a? Ein Band um die Mitte. Größer als a? Zwei Arme nach außen." |x|&lt;a bleibt IMMER zusammenhängend, |x|&gt;a fällt IMMER in zwei getrennte Teile auseinander.</div>
+    </div>
+  </section>
+
+  <!-- 10 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Fertigungstoleranz beim Drehen</h2>
+      <div class="defbox">Eine Schraube soll einen Durchmesser d von genau 8mm haben, mit einer zulässigen Toleranz von ±0,1mm. Als Betragsungleichung: |d−8|≤0,1. Aufgelöst: 7,9≤d≤8,1 — jede Schraube in diesem Band gilt als „gut", jede außerhalb als Ausschuss. Toleranzangaben in der Technik sind fast immer Betragsungleichungen.</div>
+    </div>
+  </section>
+
+  <!-- 11 Intuitions-Regler -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Schätz mal: Größte ganze Lösung</h2>
+      <div class="defbox">Für |x|&lt;4 — was ist die GRÖSSTE ganze Zahl, die noch in der Lösungsmenge liegt?</div>
+      <div id="estBand24"></div>
+    </div>
+  </section>
+
+  <!-- 12 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>|a|</td><td>„Betrag von a"</td><td>Abstand von a zur 0, nie negativ</td></tr>
+        <tr><td>−a&lt;x&lt;a</td><td>„Doppelungleichung"</td><td>zwei Bedingungen gleichzeitig, EIN Band</td></tr>
+        <tr><td>∨</td><td>„oder"</td><td>mindestens eine der Bedingungen gilt</td></tr>
+        <tr><td>∪</td><td>„vereinigt mit"</td><td>zwei getrennte Lösungsbereiche zusammen</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 13 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Betrags-Band</span><span class="sub">a-Regler + Zeichen-Wahl formen das Lösungsband live</span></div>
+    <iframe allow="autoplay" data-src="betragsband24_labor.html"></iframe>
+  </section>
+
+  <!-- 14 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Begriff</th><th>Kernaussage</th></tr>
+      <tr><td>Formvariable in Ungleichung</td><td>3 Fälle: Term&gt;0 / Term&lt;0 (dreht!) / Term=0 (separat)</td></tr>
+      <tr><td>|x|&lt;a</td><td>−a&lt;x&lt;a, EIN Band (Doppelungleichung)</td></tr>
+      <tr><td>|x|&gt;a</td><td>x&lt;−a ∨ x&gt;a, ZWEI Strahlen (Vereinigung ∪)</td></tr>
+    </table>
+  </section>
+
+  <!-- 15 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Bestimme die Lösungsmenge von |x|≤5.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>−5≤x≤5 → L=[−5;5]</details>
+        </li>
+        <li style="margin-top:10px;">Bestimme die Lösungsmenge von |x+2|&gt;4.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>x+2&lt;−4 ∨ x+2&gt;4 → x&lt;−6 ∨ x&gt;2 → L=]−∞;−6[∪]2;∞[</details>
+        </li>
+        <li style="margin-top:10px;">Hat |x|&lt;−3 eine Lösung? Begründe.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>Nein — ein Betrag ist NIE negativ, also kann er niemals kleiner als eine negative Zahl sein. L={ }.</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 16 Pruefungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Fallunterscheidung bei Formvariablen in Ungleichungen</b> durchführen — inkl. korrektem Zeichen-Dreh bei negativem Term.</li>
+        <li><b>Betragsungleichungen in Doppelungleichung/Vereinigung umschreiben</b> und lösen.</li>
+        <li><b>Erkennen, ob eine Betragsungleichung überhaupt eine Lösung hat</b> (nie bei „&lt; negative Zahl").</li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">Kapitel-Brücke — Transferaufgabe mit Teil 1 (Zeichen-Dreher): <i>„Löse b·x&lt;−4 für b=−2 UND für b=2. Was unterscheidet die beiden Lösungswege?"</i> → b=−2: −2x&lt;−4 |:(−2) [dreht] ⇔ x&gt;2. b=2: 2x&lt;−4 |:2 [bleibt] ⇔ x&lt;−2. Derselbe Aufbau, aber das Vorzeichen von b entscheidet über Richtung UND Zeichen-Dreh gleichzeitig.</div>
+    </div>
+  </section>
+
+  <!-- 17 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+// === SVG: 3-Fälle-Entscheidungsbaum ===
+function treeBox(x,y,w,h,text,color){
+  return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="6" fill="rgba(255,255,255,0.03)" stroke="'+color+'" stroke-width="1.5"/><text x="'+(x+w/2)+'" y="'+(y+h/2+5)+'" text-anchor="middle" font-size="12" font-weight="600" fill="'+color+'">'+text+'</text>';
+}
+function buildTree3SVG(top, branches){
+  const topW=200, topX=180;
+  let s='<svg viewBox="0 0 560 220" style="width:100%;max-width:560px;height:auto;display:block;margin:0 auto;">';
+  s+=treeBox(topX,10,topW,40,top,'#f2a63c');
+  const cols=[{x:10,c:'#4caf50'},{x:205,c:'#c0392b'},{x:400,c:'#5fd0c7'}];
+  branches.forEach((b,i)=>{
+    const col=cols[i];
+    s+='<line x1="'+(topX+topW/2)+'" y1="50" x2="'+(col.x+75)+'" y2="90" stroke="#9aa4b2" stroke-width="1.5"/>';
+    s+=treeBox(col.x,90,150,40,b.cond,col.c);
+    s+='<line x1="'+(col.x+75)+'" y1="130" x2="'+(col.x+75)+'" y2="160" stroke="#9aa4b2" stroke-width="1.5"/>';
+    s+=treeBox(col.x,160,150,45,b.res,col.c);
+  });
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgTree3').innerHTML=buildTree3SVG('a·x > 6', [
+  {cond:'a > 0', res:'x > 6/a (Zeichen bleibt)'},
+  {cond:'a < 0', res:'x < 6/a (Zeichen dreht!)'},
+  {cond:'a = 0', res:'0 > 6 (falsch) → L₀={ }'}
+]);
+
+// === SVG: Abstands-Band |x|<3 ===
+function buildBandSVG(){
+  const x0=250, unit=42, y=70;
+  let s='<svg viewBox="0 0 500 130" style="width:100%;max-width:520px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="30" y1="'+y+'" x2="470" y2="'+y+'" stroke="#9aa4b2" stroke-width="2"/>';
+  s+='<polygon points="470,'+y+' 462,'+(y-5)+' 462,'+(y+5)+'" fill="#9aa4b2"/>';
+  for(let v=-5;v<=5;v++){
+    const x=x0+v*unit;
+    s+='<line x1="'+x+'" y1="'+(y-5)+'" x2="'+x+'" y2="'+(y+5)+'" stroke="#9aa4b2" stroke-width="1.5"/>';
+    s+='<text x="'+x+'" y="'+(y+22)+'" text-anchor="middle" font-size="11" fill="#9aa4b2">'+v+'</text>';
+  }
+  s+='<line x1="'+(x0-3*unit)+'" y1="'+y+'" x2="'+(x0+3*unit)+'" y2="'+y+'" stroke="#5fd0c7" stroke-width="5"/>';
+  s+='<circle cx="'+(x0-3*unit)+'" cy="'+y+'" r="7" fill="#0e131b" stroke="#5fd0c7" stroke-width="3"/>';
+  s+='<circle cx="'+(x0+3*unit)+'" cy="'+y+'" r="7" fill="#0e131b" stroke="#5fd0c7" stroke-width="3"/>';
+  s+='<text x="'+x0+'" y="'+(y-16)+'" text-anchor="middle" font-size="14" font-weight="700" fill="#5fd0c7">|x| &lt; 3 → Band von −3 bis 3</text>';
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgBand').innerHTML=buildBandSVG();
+
+// === SVG: Doppelungleichung (Band) vs Vereinigung (2 Strahlen) ===
+function buildAxisBase(y){
+  const x0=250, unit=42;
+  let s='<line x1="30" y1="'+y+'" x2="470" y2="'+y+'" stroke="#9aa4b2" stroke-width="2"/>';
+  s+='<polygon points="470,'+y+' 462,'+(y-5)+' 462,'+(y+5)+'" fill="#9aa4b2"/>';
+  s+='<polygon points="30,'+y+' 38,'+(y-5)+' 38,'+(y+5)+'" fill="#9aa4b2"/>';
+  for(let v=-5;v<=5;v++){
+    const x=x0+v*unit;
+    s+='<line x1="'+x+'" y1="'+(y-5)+'" x2="'+x+'" y2="'+(y+5)+'" stroke="#9aa4b2" stroke-width="1.5"/>';
+    s+='<text x="'+x+'" y="'+(y+20)+'" text-anchor="middle" font-size="10" fill="#9aa4b2">'+v+'</text>';
+  }
+  return s;
+}
+function buildDoubleUnionSVG(){
+  const x0=250, unit=42, y1=45, y2=155;
+  let s='<svg viewBox="0 0 500 200" style="width:100%;max-width:520px;height:auto;display:block;margin:0 auto;">';
+  s+=buildAxisBase(y1);
+  s+='<line x1="'+(x0-3*unit)+'" y1="'+y1+'" x2="'+(x0+3*unit)+'" y2="'+y1+'" stroke="#5fd0c7" stroke-width="5"/>';
+  s+='<circle cx="'+(x0-3*unit)+'" cy="'+y1+'" r="6" fill="#0e131b" stroke="#5fd0c7" stroke-width="3"/>';
+  s+='<circle cx="'+(x0+3*unit)+'" cy="'+y1+'" r="6" fill="#0e131b" stroke="#5fd0c7" stroke-width="3"/>';
+  s+='<text x="35" y="'+(y1-14)+'" text-anchor="start" font-size="12" font-weight="700" fill="#5fd0c7">|x|&lt;3 ⇔ −3&lt;x&lt;3 — EIN Band</text>';
+  s+=buildAxisBase(y2);
+  s+='<line x1="30" y1="'+y2+'" x2="'+(x0-3*unit)+'" y2="'+y2+'" stroke="#f2a63c" stroke-width="5"/>';
+  s+='<line x1="'+(x0+3*unit)+'" y1="'+y2+'" x2="470" y2="'+y2+'" stroke="#f2a63c" stroke-width="5"/>';
+  s+='<circle cx="'+(x0-3*unit)+'" cy="'+y2+'" r="6" fill="#0e131b" stroke="#f2a63c" stroke-width="3"/>';
+  s+='<circle cx="'+(x0+3*unit)+'" cy="'+y2+'" r="6" fill="#0e131b" stroke="#f2a63c" stroke-width="3"/>';
+  s+='<text x="35" y="'+(y2-14)+'" text-anchor="start" font-size="12" font-weight="700" fill="#f2a63c">|x|&gt;3 ⇔ x&lt;−3 ∨ x&gt;3 — ZWEI Strahlen (∪)</text>';
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgDoubleUnion').innerHTML=buildDoubleUnionSVG();
+
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "🌉 Brücke: Fallunterscheidung — jetzt mit einer Frage mehr", "Fallunterscheidung: a·x > 6", "📐 Schritt für Schritt: Ungleichung mit Formvariable lösen", "🌉 Brücke: Betrag = Abstand von 0", "|x| < a als Abstands-Band", "Doppelungleichung & 🌉 Brücke Vereinigung", "📐 Schritt für Schritt: Ein verschobenes Betragsband lösen", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Fertigungstoleranz beim Drehen", "Schätz mal: Größte ganze Lösung", "Symbol-Legende", "🧪 Betrags-Band", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=18;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck24_s1_Charon.mp3",txt:"Lineare Ungleichungen, Teil zwei. Heute treffen zwei bekannte Ideen aufeinander: Formvariablen aus den Gleichungen, und der Zeichen-Dreher von eben - und ein neues Werkzeug: Beträge als Abstands-Frage auf dem Zahlenstrahl."},
+ 2:{wav:"narration_deck24_s2_Charon.mp3",txt:"Bei Gleichungen mit Formvariable gab es zwei Fälle: der Term ist Null, oder er ist es nicht. Bei Ungleichungen kommt eine dritte Unterscheidung dazu - denn jetzt zählt auch, ob der Term positiv oder negativ ist, wegen des Zeichen-Drehers."},
+ 3:{wav:"narration_deck24_s3_Charon.mp3",txt:"Schauen wir uns die drei Fälle an einem eigenen Beispiel an: was passiert, wenn die Formvariable positiv, negativ, oder Null ist."},
+ 4:{wav:"narration_deck24_s4_Charon.mp3",txt:"Jetzt lösen wir gemeinsam eine Ungleichung mit Formvariable, bei der wieder alle drei Fälle vorkommen - und diesmal führt der Null-Fall zu einem ganz anderen Ergebnis als beim letzten Mal."},
+ 5:{wav:"narration_deck24_s5_Charon.mp3",txt:"Der Betrag einer Zahl ist ihr Abstand vom Nullpunkt auf dem Zahlenstrahl - deshalb ist er nie negativ."},
+ 6:{wav:"narration_deck24_s6_Charon.mp3",txt:"Die Frage, für welche Zahlen der Betrag kleiner als eine gegebene Zahl ist, hat als Antwort immer ein ganzes Band auf dem Zahlenstrahl."},
+ 7:{wav:"narration_deck24_s7_Charon.mp3",txt:"Kleiner als führt zu einem zusammenhängenden Band, beschrieben durch eine Doppelungleichung. Größer als führt dagegen zu zwei getrennten Strahlen - das ist genau die Vereinigung aus der Mengenlehre."},
+ 8:{wav:"narration_deck24_s8_Charon.mp3",txt:"Jetzt lösen wir gemeinsam eine Betragsungleichung, bei der das Band nicht um die Null, sondern um eine andere Zahl zentriert ist."},
+ 9:{wav:"narration_deck24_s9_Charon.mp3",txt:"Merk dir: kleiner als a ergibt ein Band um die Mitte, größer als a ergibt zwei Arme nach außen."},
+ 10:{wav:"narration_deck24_s10_Charon.mp3",txt:"Auch in der Fertigungstechnik sind Toleranzangaben fast immer Betragsungleichungen - zum Beispiel beim zulässigen Durchmesser einer gedrehten Schraube."},
+ 11:{wav:"narration_deck24_s11_Charon.mp3",txt:"Bevor du ins Labor gehst: schätz doch mal, welche ganze Zahl gerade noch in diesem Betragsband liegt."},
+ 12:{wav:"narration_deck24_s12_Charon.mp3",txt:"Hier noch mal alle Symbole rund um Beträge und Vereinigung im Überblick, bevor du selbst im Labor experimentierst."},
+ 13:{wav:"narration_deck24_s13_Charon.mp3",txt:"Jetzt bist du dran: stelle mit dem Regler und der Zeichen-Wahl verschiedene Betragsbänder live ein."},
+ 14:{wav:"narration_deck24_s14_Charon.mp3",txt:"Fassen wir zusammen: die drei Fälle bei Formvariablen in Ungleichungen, und wie kleiner-als und größer-als bei Beträgen zu ganz unterschiedlichen Lösungsmengen führen."},
+ 15:{wav:"narration_deck24_s15_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben zu Formvariablen und Beträgen."},
+ 16:{wav:"narration_deck24_s16_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst - inklusive einer Transferaufgabe, die zeigt, wie ein einziges Vorzeichen über Richtung und Zeichen-Dreh gleichzeitig entscheidet."},
+ 17:{wav:"narration_deck24_s17_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"Bei a·x&gt;6 mit Formvariable a — was gilt im Fall a&lt;0?",
+  a:["Das Relationszeichen bleibt unverändert","Das Relationszeichen dreht sich, weil durch eine negative Zahl geteilt wird","Es gibt keine Lösung","x muss negativ sein"],r:1,
+  why:"Division durch eine negative Formvariable dreht das Relationszeichen — genau wie bei einer negativen Zahl."},
+ {q:"Hat |x|&lt;−3 eine Lösung?",
+  a:["Ja, x=−3","Nein — ein Betrag ist nie negativ, kann also nie kleiner als eine negative Zahl sein","Ja, alle x&lt;0","Ja, x=0"],r:1,
+  why:"|x| ist immer ≥0. Eine Bedingung „Betrag kleiner als eine negative Zahl“ kann niemals erfüllt sein → L={ }."},
+ {q:"Wie schreibt man |x|&lt;5 als Doppelungleichung?",
+  a:["x&lt;5","−5&lt;x&lt;5","x&lt;−5 ∨ x&gt;5","0&lt;x&lt;5"],r:1,
+  why:"|x|<a bedeutet: der Abstand zur 0 ist kleiner als a, also liegt x zwischen −a und a."},
+ {q:"Wie hängt |x|&gt;5 mit der Mengenlehre zusammen?",
+  a:["Es ist eine Schnittmenge ∩ zweier Bereiche","Es ist eine Vereinigung ∪ zweier getrennter Strahlen","Es ist eine leere Menge","Es ist eine Teilmenge"],r:1,
+  why:"x<−5 ∨ x>5 sind zwei getrennte Zahlenbereiche, die mit „oder“ verbunden werden — das ist die Vereinigung ∪."},
+ {q:"k·x−3≤5 mit Formvariable k. Was gilt im Fall k=0?",
+  a:["0≤8 ist wahr → L₀=G (alle Zahlen)","0≤8 ist falsch → L₀={ }","x muss 0 sein","Das ist nicht erlaubt"],r:0,
+  why:"Für k=0 wird die Ungleichung zu −3≤5 — das ist immer wahr, unabhängig von x, also lösen ALLE Zahlen."},
+ {q:"Löse |x−3|≤2.",
+  a:["L=[1;5]","L=[−1;5]","L=]1;5[","L={2}"],r:0,
+  why:"|x−3|≤2 ⇔ −2≤x−3≤2 |+3 ⇔ 1≤x≤5 → L=[1;5]."}
+];
+const DECK_ID="ungleichungen/deck24";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), oi===item.r);
+        answered++; if(oi===item.r) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estBand24', {
+    frage: 'Für |x|<4 — was ist die GRÖSSTE ganze Zahl, die noch in der Lösungsmenge liegt?',
+    min: 0, max: 6, korrekt: 3, toleranz: 0,
+    begruendung: '|x|<4 bedeutet −4<x<4. Die Grenze 4 selbst gehört NICHT dazu, also ist 3 die größte ganze Lösung.'
+  });
+});
+</script>
+</body>
+</html>

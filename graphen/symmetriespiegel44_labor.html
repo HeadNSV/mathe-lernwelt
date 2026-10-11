@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Symmetrie-Spiegel</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:16px 22px 40px;max-width:1000px;margin:0 auto;}
+  h2{margin:0 0 4px;font-size:22px;}
+  .lead{color:var(--muted);font-size:15px;margin:0 0 14px;}
+  #score{font-size:15px;color:var(--accent);margin-bottom:10px;font-weight:700;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;}
+  .card{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+  .card h3{margin:0 0 6px;font-size:16px;color:var(--accent);}
+  .svghost{background:#0e131b;border:1px solid var(--line);border-radius:8px;padding:6px;text-align:center;}
+  .guessrow{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+  .guessbtn{flex:1;min-width:80px;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 6px;font-size:13px;cursor:pointer;}
+  .guessbtn.picked{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  .checkbtn{margin-top:8px;width:100%;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:14px;cursor:pointer;}
+  .checkbtn:hover{background:#283041;}
+  .result{margin-top:8px;font-size:13.5px;line-height:1.5;display:none;}
+  .result.show{display:block;}
+  .result.right{color:#7be08a;}
+  .result.wrong{color:#ff9d8a;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h2>🧪 Symmetrie-Spiegel</h2>
+  <p class="lead">Schau dir jeden Graphen an, vermute Achsensymmetrie / Punktsymmetrie / Keine — und prüfe dann rechnerisch nach.</p>
+  <div id="score">Vermutungen richtig: 0 / 6</div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<script>
+function toX(x,ox,sx){ return ox+x*sx; }
+function toY(y,oy,sy){ return oy-y*sy; }
+function drawSVG(fn, xr, w,h,ox,oy,sx,sy,color){
+  let s='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;max-width:260px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="0" y1="'+oy+'" x2="'+w+'" y2="'+oy+'" stroke="#9aa4b2" stroke-width="1"/>';
+  s+='<line x1="'+ox+'" y1="0" x2="'+ox+'" y2="'+h+'" stroke="#9aa4b2" stroke-width="1"/>';
+  let pts=[];
+  for(let x=xr[0]; x<=xr[1]+0.001; x+=0.1){
+    const y=fn(x);
+    const py=toY(y,oy,sy);
+    if(py>-20 && py<h+20) pts.push(toX(x,ox,sx)+","+py);
+  }
+  s+='<polyline points="'+pts.join(" ")+'" fill="none" stroke="'+color+'" stroke-width="2.2"/>';
+  s+='</svg>';
+  return s;
+}
+const de2=(x)=>{ const r=Math.round(x*100)/100; return r.toString().replace('.',','); };
+
+const CANDIDATES=[
+  {id:'p1', label:'p₁(x) = x² − 1', D:'ℝ', fn:x=>x*x-1, xr:[-2.5,2.5], type:'achse', note:'p₁(−x)=(−x)²−1=x²−1=p₁(x) → achsensymmetrisch.'},
+  {id:'p2', label:'p₂(x) = −0,5x', D:'ℝ', fn:x=>-0.5*x, xr:[-3,3], type:'punkt', note:'p₂(−x)=0,5x=−p₂(x) → punktsymmetrisch.'},
+  {id:'p3', label:'p₃(x) = x² + x', D:'ℝ', fn:x=>x*x+x, xr:[-2.5,2.5], type:'keine', note:'p₃(−x)=x²−x — das ist WEDER p₃(x) NOCH −p₃(x). Die Parabel ist verschoben (lineares Glied „x“) — sieht auf den ersten Blick symmetrisch aus, ist es rechnerisch aber nicht!'},
+  {id:'p4', label:'p₄(x) = x², D=[−2;3]', D:'[−2;3] — NICHT symmetrisch zu Null!', fn:x=>x*x, xr:[-2,3], type:'keine', note:'Der Term x² wäre für sich symmetrisch — aber D=[−2;3] ist nicht symmetrisch zu Null (zu x=3 fehlt x=−3 in D). Deshalb KEINE Symmetrie, obwohl der Term „symmetrisch aussieht".'},
+  {id:'p5', label:'p₅(x) = 2x²', D:'ℝ', fn:x=>2*x*x, xr:[-2,2], type:'achse', note:'p₅(−x)=2x²=p₅(x) → achsensymmetrisch (und NIE punktsymmetrisch, da es eine Parabel ist).'},
+  {id:'p6', label:'p₆(x) = 3x', D:'ℝ', fn:x=>3*x, xr:[-1.8,1.8], type:'punkt', note:'p₆(−x)=−3x=−p₆(x) → punktsymmetrisch.'}
+];
+const TYPE_LABEL={achse:'Achsensymmetrisch', punkt:'Punktsymmetrisch', keine:'Keine Symmetrie'};
+
+let guesses={}, checked={}, correctCount=0;
+const grid=document.getElementById('grid');
+
+CANDIDATES.forEach(c=>{
+  const card=document.createElement('div'); card.className='card';
+  card.innerHTML='<h3>'+c.label+'</h3><div style="font-size:12px;color:var(--muted);margin-bottom:6px;">D<sub>f</sub> = '+c.D+'</div>';
+  const svgHost=document.createElement('div'); svgHost.className='svghost';
+  svgHost.innerHTML=drawSVG(c.fn, c.xr, 240,150, 120,110, 24,20, '#5fd0c7');
+  card.appendChild(svgHost);
+  const grow=document.createElement('div'); grow.className='guessrow';
+  ['achse','punkt','keine'].forEach(t=>{
+    const b=document.createElement('button'); b.className='guessbtn'; b.textContent=TYPE_LABEL[t];
+    b.onclick=()=>{
+      if(checked[c.id]) return;
+      guesses[c.id]=t;
+      grow.querySelectorAll('.guessbtn').forEach(x=>x.classList.remove('picked'));
+      b.classList.add('picked');
+    };
+    grow.appendChild(b);
+  });
+  card.appendChild(grow);
+  const chkBtn=document.createElement('button'); chkBtn.className='checkbtn'; chkBtn.textContent='🔍 Rechnerisch prüfen';
+  const res=document.createElement('div'); res.className='result';
+  chkBtn.onclick=()=>{
+    if(checked[c.id] || !guesses[c.id]) return;
+    checked[c.id]=true;
+    const guessRight = guesses[c.id]===c.type;
+    if(guessRight) correctCount++;
+    res.classList.add('show');
+    res.classList.add(guessRight?'right':'wrong');
+    res.innerHTML=(guessRight?'✅ Richtig vermutet! ':'❌ Vermutung war „'+TYPE_LABEL[guesses[c.id]]+'“, richtig ist „'+TYPE_LABEL[c.type]+'“. ')+c.note;
+    document.getElementById('score').textContent='Vermutungen richtig: '+correctCount+' / '+CANDIDATES.length;
+    chkBtn.disabled=true;
+  };
+  card.appendChild(chkBtn);
+  card.appendChild(res);
+  grid.appendChild(card);
+});
+
+window.LAB={
+  state(){
+    return {
+      guesses: Object.assign({}, guesses),
+      checkedCount: Object.keys(checked).length,
+      allChecked: Object.keys(checked).length===CANDIDATES.length,
+      correctCount: correctCount
+    };
+  },
+  guess(id, type){
+    const card=[...grid.children].find((el,i)=>CANDIDATES[i].id===id);
+    const idx=CANDIDATES.findIndex(c=>c.id===id);
+    const btns=card.querySelectorAll('.guessbtn');
+    const ti=['achse','punkt','keine'].indexOf(type);
+    if(ti>=0) btns[ti].click();
+  },
+  check(id){
+    const idx=CANDIDATES.findIndex(c=>c.id===id);
+    const card=grid.children[idx];
+    card.querySelector('.checkbtn').click();
+  },
+  candidateIds(){ return CANDIDATES.map(c=>c.id); },
+  correctType(id){ return CANDIDATES.find(c=>c.id===id).type; }
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Diskriminanten-Detektor — Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{max-width:760px;margin:0 auto;padding:18px 20px 40px;}
+  h3{margin:0 0 6px;}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  .controls{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:14px;}
+  .row{display:flex;align-items:center;gap:12px;margin:10px 0;}
+  .row label{font-size:14px;color:var(--muted);min-width:80px;}
+  input[type=range]{flex:1;}
+  .valbox{background:#1f2630;border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:14px;font-weight:700;color:var(--accent);min-width:44px;text-align:center;}
+  #eqLabel{font-size:22px;color:var(--accent);text-align:center;font-weight:700;margin:12px 0;}
+  #dBox{text-align:center;font-size:18px;margin:8px 0 16px;}
+  #dBox b{font-size:24px;}
+  #weiche{display:flex;gap:10px;justify-content:center;margin-bottom:14px;}
+  .wbox{flex:1;max-width:160px;background:#151b24;border:2px solid var(--line);border-radius:10px;padding:12px;text-align:center;font-size:13px;opacity:0.4;transition:opacity .2s,border-color .2s;}
+  .wbox.active{opacity:1;}
+  .wbox .cond{font-weight:700;font-size:15px;margin-bottom:6px;}
+  #missionBox{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:14px;margin-top:14px;}
+  #missionBox .m{margin:6px 0;}
+  #missionBox .m.done{color:#4caf50;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h3>🎯 Diskriminanten-Detektor</h3>
+  <p class="hint">Verschiebe a, b und c — die Diskriminante D wird live berechnet und färbt die passende Weiche ein.</p>
+  <div class="controls">
+    <div class="row"><label for="aSlider">a</label><input type="range" id="aSlider" min="-5" max="5" step="1" value="1"/><span class="valbox" id="aVal">1</span></div>
+    <div class="row"><label for="bSlider">b</label><input type="range" id="bSlider" min="-10" max="10" step="1" value="2"/><span class="valbox" id="bVal">2</span></div>
+    <div class="row"><label for="cSlider">c</label><input type="range" id="cSlider" min="-10" max="10" step="1" value="-3"/><span class="valbox" id="cVal">-3</span></div>
+  </div>
+  <div id="eqLabel"></div>
+  <div id="dBox"></div>
+  <div id="weiche">
+    <div class="wbox" id="wGt"><div class="cond">D &gt; 0</div>zwei Lösungen</div>
+    <div class="wbox" id="wEq"><div class="cond">D = 0</div>eine Lösung</div>
+    <div class="wbox" id="wLt"><div class="cond">D &lt; 0</div>keine Lösung</div>
+  </div>
+  <div id="missionBox">
+    <div class="m" id="m1">🎯 Mission 1: Stelle eine Gleichung mit genau EINER Lösung ein (D=0).</div>
+    <div class="m" id="m2">🎯 Mission 2: Stelle eine Gleichung OHNE Lösung ein (D&lt;0).</div>
+  </div>
+</div>
+<script>
+let a=1, b=2, c=-3;
+let m1done=false, m2done=false;
+const REF=[
+  {a:1,b:-1,c:-6,D:25},
+  {a:1,b:-6,c:9,D:0},
+  {a:1,b:1,c:3,D:-11}
+];
+function fmt(n){ return n<0 ? '−'+Math.abs(n) : (n>0?'+'+n:''); }
+function eqStr(){
+  let s=(a===1?'':(a===-1?'−':a))+'x²';
+  if(b!==0) s+= (b>0?'+'+b:'−'+Math.abs(b))+'x';
+  if(c!==0) s+= (c>0?'+'+c:'−'+Math.abs(c));
+  s+=' = 0';
+  return s;
+}
+function render(){
+  document.getElementById('aVal').textContent=a;
+  document.getElementById('bVal').textContent=b;
+  document.getElementById('cVal').textContent=c;
+  document.getElementById('eqLabel').textContent = a===0 ? '(a darf nicht 0 sein!)' : eqStr();
+  if(a===0){
+    document.getElementById('dBox').innerHTML = '<span style="color:#c0392b;">a=0 ist keine quadratische Gleichung mehr — bitte a verändern.</span>';
+    ['wGt','wEq','wLt'].forEach(id=>document.getElementById(id).classList.remove('active'));
+    return;
+  }
+  const D = b*b - 4*a*c;
+  document.getElementById('dBox').innerHTML = 'D = b²−4ac = <b>'+D+'</b>';
+  document.getElementById('wGt').classList.toggle('active', D>0);
+  document.getElementById('wEq').classList.toggle('active', D===0);
+  document.getElementById('wLt').classList.toggle('active', D<0);
+  checkMissions(D);
+}
+function checkMissions(D){
+  if(D===0 && !m1done){
+    m1done=true;
+    document.getElementById('m1').classList.add('done');
+    document.getElementById('m1').textContent='✅ Mission 1 erfüllt: D=0 → genau eine Lösung!';
+    window.lwAward && window.lwAward('mission','d0');
+  }
+  if(D<0 && !m2done){
+    m2done=true;
+    document.getElementById('m2').classList.add('done');
+    document.getElementById('m2').textContent='✅ Mission 2 erfüllt: D<0 → keine Lösung!';
+    window.lwAward && window.lwAward('mission','dneg');
+  }
+}
+['aSlider','bSlider','cSlider'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', e=>{
+    if(id==='aSlider') a=parseInt(e.target.value);
+    if(id==='bSlider') b=parseInt(e.target.value);
+    if(id==='cSlider') c=parseInt(e.target.value);
+    render();
+  });
+});
+render();
+
+// Test-Hook fuer Playwright-Verifikation
+window.LAB = {
+  state: () => ({a,b,c,D: a===0?null:(b*b-4*a*c), m1done, m2done}),
+  setValues: (na,nb,nc) => {
+    a=na; b=nb; c=nc;
+    document.getElementById('aSlider').value=na;
+    document.getElementById('bSlider').value=nb;
+    document.getElementById('cSlider').value=nc;
+    render();
+  },
+  REF
+};
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Form-Wandler — Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{max-width:680px;margin:0 auto;padding:18px 20px 44px;}
+  h3{margin:0 0 6px;}
+  h4{margin:26px 0 6px;color:var(--accent);}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  .card{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:14px;}
+  #progress{font-size:13px;color:var(--muted);margin-bottom:6px;}
+  #termLabel{font-size:19px;color:var(--accent);text-align:center;font-weight:700;margin:8px 0 14px;}
+  .optRow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+  .opt{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 13px;font-size:14px;cursor:pointer;}
+  .opt:hover{background:#283041;}
+  .opt.correct{background:#1c3d24;border-color:#4caf50;}
+  .opt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .opt:disabled{cursor:default;}
+  #missionResult{text-align:center;font-size:15px;font-weight:700;color:#4caf50;min-height:24px;margin:10px 0;}
+  #nextMissionBtn{display:none;margin:8px auto 0;background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:9px 18px;font-size:14px;cursor:pointer;}
+  .puzzleItem{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:12px 0;}
+  .puzzleText{font-size:16px;margin:0 0 10px;text-align:center;color:var(--accent);font-weight:700;}
+  .puzzleWhy{margin-top:9px;font-size:13px;color:var(--muted);display:none;}
+  .puzzleWhy.show{display:block;}
+  #doneBox{text-align:center;font-size:16px;color:var(--accent);font-weight:700;margin-top:18px;display:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h3>🔄 Form-Wandler</h3>
+  <p class="hint">Wandle die Scheitelpunktform in die allgemeine Form um — wähle das richtige Ergebnis.</p>
+
+  <div class="card">
+    <div id="progress">Fall 1 / 3</div>
+    <div id="termLabel"></div>
+    <div class="optRow" id="formOptions"></div>
+    <div id="missionResult"></div>
+    <button id="nextMissionBtn">Nächster Fall ▸</button>
+  </div>
+
+  <h4>🧩 Rätselmodus — welcher Scheitel steckt drin?</h4>
+  <p class="hint">Zu jeder allgemeinen Form gehört genau ein Scheitelpunkt — welcher?</p>
+  <div id="puzzleWrap"></div>
+
+  <div id="doneBox">✅ Alle Fälle umgewandelt und alle Scheitelpunkte erraten — du beherrschst beide Formen!</div>
+</div>
+<script>
+const MISSIONS=[
+  {term:"f(x) = 2(x−1)² + 3", opts:["2x²−4x+5","2x²+4x+5","2x²−4x−5","x²−4x+5"], r:0},
+  {term:"g(x) = −(x+2)² − 1", opts:["−x²−4x−5","−x²+4x−5","−x²−4x+5","x²−4x−5"], r:0},
+  {term:"h(x) = 0,5(x−4)² + 2", opts:["0,5x²−4x+10","0,5x²+4x+10","0,5x²−4x−10","0,5x²−8x+10"], r:0}
+];
+let mi=0, missionSolved=[false,false,false];
+
+function shuffleArr(a){ return [...a].sort(()=>Math.random()-0.5); }
+function render(){
+  const m=MISSIONS[mi];
+  document.getElementById('progress').textContent='Fall '+(mi+1)+' / '+MISSIONS.length;
+  document.getElementById('termLabel').textContent=m.term;
+  document.getElementById('missionResult').textContent='';
+  document.getElementById('nextMissionBtn').style.display='none';
+  const row=document.getElementById('formOptions');
+  row.innerHTML='';
+  const shuffled=m.opts.map((o,i)=>({o,i})).sort(()=>Math.random()-0.5);
+  shuffled.forEach(item=>{
+    const b=document.createElement('button'); b.className='opt'; b.textContent=item.o; b.dataset.idx=item.i;
+    b.onclick=()=>checkForm(item.i, b);
+    row.appendChild(b);
+  });
+}
+function checkForm(i, btn){
+  if(missionSolved[mi]) return;
+  const m=MISSIONS[mi];
+  [...document.getElementById('formOptions').children].forEach(b=>{
+    b.disabled=true;
+    if(parseInt(b.dataset.idx)===m.r) b.classList.add('correct');
+  });
+  if(i!==m.r) btn.classList.add('wrong');
+  missionSolved[mi]=true;
+  document.getElementById('missionResult').textContent='✅ '+m.term+' = '+m.opts[m.r];
+  window.lwAward && window.lwAward('mission', 'fall'+(mi+1));
+  document.getElementById('nextMissionBtn').style.display = (mi<MISSIONS.length-1) ? 'block' : 'none';
+  checkAllDone();
+}
+document.getElementById('nextMissionBtn').onclick=()=>{
+  if(mi<MISSIONS.length-1){ mi++; render(); }
+};
+render();
+
+const PUZZLES=[
+  {term:"f(x) = x² − 4x + 7", opts:[[2,3],[-2,3],[2,-3],[4,3]], r:0,
+   why:"x_s=−(−4)/2=2, y_s=f(2)=4−8+7=3 → S(2|3)."},
+  {term:"g(x) = −2x² + 8x − 3", opts:[[2,5],[-2,5],[2,-5],[1,5]], r:0,
+   why:"x_s=−8/(2·(−2))=2, y_s=g(2)=−8+16−3=5 → S(2|5)."},
+  {term:"h(x) = 0,25x² + x + 2", opts:[[-2,1],[2,1],[-2,-1],[-4,1]], r:0,
+   why:"x_s=−1/(2·0,25)=−2, y_s=h(−2)=0,25·4−2+2=1 → S(−2|1)."}
+];
+let puzzleAnswered=[false,false,false];
+function renderPuzzles(){
+  const wrap=document.getElementById('puzzleWrap');
+  PUZZLES.forEach((p,pi)=>{
+    const box=document.createElement('div'); box.className='puzzleItem';
+    const t=document.createElement('p'); t.className='puzzleText'; t.textContent=p.term;
+    box.appendChild(t);
+    const optRow=document.createElement('div'); optRow.className='optRow';
+    const why=document.createElement('div'); why.className='puzzleWhy'; why.textContent=p.why;
+    const shuffled=p.opts.map((o,i)=>({o,i})).sort(()=>Math.random()-0.5);
+    shuffled.forEach(item=>{
+      const b=document.createElement('button'); b.className='opt'; b.textContent='S('+item.o[0]+'|'+item.o[1]+')';
+      b.dataset.idx=item.i;
+      b.onclick=()=>{
+        if(puzzleAnswered[pi]) return;
+        puzzleAnswered[pi]=true;
+        [...optRow.children].forEach(x=>{ x.disabled=true; if(parseInt(x.dataset.idx)===p.r) x.classList.add('correct'); });
+        if(item.i!==p.r) b.classList.add('wrong');
+        why.classList.add('show');
+        window.lwAward && window.lwAward('mission', 'raetsel'+(pi+1));
+        checkAllDone();
+      };
+      optRow.appendChild(b);
+    });
+    box.appendChild(optRow);
+    box.appendChild(why);
+    wrap.appendChild(box);
+  });
+}
+renderPuzzles();
+
+function checkAllDone(){
+  if(missionSolved.every(Boolean) && puzzleAnswered.every(Boolean)){
+    document.getElementById('doneBox').style.display='block';
+    window.lwAward && window.lwAward('mission', 'formwandler_komplett');
+  }
+}
+
+// Test-Hook fuer Playwright-Verifikation
+window.LAB = {
+  state: () => ({ mission: mi, missionSolved: missionSolved.slice(), puzzleAnswered: puzzleAnswered.slice() }),
+  chooseForm: (i) => {
+    const b=[...document.getElementById('formOptions').children].find(x=>parseInt(x.dataset.idx)===i);
+    if(b) checkForm(i,b);
+  },
+  nextMission: () => document.getElementById('nextMissionBtn').click(),
+  answerPuzzle: (pi, i) => {
+    const box=document.querySelectorAll('.puzzleItem')[pi];
+    if(!box) return;
+    const btn=[...box.querySelectorAll('.opt')].find(x=>parseInt(x.dataset.idx)===i);
+    if(btn) btn.click();
+  }
+};
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Wurzelgesetz-Anwender — Labor</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{max-width:760px;margin:0 auto;padding:18px 20px 40px;}
+  h3{margin:0 0 6px;}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  .modebar{display:flex;gap:8px;margin-bottom:14px;}
+  .modebar button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;}
+  .modebar button.on{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+  .part{display:none;}
+  .part.show{display:block;}
+  #termBox{font-size:24px;color:var(--accent);text-align:center;font-weight:700;margin:14px 0;}
+  #lawRow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:12px;}
+  #lawRow button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 14px;font-size:13.5px;cursor:pointer;}
+  #lawRow button.picked{border-color:#4caf50;background:#173d28;}
+  #stepFeedback{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:14.5px;min-height:24px;text-align:center;}
+  #stepFeedback.ok{border-color:#4caf50;}
+  #stepFeedback.bad{border-color:#c0392b;}
+  #progress{font-size:14px;color:var(--muted);text-align:center;margin-top:10px;}
+  #missionDone{display:none;background:#173d28;border:1px solid #4caf50;border-radius:8px;padding:14px 18px;font-size:15px;color:#dff3df;text-align:center;margin-top:10px;}
+  #missionDone.show{display:block;}
+  button.resetbtn{display:block;margin:14px auto 0;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 16px;font-size:13.5px;cursor:pointer;}
+  .fdline{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:8px 0;font-size:14.5px;cursor:pointer;}
+  .fdline:hover{background:#1c2430;}
+  .fdline.wrongfound{border-color:#c0392b;background:#3d1c1c;}
+  .fdfix{display:none;margin-top:6px;font-size:13px;color:#8adf9c;}
+  .fdfix.show{display:block;}
+  #puzzleExplain{margin-top:12px;font-size:14px;color:var(--muted);display:none;}
+  #puzzleExplain.show{display:block;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="modebar">
+    <button id="modeMission" class="on">🎯 Gesetz-Anwender</button>
+    <button id="modePuzzle">🕵️ Finde den Wurzel-Fehler</button>
+  </div>
+
+  <div class="part show" id="partMission">
+    <h3>🧪 Welches Gesetz löst diesen Wurzelterm?</h3>
+    <p class="hint">Klick auf das Gesetz, das den gezeigten Term vereinfacht — dann siehst du sofort das Ergebnis.</p>
+    <div id="termBox"></div>
+    <div id="lawRow"></div>
+    <div id="stepFeedback">Wähle ein Gesetz.</div>
+    <div id="progress"></div>
+    <div id="missionDone"></div>
+    <button class="resetbtn" id="resetBtn">↺ Neu starten</button>
+  </div>
+
+  <div class="part" id="partPuzzle">
+    <h3>🕵️ Finde den Fehler in dieser Rechnung</h3>
+    <p class="hint">Ein Mitschüler hat gerechnet — aber irgendwo hat er die Anti-Regel gebrochen. Klick auf die falsche Zeile.</p>
+    <div id="fdWrap"></div>
+    <div id="puzzleExplain"></div>
+  </div>
+</div>
+<script>
+// === Gesetz-Anwender ===
+const LAWS=[
+  {key:'produkt', label:'Produktregel √a·√b=√(ab)'},
+  {key:'quotient', label:'Quotientenregel √a/√b=√(a/b)'},
+  {key:'teilweise', label:'Teilweises Radizieren'},
+  {key:'faktor', label:'Faktor unter die Wurzel'}
+];
+const TERMS=[
+  {disp:"√3 · √27", law:'produkt', result:"= √81 = 9"},
+  {disp:"√50 / √2", law:'quotient', result:"= √25 = 5"},
+  {disp:"√12", law:'teilweise', result:"= √(4·3) = 2√3"},
+  {disp:"3√5", law:'faktor', result:"= √(9·5) = √45"},
+  {disp:"√8", law:'teilweise', result:"= √(4·2) = 2√2"},
+  {disp:"√3 · √12", law:'produkt', result:"= √36 = 6"},
+  {disp:"√75 / √3", law:'quotient', result:"= √25 = 5"},
+  {disp:"2√7", law:'faktor', result:"= √(4·7) = √28"}
+];
+let ti=0, correctFirstTry=0, order=[...TERMS.keys()];
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+shuffle(order);
+const lawRow=document.getElementById('lawRow');
+LAWS.forEach(l=>{
+  const b=document.createElement('button');
+  b.textContent=l.label; b.dataset.key=l.key;
+  b.onclick=()=>pickLaw(l.key,b);
+  lawRow.appendChild(b);
+});
+let firstTryClean=true;
+function loadTerm(){
+  if(ti>=TERMS.length){
+    document.getElementById('missionDone').classList.add('show');
+    document.getElementById('missionDone').textContent='🎉 Alle '+TERMS.length+' Terme gelöst! '+correctFirstTry+' davon im ersten Versuch richtig.';
+    window.lwAward && window.lwAward('mission');
+    document.getElementById('termBox').textContent='';
+    document.getElementById('lawRow').style.display='none';
+    return;
+  }
+  const t=TERMS[order[ti]];
+  firstTryClean=true;
+  document.getElementById('termBox').textContent=t.disp;
+  document.getElementById('stepFeedback').className='';
+  document.getElementById('stepFeedback').textContent='Wähle das passende Gesetz.';
+  document.getElementById('progress').textContent='Term '+(ti+1)+' / '+TERMS.length+' · bisher '+correctFirstTry+' im 1. Versuch richtig';
+  [...lawRow.children].forEach(b=>{ b.classList.remove('picked'); b.disabled=false; });
+}
+function pickLaw(key,btn){
+  if(ti>=TERMS.length) return;
+  const t=TERMS[order[ti]];
+  const fb=document.getElementById('stepFeedback');
+  if(key===t.law){
+    btn.classList.add('picked');
+    [...lawRow.children].forEach(b=>b.disabled=true);
+    fb.className='ok';
+    fb.textContent='✅ Richtig! '+t.disp+' '+t.result;
+    if(firstTryClean) correctFirstTry++;
+    ti++;
+    setTimeout(loadTerm,1100);
+  } else {
+    firstTryClean=false;
+    fb.className='bad';
+    fb.textContent='❌ Nicht dieses Gesetz — überleg: steht hier ein Produkt, ein Quotient, oder ein einzelner Radikand?';
+  }
+}
+document.getElementById('resetBtn').onclick=()=>{
+  ti=0; correctFirstTry=0; order=shuffle([...TERMS.keys()]);
+  document.getElementById('missionDone').classList.remove('show');
+  document.getElementById('lawRow').style.display='flex';
+  loadTerm();
+};
+loadTerm();
+
+// === Raetselmodus: Finde den Wurzel-Fehler ===
+const FD = {
+  problem:"Aufgabe: Vereinfache √(16+9).",
+  lines:[
+    {label:"Ansatz", text:"√(16+9) = √16 + √9", wrong:true, fix:"FALSCH! Eine Summe darf nicht unter der Wurzel auseinandergezogen werden — erst addieren, dann Wurzel ziehen: √(16+9)=√25=5, nicht √16+√9=4+3=7."},
+    {label:"Weiterrechnen", text:"√16 + √9 = 4 + 3", wrong:false},
+    {label:"Ergebnis", text:"= 7", wrong:false}
+  ],
+  explain:"Der Klassiker-Fehler: √(a+b) ≠ √a+√b. Richtig ist: erst die Summe im Radikanden ausrechnen (16+9=25), dann die Wurzel ziehen (√25=5)."
+};
+(function(){
+  const wrap=document.getElementById('fdWrap');
+  const probEl=document.createElement('p');
+  probEl.style.cssText='font-size:15px;color:var(--accent);font-weight:700;';
+  probEl.textContent=FD.problem;
+  wrap.appendChild(probEl);
+  let solved=false;
+  FD.lines.forEach(ln=>{
+    const box=document.createElement('div'); box.className='fdline';
+    box.textContent=ln.label+': '+ln.text;
+    const fix=document.createElement('div'); fix.className='fdfix';
+    if(ln.wrong) fix.textContent='✅ '+ln.fix;
+    box.appendChild(fix);
+    box.onclick=()=>{
+      if(solved) return;
+      if(ln.wrong){
+        solved=true;
+        box.classList.add('wrongfound');
+        fix.classList.add('show');
+        const ex=document.getElementById('puzzleExplain');
+        ex.classList.add('show');
+        ex.textContent=FD.explain;
+      } else {
+        box.style.opacity='0.5';
+        setTimeout(()=>{ box.style.opacity='1'; },500);
+      }
+    };
+    wrap.appendChild(box);
+  });
+})();
+
+// mode switch
+const modeMission=document.getElementById('modeMission'), modePuzzle=document.getElementById('modePuzzle');
+const partMission=document.getElementById('partMission'), partPuzzle=document.getElementById('partPuzzle');
+modeMission.onclick=()=>{ modeMission.classList.add('on'); modePuzzle.classList.remove('on'); partMission.classList.add('show'); partPuzzle.classList.remove('show'); };
+modePuzzle.onclick=()=>{ modePuzzle.classList.add('on'); modeMission.classList.remove('on'); partPuzzle.classList.add('show'); partMission.classList.remove('show'); };
+</script>
+<script src="../gamify.js" defer></script>
+</body>
+</html>

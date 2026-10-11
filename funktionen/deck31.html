@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Funktionen · Teil 1 — Was ist eine Funktion?</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --card:#151b24; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+  #deck{position:fixed;inset:0;}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:0;}
+  .slide.active{display:flex;}
+  .center{justify-content:center;align-items:center;text-align:center;padding:6vh 8vw;}
+  .center h1{font-size:min(7vw,64px);margin:0 0 18px;letter-spacing:1px;}
+  .center h2{font-size:min(3.4vw,30px);font-weight:600;margin:0 0 10px;}
+  .center p{font-size:min(2.4vw,22px);color:var(--muted);margin:6px 0;max-width:62ch;}
+  .accent{color:var(--accent);}
+  table{border-collapse:collapse;font-size:min(2vw,18px);margin-top:14px;}
+  th,td{border:1px solid var(--line);padding:7px 12px;text-align:left;}
+  th{background:#1b222c;color:var(--accent);}
+  .clip{flex-direction:column;}
+  .cliptop{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0e131b;}
+  .chip{background:var(--accent);color:#12100a;font-weight:700;border-radius:999px;padding:5px 14px;font-size:15px;white-space:nowrap;}
+  .cliptop .ttl{font-size:20px;font-weight:600;}
+  .cliptop .sub{color:var(--muted);font-size:14px;margin-left:6px;}
+  iframe{flex:1;width:100%;border:0;background:var(--bg);}
+  #foot{position:fixed;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:12px;
+    padding:0 14px;background:rgba(10,13,18,0.85);border-top:1px solid var(--line);font-size:14px;color:var(--muted);z-index:10;}
+  #foot .grow{flex:1;}
+  #foot button{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer;}
+  #foot button:hover{background:#283041;}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);z-index:11;transition:width .2s;}
+  .kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;background:#161c24;color:var(--fg);font-size:12px;}
+  .explain{justify-content:center;align-items:center;padding:3vh 7vw;}
+  .explain.scroll{justify-content:flex-start;align-items:center;overflow-y:auto;padding-top:3vh;padding-bottom:50px;}
+  .ebox{max-width:min(88vw,980px);text-align:left;width:100%;}
+  .explain h2{font-size:min(3.6vw,30px);margin:0 0 12px;}
+  .explain h2 .chip{font-size:min(2.4vw,20px);vertical-align:middle;margin-right:10px;}
+  .svgbox{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+  .svgcaption{text-align:center;color:var(--accent);font-size:min(2vw,17px);margin-top:6px;font-weight:600;}
+  .defbox{background:#33291a;border-left:5px solid var(--accent);border-radius:8px;padding:11px 16px;font-size:min(2.1vw,18px);color:#f6e7cf;margin-bottom:10px;}
+  .bul{font-size:min(1.95vw,16.5px);line-height:1.45;color:var(--fg);margin:0;padding-left:22px;}
+  .bul li{margin:4px 0;}
+  .bul b{color:var(--accent);}
+  .hook{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:14px 18px;font-size:min(2.2vw,18px);color:#d7f3f0;margin-bottom:12px;}
+  .alltagbox{background:#1c2a1c;border-left:5px solid #6fcf6f;border-radius:8px;padding:10px 16px;font-size:min(1.8vw,15px);color:#dff3df;margin-top:8px;}
+  .warnbox{background:#3d1c1c;border-left:5px solid #c0392b;border-radius:8px;padding:10px 16px;font-size:min(1.9vw,16px);color:#ffd9d0;margin-top:8px;}
+  .legend td,.legend th{font-size:min(1.85vw,15.5px);}
+  .step{display:none;background:#151b24;border:1px solid var(--line);border-radius:8px;padding:11px 15px;margin:7px 0;font-size:min(2vw,17px);}
+  .step.show{display:block;}
+  .step b.lbl{color:var(--accent);}
+  .slide.steps{justify-content:flex-start;align-items:center;overflow-y:auto;padding-bottom:64px;}
+  #transOverlay{position:fixed;inset:0;background:rgba(8,10,14,0.92);z-index:20;display:none;align-items:center;justify-content:center;padding:8vh 10vw;}
+  #transOverlay.show{display:flex;}
+  #transBox{max-width:760px;background:#151b24;border:1px solid var(--line);border-radius:12px;padding:26px 30px;font-size:min(2.6vw,21px);line-height:1.7;color:var(--fg);max-height:78vh;overflow:auto;}
+  #transBox h3{margin-top:0;color:var(--accent);}
+  .quizq{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0;text-align:left;}
+  .quizq p.qtext{font-size:min(2.3vw,20px);margin:0 0 10px;color:var(--fg);}
+  .quizopt{display:block;width:100%;text-align:left;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:6px 0;font-size:min(2.1vw,17px);cursor:pointer;}
+  .quizopt:hover{background:#283041;}
+  .quizopt.correct{background:#1c3d24;border-color:#4caf50;}
+  .quizopt.wrong{background:#3d1c1c;border-color:#c0392b;}
+  .quizopt:disabled{cursor:default;}
+  .quizwhy{margin-top:8px;font-size:min(2vw,16px);color:var(--muted);display:none;}
+  .quizwhy.show{display:block;}
+  #quizscore{font-size:min(3vw,24px);color:var(--accent);margin-top:16px;text-align:center;}
+  .fourbox{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px;}
+  .fourbox div.fitem{background:#151b24;border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:min(2vw,16px);}
+  .fourbox div.fitem b{color:var(--accent);display:block;font-size:12px;margin-bottom:4px;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="timewidget" style="position:fixed;top:10px;right:14px;z-index:12;display:flex;align-items:center;gap:8px;background:rgba(10,13,18,0.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--muted);">
+  <span id="timelabel">0:00 / 0 Min</span>
+  <div style="width:80px;height:6px;background:#1f2630;border-radius:3px;overflow:hidden;">
+    <div id="timebar" style="height:100%;width:0%;background:#5fd0c7;transition:width 1s linear;"></div>
+  </div>
+</div>
+<div id="deck">
+
+  <!-- 1 Titel -->
+  <section class="slide center active">
+    <h1>FUNKTIONEN <span class="accent">· Teil 1</span></h1>
+    <h2>Was ist eine Funktion?</h2>
+    <div class="hook" style="max-width:70ch;">Ein Parkhaus-Automat zeigt dir für jede Parkdauer GENAU einen Preis an — nie zwei verschiedene. Genau dieses „eindeutig zugeordnet" ist der ganze Trick hinter dem Wort „Funktion".</div>
+    <p>Mathe-Lernwelt · FOS/BOS Vorklasse — Kapitel 11.1</p>
+    <p style="margin-top:22px;">Weiter mit <span class="kbd">→</span> · Vollbild mit <span class="kbd">F</span></p>
+  </section>
+
+  <!-- 2 Zuordnung Alltag -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Zuordnungen im Alltag</h2>
+      <div class="defbox">Überall, wo ein Wert einem anderen Wert zugeordnet wird, steckt eine Zuordnung dahinter.</div>
+      <ul class="bul">
+        <li><b>Parkdauer ↦ Parkgebühr:</b> jede Parkdauer hat ihren Preis.</li>
+        <li><b>Uhrzeit ↦ Akkustand:</b> das Handy misst kontinuierlich, wie viel Akku übrig ist.</li>
+        <li><b>Taste am Getränkeautomaten ↦ Getränk:</b> jede Taste liefert immer dasselbe Getränk.</li>
+        <li><b>Postleitzahl ↦ Zone im Paketpreis:</b> jede PLZ gehört zu genau einer Preiszone.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 3 Eindeutige Zuordnung = Funktion -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Eindeutige Zuordnung = Funktion</h2>
+      <div class="defbox">Eine Zuordnung heißt <b>eindeutig</b>, wenn jedem Wert der einen Größe GENAU EIN Wert der anderen Größe zugeordnet ist. Eine eindeutige Zuordnung nennt man <b>Funktion</b>.</div>
+      <div class="warnbox">⚠️ Gegenbeispiel: Ordnest du jedem Fahrkartenpreis das dazugehörige Ziel zu, ist das oft NICHT eindeutig — haben zwei verschiedene Ziele denselben Preis (z.B. beide 3,20 €), gehören zu diesem einen Preis plötzlich ZWEI Ziele. Diese Zuordnung ist damit keine Funktion.</div>
+    </div>
+  </section>
+
+  <!-- 4 Bruecke Paarmenge -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🌉 Brücke</span> Funktion als Paarmenge</h2>
+      <div class="defbox">Eine Funktion ist eine Paarmenge aus Zahlenpaaren (x|y), wobei jedem x-Wert über eine Zuordnungsvorschrift genau ein y-Wert zugeordnet wird — genau die Produktmenge aus dem allerersten Kapitel, nur mit einer zusätzlichen Regel: zu jedem x gehört nur EIN y, nicht beliebig viele Kombinationen.</div>
+    </div>
+  </section>
+
+  <!-- 5 Schritt Zahlenpaare -->
+  <section class="slide explain steps">
+    <div class="ebox">
+      <h2><span class="chip">📐 Schritt für Schritt</span> Zahlenpaare einer Funktion berechnen</h2>
+      <div class="defbox">Aufgabe: Gegeben ist f={(x|y)|y=3x−2 ∧ x∈D} mit D={−1;0;1;2;3}. Berechne alle Zahlenpaare.</div>
+      <div class="step" id="s5_1"><b class="lbl">Schritt 1 — jeden x-Wert einsetzen:</b> f(−1)=3·(−1)−2=−5, f(0)=3·0−2=−2, f(1)=3·1−2=1, f(2)=3·2−2=4, f(3)=3·3−2=7.</div>
+      <div class="step" id="s5_2"><b class="lbl">Schritt 2 — Zahlenpaare bilden:</b> (−1|−5), (0|−2), (1|1), (2|4), (3|7).</div>
+      <div class="step" id="s5_3"><b class="lbl">Schritt 3 — Paarmenge angeben:</b> f = {(−1|−5); (0|−2); (1|1); (2|4); (3|7)}.</div>
+      <div style="margin-top:14px;"><button class="stepBtn" data-group="5" style="background:var(--accent);color:#12100a;font-weight:700;border:0;border-radius:8px;padding:10px 18px;font-size:min(2.2vw,17px);cursor:pointer;">Nächster Schritt ▸</button></div>
+    </div>
+  </section>
+
+  <!-- 6 Fachbegriffe -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Fachbegriffe rund um Funktionen</h2>
+      <div class="defbox">Beispiel: f(x) = ½x + 3</div>
+      <ul class="bul">
+        <li><b>Funktionsgleichung:</b> y = ½x + 3</li>
+        <li><b>Funktionsterm:</b> ½x + 3</li>
+        <li><b>Funktionswert:</b> f(4) = ½·4+3 = 5 — der y-Wert an einer bestimmten Stelle</li>
+        <li><b>Argument:</b> die eingesetzte Zahl (hier: 4) — jedes erlaubte x heißt Argument</li>
+        <li><b>Nullstelle:</b> das Argument, dessen Funktionswert 0 ist — hier: ½x+3=0 ⟺ x=−6</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7 D und W -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Definitionsmenge &amp; Wertemenge <span class="chip">🌉 Brücke</span></h2>
+      <div class="defbox">Beispiel: f:x↦f(x)=2x−1 mit D={−2;−1;0;1;2} → Funktionswerte: −5,−3,−1,1,3 → W={−5;−3;−1;1;3}.</div>
+      <ul class="bul">
+        <li><b>Definitionsmenge D:</b> alle x-Werte, die eingesetzt werden dürfen.</li>
+        <li><b>Wertemenge W:</b> alle Funktionswerte (y-Werte), die dabei herauskommen.</li>
+      </ul>
+      <div class="defbox" style="margin-top:8px;">Genau diese Begriffe D und W triffst du bei Bruchgleichungen wieder: dort hieß D die Menge der ERLAUBTEN x-Werte (Verbotsstellen ausgenommen) — bei Funktionen ist es exakt dasselbe Prinzip, nur ohne die Verbotsstellen-Falle.</div>
+    </div>
+  </section>
+
+  <!-- 8 Mengendiagramm -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Grafische Darstellung mit Mengendiagrammen</h2>
+      <div class="svgbox"><div id="svgMengendiagramm"></div></div>
+      <div class="defbox">Jeder Pfeil verbindet einen x-Wert aus D mit seinem Funktionswert in W. Bei einer Funktion geht von JEDEM Punkt in D genau EIN Pfeil aus — nie zwei.</div>
+    </div>
+  </section>
+
+  <!-- 9 Schreibweisen -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Die Schreibweisen-Familie</h2>
+      <div class="defbox">Alle vier Schreibweisen beschreiben dieselbe Funktion f(x)=2x+2 mit D=ℝ.</div>
+      <div class="fourbox">
+        <div class="fitem"><b>1. Paarmengenschreibweise</b>f = {(x|y)|y=2x+2 ∧ x∈D}</div>
+        <div class="fitem"><b>2. Zuordnungspfeil, ausführlich</b>f: x ↦ y = 2x+2 mit D=ℝ</div>
+        <div class="fitem"><b>3. Funktionsgleichung, verkürzt</b>y = 2x+2</div>
+        <div class="fitem"><b>4. Funktionsterm, verkürzt</b>f(x) = 2x+2</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 Koordinatensystem -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Das Koordinatensystem</h2>
+      <div class="svgbox"><div id="svgKoordinatensystem"></div></div>
+      <ul class="bul">
+        <li>Waagrechte Achse = <b>x-Achse</b> (Abszisse), senkrechte Achse = <b>y-Achse</b> (Ordinate).</li>
+        <li>Schnittpunkt beider Achsen = <b>Ursprung O</b>, Koordinaten (0|0).</li>
+        <li>Vier Bereiche = <b>Quadranten</b>, gegen den Uhrzeigersinn nummeriert I–IV.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 11 Graph Punkte vs Linie -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Vom Punkt zum Graphen</h2>
+      <div class="defbox">Jedes Zahlenpaar (x|y) entspricht einem Punkt im Koordinatensystem. Die Menge aller eingetragenen Punkte heißt <b>Graph</b> der Funktion.</div>
+      <ul class="bul">
+        <li>Besteht D aus wenigen Zahlen, ergibt der Graph einzelne, unverbundene Punkte.</li>
+        <li>Besteht D aus unendlich vielen Zahlen (z.B. D=ℝ), ergibt der Graph eine zusammenhängende Linie.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 12 Eselsbruecke -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">💡 Eselsbrücke</span></h2>
+      <div class="defbox">„Ein x, ein y — sonst ist es vorbei" — jedes x darf nur EINEN Pfeil aussenden, sonst ist es keine Funktion. Und: „D wie Definiert-werden-Dürfen (was reindarf), W wie Was-rauskommt (was rauskommt)."</div>
+    </div>
+  </section>
+
+  <!-- 13 Praxisbeispiel -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2><span class="chip">🔧 Praxisbeispiel</span> Funktionen im Handwerk</h2>
+      <div class="defbox">Ein Elektriker, der den Widerstand eines Bauteils bei verschiedenen Temperaturen misst, beschreibt genau das mit einer Funktion: jeder Temperatur ist eindeutig ein Widerstandswert zugeordnet — ändert sich die Temperatur, kann er mit der Funktionsgleichung sofort den neuen Wert berechnen, ohne erneut zu messen.</div>
+    </div>
+  </section>
+
+  <!-- 14 Intuitions-Regler -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Schätz mal: Wie viele Pfeile?</h2>
+      <div class="defbox">Eine Funktion hat die Definitionsmenge D={1;2;3;4;5}. Wie viele Pfeile gehen im Mengendiagramm insgesamt von D aus (ein Pfeil pro Element)?</div>
+      <div id="estPfeile31"></div>
+    </div>
+  </section>
+
+  <!-- 15 Symbol-Legende -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>Symbol-Legende</h2>
+      <table class="legend">
+        <tr><th>Zeichen</th><th>gesprochen</th><th>Bedeutung</th></tr>
+        <tr><td>f: x ↦ y</td><td>„f bildet x auf y ab"</td><td>Zuordnungsvorschrift, ausführliche Schreibweise</td></tr>
+        <tr><td>f(x)</td><td>„f von x"</td><td>Funktionswert an der Stelle x</td></tr>
+        <tr><td>D, W</td><td>„D, W"</td><td>Definitionsmenge, Wertemenge</td></tr>
+        <tr><td>xN</td><td>„x-N"</td><td>Nullstelle (f(xN)=0)</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 16 Labor -->
+  <section class="slide clip">
+    <div class="cliptop"><span class="chip">🧪 Labor</span><span class="ttl">Funktions-Detektor</span><span class="sub">Funktion oder nicht? Der Senkrechten-Test</span></div>
+    <iframe allow="autoplay" data-src="funktionsdetektor31_labor.html"></iframe>
+  </section>
+
+  <!-- 17 Zusammenfassung -->
+  <section class="slide center">
+    <h2>Zusammenfassung</h2>
+    <table>
+      <tr><th>Begriff</th><th>Bedeutung</th></tr>
+      <tr><td>Funktion</td><td>eindeutige Zuordnung — jedem x genau ein y</td></tr>
+      <tr><td>Paarmenge</td><td>Menge aller Zahlenpaare (x|y) der Funktion</td></tr>
+      <tr><td>Definitionsmenge D</td><td>erlaubte x-Werte</td></tr>
+      <tr><td>Wertemenge W</td><td>alle vorkommenden y-Werte</td></tr>
+      <tr><td>Graph</td><td>alle Punkte (x|y) im Koordinatensystem</td></tr>
+    </table>
+  </section>
+
+  <!-- 18 Stift & Papier -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>✏️ Übung: Stift &amp; Papier</h2>
+      <div class="defbox">Nimm Stift und Papier — diese Aufgaben löst du von Hand, ganz ohne Bildschirm.</div>
+      <ol class="bul">
+        <li>Berechne alle Zahlenpaare von g={(x|y)|y=−x+4 ∧ x∈D} mit D={0;1;2;3}.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>(0|4), (1|3), (2|2), (3|1)</details>
+        </li>
+        <li style="margin-top:10px;">Bestimme die Nullstelle von h(x)=4x−8.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>4x−8=0 → x=2, also xN=2</details>
+        </li>
+        <li style="margin-top:10px;">Begründe, warum die Zuordnung „Hausnummer ↦ alle Bewohner dieses Hauses" meist KEINE Funktion ist.
+          <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--accent);">Lösung anzeigen</summary>Wohnen mehrere Personen in einem Haus, wird einer Hausnummer nicht ein eindeutiger Wert, sondern mehrere Bewohner zugeordnet — das ist nicht eindeutig, also keine Funktion.</details>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 19 Pruefungs-Check -->
+  <section class="slide explain">
+    <div class="ebox">
+      <h2>🎯 Prüfungs-Check — <span class="accent">das musst du KÖNNEN</span></h2>
+      <ul class="bul" style="font-size:min(2.2vw,18px);">
+        <li><b>Erkennen, ob eine Zuordnung eindeutig ist</b> — jedem x genau ein y.</li>
+        <li><b>Fachbegriffe sicher unterscheiden:</b> Funktionsgleichung, -term, -wert, Argument, Nullstelle.</li>
+        <li><b>D und W aus einer Wertetabelle oder Paarmenge ablesen.</b></li>
+      </ul>
+      <div class="defbox" style="margin-top:12px;">Kapitel-Vorschau: Im nächsten Deck lernst du die wichtigste Funktionsfamilie kennen — die lineare Funktion, deren Graph immer eine Gerade ist.</div>
+    </div>
+  </section>
+
+  <!-- 20 Klick-Quiz -->
+  <section class="slide center" style="justify-content:flex-start;padding-top:5vh;padding-bottom:64px;overflow-y:auto;">
+    <h2>❓ Klick-Quiz — sofort Feedback</h2>
+    <div id="quizWrap" style="width:min(90vw,760px);"></div>
+    <div id="quizscore"></div>
+  </section>
+
+</div>
+
+<div id="foot">
+  <button id="prev">‹ Zurück</button>
+  <button id="next">Weiter ›</button>
+  <button id="automode">🔊 Auto: Mit Stimme</button>
+  <button id="transBtn">📜 Transkript</button>
+  <button id="timetoggle">⏱ Zeit-Balken: An</button>
+  <span id="pos"></span>
+  <span class="grow"></span>
+  <span id="title"></span>
+  <button id="fs">⛶ Vollbild</button>
+</div>
+<div id="transOverlay"><div id="transBox"><h3>📜 Transkript</h3><div id="transText">Für diese Folie gibt es keinen Sprechtext.</div></div></div>
+
+<script>
+// === SVG: Mengendiagramm ===
+function buildMengendiagrammSVG(){
+  const dCx=110, wCx=390, cy=150, rx=90, ry=130;
+  let s='<svg viewBox="0 0 500 300" style="width:100%;max-width:520px;height:auto;display:block;margin:0 auto;">';
+  s+='<ellipse cx="'+dCx+'" cy="'+cy+'" rx="'+rx+'" ry="'+ry+'" fill="rgba(242,166,60,0.08)" stroke="#f2a63c" stroke-width="1.5"/>';
+  s+='<ellipse cx="'+wCx+'" cy="'+cy+'" rx="'+rx+'" ry="'+ry+'" fill="rgba(95,208,199,0.08)" stroke="#5fd0c7" stroke-width="1.5"/>';
+  s+='<text x="'+dCx+'" y="'+(cy-ry-10)+'" text-anchor="middle" font-size="14" font-weight="700" fill="#f2a63c">D</text>';
+  s+='<text x="'+wCx+'" y="'+(cy-ry-10)+'" text-anchor="middle" font-size="14" font-weight="700" fill="#5fd0c7">W</text>';
+  const pairs=[[-1,-5],[0,-2],[1,1],[2,4],[3,7]];
+  const dY=[60,105,150,195,240];
+  const wYmap={"-5":240,"-2":195,"1":150,"4":105,"7":60};
+  pairs.forEach((p,i)=>{
+    const y1=dY[i], y2=wYmap[String(p[1])];
+    s+='<circle cx="'+dCx+'" cy="'+y1+'" r="4" fill="#f2a63c"/>';
+    s+='<text x="'+(dCx-18)+'" y="'+(y1+4)+'" text-anchor="end" font-size="11" fill="#e6edf3">'+p[0]+'</text>';
+    s+='<circle cx="'+wCx+'" cy="'+y2+'" r="4" fill="#5fd0c7"/>';
+    s+='<text x="'+(wCx+18)+'" y="'+(y2+4)+'" font-size="11" fill="#e6edf3">'+p[1]+'</text>';
+    s+='<line x1="'+(dCx+8)+'" y1="'+y1+'" x2="'+(wCx-8)+'" y2="'+y2+'" stroke="#9aa4b2" stroke-width="1" marker-end="url(#arrow31)"/>';
+  });
+  s+='<defs><marker id="arrow31" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#9aa4b2"/></marker></defs>';
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgMengendiagramm').innerHTML=buildMengendiagrammSVG();
+
+// === SVG: Koordinatensystem mit Quadranten ===
+function buildKoordinatensystemSVG(){
+  const cx=250, cy=150, w=460, h=260;
+  let s='<svg viewBox="0 0 500 300" style="width:100%;max-width:460px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="20" y1="'+cy+'" x2="480" y2="'+cy+'" stroke="#9aa4b2" stroke-width="1.5"/>';
+  s+='<line x1="'+cx+'" y1="20" x2="'+cx+'" y2="280" stroke="#9aa4b2" stroke-width="1.5"/>';
+  s+='<text x="470" y="'+(cy-8)+'" font-size="13" fill="#e6edf3">x</text>';
+  s+='<text x="'+(cx+10)+'" y="30" font-size="13" fill="#e6edf3">y</text>';
+  s+='<text x="'+(cx-14)+'" y="'+(cy+16)+'" font-size="11" fill="#9aa4b2">O</text>';
+  const labels=[
+    {x:cx+115,y:cy-70,t:"I",c:"#4caf50"},
+    {x:cx-115,y:cy-70,t:"II",c:"#5fd0c7"},
+    {x:cx-115,y:cy+80,t:"III",c:"#c0392b"},
+    {x:cx+115,y:cy+80,t:"IV",c:"#f2a63c"}
+  ];
+  labels.forEach(l=>{
+    s+='<text x="'+l.x+'" y="'+l.y+'" text-anchor="middle" font-size="20" font-weight="700" fill="'+l.c+'">'+l.t+'</text>';
+  });
+  s+='</svg>';
+  return s;
+}
+document.getElementById('svgKoordinatensystem').innerHTML=buildKoordinatensystemSVG();
+
+const slides=[...document.querySelectorAll('.slide')];
+const titles=["Titel", "Zuordnungen im Alltag", "Eindeutige Zuordnung = Funktion", "🌉 Brücke: Funktion als Paarmenge", "📐 Schritt für Schritt: Zahlenpaare einer Funktion berechnen", "Fachbegriffe rund um Funktionen", "Definitionsmenge & Wertemenge", "Grafische Darstellung mit Mengendiagrammen", "Die Schreibweisen-Familie", "Das Koordinatensystem", "Vom Punkt zum Graphen", "💡 Eselsbrücke", "🔧 Praxisbeispiel: Funktionen im Handwerk", "Schätz mal: Wie viele Pfeile?", "Symbol-Legende", "🧪 Funktions-Detektor", "Zusammenfassung", "✏️ Stift & Papier", "🎯 Prüfungs-Check", "❓ Klick-Quiz"];
+let idx=0;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function show(i){
+  idx=clamp(i,0,slides.length-1);
+  slides.forEach((s,k)=>{
+    const active=(k===idx); s.classList.toggle('active',active);
+    const f=s.querySelector('iframe');
+    if(f){
+      if(active){ if(!f.dataset.loaded){ f.src=f.dataset.src; f.dataset.loaded='1'; } }
+      else if(f.dataset.loaded){ f.removeAttribute('src'); f.dataset.loaded=''; }
+    }
+  });
+  document.getElementById('pos').textContent=(idx+1)+' / '+slides.length;
+  document.getElementById('title').textContent=titles[idx]||'';
+  document.getElementById('bar').style.width=((idx)/(slides.length-1)*100)+'%';
+  playSlideNarr(idx+1);
+}
+document.getElementById('next').onclick=()=>show(idx+1);
+document.getElementById('prev').onclick=()=>show(idx-1);
+document.getElementById('fs').onclick=toggleFS;
+let autoMode='voice';
+const AM={voice:'🔊 Auto: Mit Stimme', silent:'🔇 Auto: Stumm', off:'⏸ Auto: Aus'};
+const amBtn=document.getElementById('automode');
+amBtn.onclick=()=>{ autoMode = autoMode==='voice'?'silent':(autoMode==='silent'?'off':'voice'); amBtn.textContent=AM[autoMode]; };
+function toggleFS(){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen&&document.exitFullscreen(); } }
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(idx-1); e.preventDefault(); }
+  else if(e.key==='Home'){ show(0); }
+  else if(e.key==='End'){ show(slides.length-1); }
+  else if(e.key==='f'||e.key==='F'){ toggleFS(); }
+});
+const EST_MIN=19;
+let elapsedSec=0;
+const timeLabel=document.getElementById('timelabel'), timeBar=document.getElementById('timebar'), timeWidget=document.getElementById('timewidget'), timeToggle=document.getElementById('timetoggle');
+function updateTimeWidget(){
+  const m=Math.floor(elapsedSec/60), s=elapsedSec%60;
+  timeLabel.textContent=m+':'+String(s).padStart(2,'0')+' / '+EST_MIN+' Min';
+  timeBar.style.width=Math.min(100,(elapsedSec/(EST_MIN*60))*100)+'%';
+}
+setInterval(()=>{ if(!document.hidden){ elapsedSec++; updateTimeWidget(); } },1000);
+updateTimeWidget();
+function applyTimeVisibility(on){ timeWidget.style.display=on?'flex':'none'; timeToggle.textContent=on?'⏱ Zeit-Balken: An':'⏱ Zeit-Balken: Aus'; }
+let timeVisible=localStorage.getItem('mathe_timebar')!=='off';
+applyTimeVisibility(timeVisible);
+timeToggle.onclick=()=>{ timeVisible=!timeVisible; localStorage.setItem('mathe_timebar',timeVisible?'on':'off'); applyTimeVisibility(timeVisible); };
+
+// === Folien-Narration ===
+const SLIDE_NARR={
+ 1:{wav:"narration_deck31_s1_Charon.mp3",txt:"Funktionen, Teil eins. Ein Parkhaus-Automat zeigt dir für jede Parkdauer genau einen Preis an - nie zwei verschiedene. Genau dieses eindeutig-zugeordnet ist der ganze Trick hinter dem Wort Funktion."},
+ 2:{wav:"narration_deck31_s2_Charon.mp3",txt:"Überall, wo ein Wert einem anderen Wert zugeordnet wird, steckt eine Zuordnung dahinter - hier ein paar Beispiele aus deinem Alltag."},
+ 3:{wav:"narration_deck31_s3_Charon.mp3",txt:"Eine Zuordnung heißt eindeutig, wenn jedem Wert der einen Größe genau ein Wert der anderen Größe zugeordnet ist. Eine eindeutige Zuordnung nennt man Funktion."},
+ 4:{wav:"narration_deck31_s4_Charon.mp3",txt:"Eine Funktion ist eine Paarmenge aus Zahlenpaaren - genau die Produktmenge aus dem allerersten Kapitel, nur mit einer zusätzlichen Regel: zu jedem x gehört nur ein y."},
+ 5:{wav:"narration_deck31_s5_Charon.mp3",txt:"Jetzt berechnen wir gemeinsam alle Zahlenpaare einer Funktion, Schritt für Schritt."},
+ 6:{wav:"narration_deck31_s6_Charon.mp3",txt:"Hier lernst du die wichtigsten Fachbegriffe rund um Funktionen kennen: Funktionsgleichung, Funktionsterm, Funktionswert, Argument und Nullstelle."},
+ 7:{wav:"narration_deck31_s7_Charon.mp3",txt:"Die Definitionsmenge enthält alle x-Werte, die eingesetzt werden dürfen, die Wertemenge alle Funktionswerte, die dabei herauskommen."},
+ 8:{wav:"narration_deck31_s8_Charon.mp3",txt:"So sieht eine Funktion als Mengendiagramm aus: jeder Pfeil verbindet einen x-Wert mit seinem Funktionswert - und von jedem Punkt geht nur ein Pfeil aus."},
+ 9:{wav:"narration_deck31_s9_Charon.mp3",txt:"Dieselbe Funktion lässt sich auf vier verschiedene Arten aufschreiben - schau sie dir in Ruhe an."},
+ 10:{wav:"narration_deck31_s10_Charon.mp3",txt:"Bevor wir Graphen zeichnen, frischen wir gemeinsam das Koordinatensystem auf: Achsen, Ursprung und die vier Quadranten."},
+ 11:{wav:"narration_deck31_s11_Charon.mp3",txt:"Jedes Zahlenpaar entspricht einem Punkt im Koordinatensystem - alle Punkte zusammen ergeben den Graphen der Funktion."},
+ 12:{wav:"narration_deck31_s12_Charon.mp3",txt:"Ein x, ein y, sonst ist es vorbei - jedes x darf nur einen Pfeil aussenden, sonst ist es keine Funktion."},
+ 13:{wav:"narration_deck31_s13_Charon.mp3",txt:"Auch im Handwerk wird ständig mit Funktionen gearbeitet, etwa wenn ein Elektriker Widerstandswerte bei verschiedenen Temperaturen berechnet."},
+ 14:{wav:"narration_deck31_s14_Charon.mp3",txt:"Bevor du ins Labor gehst: schätz doch mal, wie viele Pfeile hier insgesamt von der Definitionsmenge ausgehen."},
+ 15:{wav:"narration_deck31_s15_Charon.mp3",txt:"Hier noch mal alle Symbole rund um Funktionen im Überblick, bevor du selbst im Labor experimentierst."},
+ 16:{wav:"narration_deck31_s16_Charon.mp3",txt:"Jetzt bist du dran: entscheide bei jeder gezeigten Zuordnung, ob es sich um eine Funktion handelt."},
+ 17:{wav:"narration_deck31_s17_Charon.mp3",txt:"Fassen wir zusammen, welche Begriffe rund um Funktionen du dir gemerkt haben solltest."},
+ 18:{wav:"narration_deck31_s18_Charon.mp3",txt:"Jetzt bist du dran, ganz ohne Bildschirm - drei Aufgaben rund um Funktionen."},
+ 19:{wav:"narration_deck31_s19_Charon.mp3",txt:"Hier siehst du gebündelt, was du für die Prüfung wirklich können musst - und einen Ausblick auf das nächste Deck: lineare Funktionen."},
+ 20:{wav:"narration_deck31_s20_Charon.mp3",txt:"Jetzt teste dich selbst: klick die Antwort an, die du für richtig hältst - du bekommst sofort Feedback und eine kurze Erklärung dazu."}
+};
+const slideAudio=new Audio();
+function playSlideNarr(i){
+  slideAudio.pause();
+  if(autoMode!=='voice'||!SLIDE_NARR[i]) return;
+  slideAudio.src=SLIDE_NARR[i].wav;
+  slideAudio.play().catch(()=>{});
+}
+
+// === Transkript ===
+const transBtn=document.getElementById('transBtn'), transOverlay=document.getElementById('transOverlay'), transText=document.getElementById('transText');
+function openTrans(){
+  const n=SLIDE_NARR[idx+1];
+  transText.textContent=n?n.txt:'Für diese Folie gibt es keinen Sprechtext.';
+  transOverlay.classList.add('show');
+}
+function closeTrans(){ transOverlay.classList.remove('show'); }
+transBtn.onclick=openTrans;
+transOverlay.onclick=(e)=>{ if(e.target===transOverlay) closeTrans(); };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrans(); });
+
+// === Schritt-für-Schritt ===
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const grp=btn.dataset.group;
+  const steps=[...document.querySelectorAll('.step[id^="s'+grp+'_"]')];
+  let si=0;
+  btn.onclick=()=>{
+    if(si<steps.length){ steps[si].classList.add('show'); si++; }
+    if(si>=steps.length){ btn.textContent='Alle Schritte gezeigt ✓'; btn.disabled=true; }
+  };
+});
+
+// === Klick-Quiz ===
+const QUIZ=[
+ {q:"Wann ist eine Zuordnung eine Funktion?",
+  a:["Wenn jedem x mindestens ein y zugeordnet ist","Wenn jedem x genau ein y zugeordnet ist","Wenn D unendlich groß ist","Wenn der Graph eine Gerade ist"],r:1,
+  why:"Eindeutigkeit ist der Kern: jedem x-Wert genau EIN y-Wert — nicht mehrere, nicht keiner."},
+ {q:"Gegeben ist f(x)=3x−5. Was ist f(2)?",
+  a:["1","−1","6","11"],r:0,
+  why:"f(2)=3·2−5=6−5=1."},
+ {q:"Was ist die Nullstelle von g(x)=5x+10?",
+  a:["x=−2","x=2","x=10","x=−10"],r:0,
+  why:"5x+10=0 ⟺ 5x=−10 ⟺ x=−2."},
+ {q:"Die Definitionsmenge einer Funktion ist D={1;2;3}. Was bedeutet das?",
+  a:["Es gibt genau 3 mögliche Funktionswerte","Es dürfen nur die x-Werte 1, 2 und 3 eingesetzt werden","Der Graph hat 3 Achsen","Die Funktion hat 3 Nullstellen"],r:1,
+  why:"D ist die Menge der ERLAUBTEN x-Werte — hier ausschließlich 1, 2 und 3."},
+ {q:"Ordnest du jedem Buchstaben des Alphabets seine Position zu (A↦1, B↦2, …), ist das eine Funktion. Warum?",
+  a:["Weil das Alphabet 26 Buchstaben hat","Weil jedem Buchstaben genau eine Position zugeordnet ist","Weil Zahlen immer Funktionen ergeben","Das ist keine Funktion"],r:1,
+  why:"Jeder Buchstabe bekommt genau eine Positionsnummer — eindeutige Zuordnung, also eine Funktion."},
+ {q:"Welche Aussage zur Wertemenge W ist richtig?",
+  a:["W enthält immer alle reellen Zahlen","W enthält alle tatsächlich vorkommenden Funktionswerte","W ist immer gleich groß wie D","W enthält die x-Werte"],r:1,
+  why:"W = die Menge aller y-Werte, die bei der gegebenen Definitionsmenge tatsächlich als Funktionswert auftreten."}
+];
+const DECK_ID="funktionen/deck31";
+function ml_saveQuizResult(id, ok, conf){
+  try{
+    const r=JSON.parse(localStorage.getItem('ml_quiz_results')||'{}');
+    r[id]={ok:ok, ts:Date.now()};
+    localStorage.setItem('ml_quiz_results', JSON.stringify(r));
+  }catch(e){}
+}
+(function(){
+  const wrap=document.getElementById('quizWrap');
+  if(!wrap) return;
+  let score=0, answered=0;
+  QUIZ.forEach((item,qi)=>{
+    const box=document.createElement('div'); box.className='quizq';
+    const p=document.createElement('p'); p.className='qtext'; p.textContent=(qi+1)+'. '+item.q; box.appendChild(p);
+    const why=document.createElement('div'); why.className='quizwhy'; why.textContent=item.why;
+    item.a.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quizopt'; b.textContent=opt;
+      b.onclick=()=>{
+        if(b.dataset.done) return;
+        box.querySelectorAll('.quizopt').forEach(x=>{ x.dataset.done='1'; x.disabled=true; if(parseInt(x.dataset.oi)===item.r) x.classList.add('correct'); });
+        if(oi!==item.r) b.classList.add('wrong');
+        why.classList.add('show');
+        ml_saveQuizResult(DECK_ID+'#'+(qi+1), oi===item.r);
+        answered++; if(oi===item.r) score++;
+        document.getElementById('quizscore').textContent=(answered===QUIZ.length)?('Ergebnis: '+score+' / '+QUIZ.length+' — '+(score>=QUIZ.length*0.8?'stark! 💪':(score>=QUIZ.length*0.5?'solide, nochmal drüberschauen':'nochmal ansehen empfohlen'))):'';
+      };
+      b.dataset.oi=oi;
+      box.appendChild(b);
+    });
+    box.appendChild(why);
+    wrap.appendChild(box);
+  });
+})();
+
+show(0);
+</script>
+<script>/* Home-Button-Fix: injizierter Server-Knopf zeigt sonst auf physik-lernwelt */
+(function(){var n=0,t=setInterval(function(){var h=document.getElementById("__plHome");if(h){h.href="../index.html";clearInterval(t);}else if(++n>20){clearInterval(t);}},150);})();
+</script>
+<script src="../gamify.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.lwEstimate) window.lwEstimate('estPfeile31', {
+    frage: 'Eine Funktion hat die Definitionsmenge D={1;2;3;4;5}. Wie viele Pfeile gehen im Mengendiagramm insgesamt von D aus?',
+    min: 0, max: 15, korrekt: 5, toleranz: 0,
+    begruendung: 'Jedes der 5 Elemente von D sendet GENAU einen Pfeil aus (Eindeutigkeit) — macht 5 Pfeile insgesamt.'
+  });
+});
+</script>
+</body>
+</html>

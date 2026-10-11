@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Zinseszins-Rechner</title>
+<style>
+  :root{ --bg:#0b0e13; --fg:#e6edf3; --muted:#9aa4b2; --accent:#f2a63c; --line:#2a3038; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Roboto,sans-serif;}
+  #wrap{padding:16px 22px 40px;max-width:900px;margin:0 auto;}
+  h2{margin:0 0 4px;font-size:22px;}
+  .lead{color:var(--muted);font-size:15px;margin:0 0 14px;}
+  .panel{background:#151b24;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:14px;}
+  .row{display:flex;align-items:center;gap:12px;margin:10px 0;flex-wrap:wrap;}
+  .row label{min-width:140px;font-size:15px;}
+  input[type=range]{flex:1;min-width:160px;}
+  input[type=number]{width:80px;background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px;font-size:15px;}
+  .val{font-weight:700;color:var(--accent);min-width:60px;text-align:right;}
+  #svgHost{background:#0e131b;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;}
+  .info{font-size:15px;line-height:1.6;margin-top:10px;text-align:center;}
+  .mission{background:#1a2733;border-left:5px solid #5fd0c7;border-radius:8px;padding:10px 16px;margin-top:10px;font-size:15px;}
+  .mission.solved{background:#1c3d24;border-left-color:#4caf50;}
+  button.act{background:#1f2630;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 16px;font-size:15px;cursor:pointer;}
+  button.act.primary{background:var(--accent);color:#12100a;font-weight:700;border-color:var(--accent);}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h2>🧪 Zinseszins-Rechner</h2>
+  <p class="lead">Stelle Startkapital, Zinssatz und Laufzeit ein — vergleiche Zinseszins mit linearem Sparen (gleicher Gesamtzins, aber ohne Zinseszinseffekt).</p>
+
+  <div class="panel">
+    <div class="row">
+      <label for="k0Slide">Startkapital K0</label>
+      <input type="range" id="k0Slide" min="500" max="5000" step="100" value="1000">
+      <span class="val" id="k0Val">1.000€</span>
+    </div>
+    <div class="row">
+      <label for="pSlide">Zinssatz p (%)</label>
+      <input type="range" id="pSlide" min="1" max="15" step="0.5" value="6">
+      <span class="val" id="pVal">6%</span>
+    </div>
+    <div class="row">
+      <label for="nSlide">Laufzeit n (Jahre)</label>
+      <input type="range" id="nSlide" min="1" max="30" step="1" value="20">
+      <span class="val" id="nVal">20</span>
+    </div>
+    <div id="svgHost"></div>
+    <div class="info" id="info"></div>
+  </div>
+
+  <div class="panel">
+    <p style="font-size:15px;margin:0 0 8px;">🎯 Mission: In wie vielen Jahren verdoppelt sich das Kapital bei diesem Zinssatz? Erst schätzen, dann prüfen!</p>
+    <div class="row">
+      <label for="guessInput">Deine Schätzung (Jahre)</label>
+      <input type="number" id="guessInput" min="1" max="99" value="10">
+      <button class="act primary" id="btnCheck">Prüfen</button>
+    </div>
+    <div class="mission" id="mission">🎯 Gib deine Schätzung ein und klicke „Prüfen".</div>
+  </div>
+</div>
+
+<script>
+const deI=(x)=>Math.round(x).toLocaleString('de-DE');
+let K0=1000, p=6, n=20;
+let missionSolved=false;
+
+function doublingYear(){
+  const q=1+p/100;
+  let year=0, val=K0;
+  while(val < 2*K0 && year<200){ year++; val=K0*Math.pow(q,year); }
+  return year;
+}
+
+function render(){
+  const q=1+p/100;
+  const w=280,h=200,ox=30,oy=180;
+  const Kn=K0*Math.pow(q,n);
+  const Klin=K0+K0*(p/100)*n;
+  const scaleX=250/n;
+  const maxY=Math.max(Kn,Klin);
+  const scaleY=160/maxY;
+
+  let s='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;max-width:340px;height:auto;display:block;margin:0 auto;">';
+  s+='<line x1="'+ox+'" y1="'+oy+'" x2="270" y2="'+oy+'" stroke="#4a5568" stroke-width="1.5"/>';
+  s+='<line x1="'+ox+'" y1="10" x2="'+ox+'" y2="'+oy+'" stroke="#4a5568" stroke-width="1.5"/>';
+  let curveExp='', curveLin='';
+  for(let t=0; t<=n; t+=Math.max(0.25,n/60)){
+    const yExp=K0*Math.pow(q,t);
+    const yLin=K0+K0*(p/100)*t;
+    curveExp += (ox+t*scaleX)+','+(oy-yExp*scaleY)+' ';
+    curveLin += (ox+t*scaleX)+','+(oy-yLin*scaleY)+' ';
+  }
+  s+='<polyline points="'+curveLin.trim()+'" fill="none" stroke="#f2a63c" stroke-width="2" stroke-dasharray="5,4"/>';
+  s+='<polyline points="'+curveExp.trim()+'" fill="none" stroke="#5fd0c7" stroke-width="2.5"/>';
+  s+='</svg>';
+  document.getElementById('svgHost').innerHTML=s;
+
+  document.getElementById('info').innerHTML='Zinseszins nach '+n+' Jahren: <b style="color:#5fd0c7;">'+deI(Kn)+'€</b> &nbsp;·&nbsp; linear (ohne Zinseszins): <b style="color:#f2a63c;">'+deI(Klin)+'€</b> &nbsp;·&nbsp; Differenz: '+deI(Kn-Klin)+'€';
+}
+
+document.getElementById('k0Slide').addEventListener('input', e=>{ K0=parseFloat(e.target.value); document.getElementById('k0Val').textContent=deI(K0)+'€'; render(); });
+document.getElementById('pSlide').addEventListener('input', e=>{ p=parseFloat(e.target.value); document.getElementById('pVal').textContent=p+'%'; render(); });
+document.getElementById('nSlide').addEventListener('input', e=>{ n=parseInt(e.target.value); document.getElementById('nVal').textContent=n; render(); });
+
+document.getElementById('btnCheck').addEventListener('click', ()=>{
+  const guess=parseFloat(document.getElementById('guessInput').value);
+  const actual=doublingYear();
+  const box=document.getElementById('mission');
+  if(Math.abs(guess-actual)<=1){
+    missionSolved=true;
+    box.classList.add('solved');
+    box.innerHTML='✅ Sehr nah dran! Bei p='+p+'% verdoppelt sich das Kapital nach '+actual+' Jahren (deine Schätzung: '+guess+').';
+  } else if(missionSolved){
+    box.classList.add('solved');
+  } else {
+    box.classList.remove('solved');
+    box.innerHTML='🎯 Nicht ganz — die tatsächliche Verdopplungszeit bei p='+p+'% liegt bei '+actual+' Jahren (deine Schätzung: '+guess+'). Versuch es nochmal!';
+  }
+});
+
+render();
+
+window.LAB={
+  state(){
+    return { K0, p, n, actualDoublingYear: doublingYear(), missionSolved };
+  },
+  setK0(v){ K0=v; document.getElementById('k0Slide').value=v; document.getElementById('k0Val').textContent=deI(v)+'€'; render(); },
+  setP(v){ p=v; document.getElementById('pSlide').value=v; document.getElementById('pVal').textContent=v+'%'; render(); },
+  setN(v){ n=v; document.getElementById('nSlide').value=v; document.getElementById('nVal').textContent=v; render(); },
+  guess(v){ document.getElementById('guessInput').value=v; document.getElementById('btnCheck').click(); }
+};
+</script>
+</body>
+</html>
